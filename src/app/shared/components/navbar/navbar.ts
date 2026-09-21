@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { ShoppingCart } from '../shopping-cart/shopping-cart';
+import { ShoppingCart } from '../../../features/shopping-cart/shopping-cart';
 
 @Component({
   selector: 'app-navbar',

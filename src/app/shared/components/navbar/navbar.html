@@ -1,0 +1,22 @@
+<nav class="navbar" aria-label="Navegación principal">
+  <a class="navbar__brand" routerLink="/home" routerLinkActive="active" aria-label="Ir a la página de inicio">
+    <img src="/favicon.ico" alt="Logo de la empresa" class="navbar__brand-image" />
+  </a>
+
+  <ul class="navbar__list">
+    <li class="navbar__item">
+      <a class="navbar__button" routerLink="/bolsas" routerLinkActive="active">Bolsas</a>
+    </li>
+    <li class="navbar__item">
+      <a class="navbar__button" routerLink="/neceseres" routerLinkActive="active">Neceseres</a>
+    </li>
+    <li class="navbar__item">
+      <a class="navbar__button" routerLink="/fundas" routerLinkActive="active">Fundas</a>
+    </li>
+    <li class="navbar__item">
+      <a class="navbar__button" routerLink="/telas" routerLinkActive="active">Telas</a>
+    </li>
+  </ul>
+
+  <app-shopping-cart></app-shopping-cart>
+</nav>

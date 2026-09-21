@@ -1,0 +1,52 @@
+<button class="shopping-cart" type="button" aria-label="Ver carrito de compra" aria-expanded="{{ isOpen }}" (click)="toggleCart()">
+  <svg class="shopping-cart__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 4H5L7.2 14.2C7.38 15.02 8.1 15.6 8.95 15.6H17.2C18.03 15.6 18.73 15.03 18.93 14.22L20.7 7.2H6.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="10" cy="18.5" r="1.5" fill="currentColor"/>
+    <circle cx="17" cy="18.5" r="1.5" fill="currentColor"/>
+  </svg>
+</button>
+
+@if (isOpen) {
+  <div class="cart-panel__backdrop" (click)="closeCart()"></div>
+
+  <aside class="cart-panel" role="dialog" aria-modal="true" aria-label="Carrito de compra" (click)="$event.stopPropagation()">
+    <div class="cart-panel__header">
+      <div>
+        <p class="cart-panel__eyebrow">Tu compra</p>
+        <h2 class="cart-panel__title">Carrito</h2>
+      </div>
+      <button type="button" class="cart-panel__close" aria-label="Cerrar carrito" (click)="closeCart()">
+        ×
+      </button>
+    </div>
+
+    <div class="cart-panel__items">
+      <article class="cart-panel__item">
+        <div class="cart-panel__thumb cart-panel__thumb--beige"></div>
+        <div class="cart-panel__info">
+          <h3>Bolsa Minimal</h3>
+          <p>1 unidad</p>
+          <strong>49,90 €</strong>
+        </div>
+      </article>
+
+      <article class="cart-panel__item">
+        <div class="cart-panel__thumb cart-panel__thumb--green"></div>
+        <div class="cart-panel__info">
+          <h3>Neceser Clásico</h3>
+          <p>2 unidades</p>
+          <strong>38,00 €</strong>
+        </div>
+      </article>
+    </div>
+
+    <div class="cart-panel__summary">
+      <div>
+        <span>Subtotal</span>
+        <strong>87,90 €</strong>
+      </div>
+      <button type="button" class="cart-panel__checkout">Tramitar pedido</button>
+    </div>
+  </aside>
+}
+

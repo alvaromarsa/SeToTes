@@ -1,0 +1,99 @@
+.feature {
+  background: #F9ECE5;
+  padding: 3rem 1.5rem 4rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.feature__header {
+  margin-bottom: 2rem;
+}
+
+.feature__tag {
+  display: inline-block;
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.06);
+  color: #111827;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.feature h2 {
+  margin: 0.8rem 0 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  color: #111827;
+}
+
+.feature__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.product-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 24px;
+  padding: 1rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+}
+
+.product-card__image {
+  height: 220px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.product-card__image--beige { background: linear-gradient(135deg, #f7efe4 0%, #e7d5b5 100%); }
+.product-card__image--dark { background: linear-gradient(135deg, #1f2937 0%, #374151 100%); color: #fff; }
+.product-card__image--sand { background: linear-gradient(135deg, #efe4d6 0%, #d8c0a4 100%); }
+.product-card__image--forest { background: linear-gradient(135deg, #dfe8db 0%, #a8bca0 100%); }
+.product-card__image--rose { background: linear-gradient(135deg, #fce7f3 0%, #f9c9d8 100%); }
+.product-card__image--graphite { background: linear-gradient(135deg, #e5e7eb 0%, #94a3b8 100%); }
+.product-card__image--linen { background: linear-gradient(135deg, #f4f1ea 0%, #d7d0c7 100%); }
+.product-card__image--stone { background: linear-gradient(135deg, #f3f4f6 0%, #cbd5e1 100%); }
+
+.product-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  color: #111827;
+}
+
+.product-card p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.product-card__meta {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.product-card__meta span {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.product-card__meta button {
+  border: none;
+  border-radius: 999px;
+  background: #111827;
+  color: #fff;
+  padding: 0.7rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}

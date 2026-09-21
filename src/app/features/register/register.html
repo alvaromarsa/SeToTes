@@ -1,1 +1,73 @@
-<p>register works!</p>,
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-card__header">
+      <p class="auth-card__eyebrow">Únete a ToteBag</p>
+      <h1>Crea tu cuenta</h1>
+    </div>
+
+    <form class="auth-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div class="field-row">
+        <label class="field">
+          <span>Nombre completo</span>
+          <input type="text" formControlName="fullName" placeholder="Tu nombre" />
+          @if (hasError('fullName', 'required')) {
+            <small>El nombre es obligatorio.</small>
+          }
+          @if (hasError('fullName', 'minlength')) {
+            <small>Introduce al menos 2 caracteres.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Teléfono</span>
+          <input type="tel" formControlName="phone" placeholder="600 123 456" />
+          @if (hasError('phone', 'required')) {
+            <small>El teléfono es obligatorio.</small>
+          }
+          @if (hasError('phone', 'minlength')) {
+            <small>Introduce un teléfono válido.</small>
+          }
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Email</span>
+        <input type="email" formControlName="email" placeholder="tu@email.com" />
+        @if (hasError('email', 'required')) {
+          <small>El email es obligatorio.</small>
+        }
+        @if (hasError('email', 'email')) {
+          <small>Introduce un email válido.</small>
+        }
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Contraseña</span>
+          <input type="password" formControlName="password" placeholder="••••••••" />
+          @if (hasError('password', 'required')) {
+            <small>La contraseña es obligatoria.</small>
+          }
+          @if (hasError('password', 'minlength')) {
+            <small>Debe contener al menos 8 caracteres.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Repetir contraseña</span>
+          <input type="password" formControlName="confirmPassword" placeholder="••••••••" />
+          @if (hasError('confirmPassword', 'required')) {
+            <small>Confirma la contraseña.</small>
+          }
+        </label>
+      </div>
+
+      @if (registerForm.hasError('passwordMismatch')) {
+        <p class="form-error">Las contraseñas no coinciden.</p>
+      }
+
+      <button type="submit" class="primary-button">Registrarme</button>
+    </form>
+  </div>
+</section>
+

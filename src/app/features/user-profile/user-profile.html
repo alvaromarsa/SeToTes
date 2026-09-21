@@ -1,1 +1,62 @@
-<p>user-profile works!</p>,
+<section class="profile-shell">
+  <div class="profile-card">
+    <div class="profile-card__header">
+      <div>
+        <p class="profile-card__eyebrow">Mi cuenta</p>
+        <h1>Perfil de usuario</h1>
+      </div>
+      <div class="profile-card__avatar">ML</div>
+    </div>
+
+    <form class="profile-form" [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+      <div class="field-row">
+        <label class="field">
+          <span>Nombre completo</span>
+          <input type="text" formControlName="fullName" />
+          @if (hasError('fullName', 'required')) {
+            <small>El nombre es obligatorio.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Email</span>
+          <input type="email" formControlName="email" />
+          @if (hasError('email', 'required')) {
+            <small>El email es obligatorio.</small>
+          }
+          @if (hasError('email', 'email')) {
+            <small>Introduce un email válido.</small>
+          }
+        </label>
+      </div>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Teléfono</span>
+          <input type="tel" formControlName="phone" />
+        </label>
+
+        <label class="field">
+          <span>Código postal</span>
+          <input type="text" formControlName="postalCode" />
+          @if (hasError('postalCode', 'pattern')) {
+            <small>El código postal debe tener 5 dígitos.</small>
+          }
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Dirección</span>
+        <input type="text" formControlName="address" />
+      </label>
+
+      <label class="field">
+        <span>Ciudad</span>
+        <input type="text" formControlName="city" />
+      </label>
+
+      <button type="submit" class="primary-button">Guardar cambios</button>
+    </form>
+  </div>
+</section>
+

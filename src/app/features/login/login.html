@@ -1,1 +1,42 @@
-<p>login works!</p>,
+<section class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-card__header">
+      <p class="auth-card__eyebrow">Bienvenid@ de nuevo</p>
+      <h1>Inicia sesión</h1>
+    </div>
+
+    <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <label class="field">
+        <span>Email</span>
+        <input type="email" formControlName="email" placeholder="tu@email.com" />
+        @if (hasError('email', 'required')) {
+          <small>El email es obligatorio.</small>
+        }
+        @if (hasError('email', 'email')) {
+          <small>Introduce un email válido.</small>
+        }
+      </label>
+
+      <label class="field">
+        <span>Contraseña</span>
+        <input type="password" formControlName="password" placeholder="••••••••" />
+        @if (hasError('password', 'required')) {
+          <small>La contraseña es obligatoria.</small>
+        }
+        @if (hasError('password', 'minlength')) {
+          <small>La contraseña debe tener al menos 6 caracteres.</small>
+        }
+      </label>
+
+      <label class="checkbox-row">
+        <input type="checkbox" formControlName="remember" />
+        <span>Recordarme</span>
+      </label>
+
+      <button type="submit" class="primary-button" [disabled]="loginForm.invalid && submitted">
+        Entrar
+      </button>
+    </form>
+  </div>
+</section>
+

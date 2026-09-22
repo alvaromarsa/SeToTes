@@ -13,19 +13,16 @@
         <label class="field">
           <span>Nombre completo</span>
           <input type="text" formControlName="fullName" />
-          @if (hasError('fullName', 'required')) {
-            <small>El nombre es obligatorio.</small>
+          @if (formUtils.isValidField(profileForm, 'fullName')) {
+            <small>{{ formUtils.getFieldError(profileForm, 'fullName') }}</small>
           }
         </label>
 
         <label class="field">
           <span>Email</span>
           <input type="email" formControlName="email" />
-          @if (hasError('email', 'required')) {
-            <small>El email es obligatorio.</small>
-          }
-          @if (hasError('email', 'email')) {
-            <small>Introduce un email válido.</small>
+          @if (formUtils.isValidField(profileForm, 'email')) {
+            <small>{{ formUtils.getFieldError(profileForm, 'email') }}</small>
           }
         </label>
       </div>
@@ -39,8 +36,8 @@
         <label class="field">
           <span>Código postal</span>
           <input type="text" formControlName="postalCode" />
-          @if (hasError('postalCode', 'pattern')) {
-            <small>El código postal debe tener 5 dígitos.</small>
+          @if (formUtils.isValidField(profileForm, 'postalCode')) {
+            <small>{{ formUtils.getFieldError(profileForm, 'postalCode') }}</small>
           }
         </label>
       </div>

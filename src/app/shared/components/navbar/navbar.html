@@ -19,12 +19,12 @@
   </ul>
 
   <div class="navbar__actions">
-    <a class="navbar__user" routerLink="/user-profile" routerLinkActive="active" aria-label="Ir al perfil del usuario">
+    <button class="navbar__user" type="button" (click)="goToUserArea()" aria-label="Acceder a mi cuenta">
       <svg class="navbar__user-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M20 21C20 18.7909 17.3137 17 14 17H10C6.68629 17 4 18.7909 4 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
       </svg>
-    </a>
+    </button>
 
     <app-shopping-cart></app-shopping-cart>
   </div>

@@ -1,0 +1,83 @@
+<section class="checkout-shell">
+  <div class="checkout-grid">
+    <div class="checkout-card checkout-card--primary">
+      <div class="checkout-header">
+        <p class="checkout-eyebrow">Finalizar compra</p>
+        <h1>Resumen del pedido</h1>
+      </div>
+
+      <div class="checkout-items">
+        @for (item of items; track item.name) {
+          <article class="checkout-item">
+            <div
+              class="checkout-item__thumb"
+              [class.checkout-item__thumb--green]="item.color === 'Verde'"
+              [class.checkout-item__thumb--beige]="item.color !== 'Verde'"
+            ></div>
+            <div class="checkout-item__details">
+              <div>
+                <h2>{{ item.name }}</h2>
+                <p>Color: {{ item.color }}</p>
+              </div>
+              <div class="checkout-item__meta">
+                <span>Cantidad: {{ item.quantity }}</span>
+                <strong>{{ (item.quantity * item.price) | currency:'EUR':'symbol':'1.2-2' }}</strong>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+
+      <div class="checkout-summary">
+        <div class="checkout-summary__row">
+          <span>Subtotal</span>
+          <strong>{{ subtotal | currency:'EUR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div class="checkout-summary__row">
+          <span>Envío</span>
+          <strong>{{ shippingCost | currency:'EUR':'symbol':'1.2-2' }}</strong>
+        </div>
+        <div class="checkout-summary__row checkout-summary__row--total">
+          <span>Total</span>
+          <strong>{{ total | currency:'EUR':'symbol':'1.2-2' }}</strong>
+        </div>
+      </div>
+    </div>
+
+    <aside class="checkout-card checkout-card--secondary">
+      <h2>Datos del pago</h2>
+
+      <form class="checkout-form" [formGroup]="checkoutForm">
+        <label class="field">
+          <span>Nombre del usuario</span>
+          <input type="text" formControlName="userName" />
+        </label>
+
+        <label class="field">
+          <span>Dirección de envío</span>
+          <textarea rows="3" formControlName="shippingAddress"></textarea>
+        </label>
+
+        <label class="field">
+          <span>Número de tarjeta</span>
+          <input type="text" formControlName="cardNumber" />
+        </label>
+
+        <label class="field">
+          <span>Código promocional</span>
+          <select formControlName="promoCode">
+            <option value="WELCOME10">WELCOME10</option>
+            <option value="TOTEBAG20">TOTEBAG20</option>
+            <option value="">Sin código</option>
+          </select>
+        </label>
+
+        <div class="checkout-detail">
+          <span>Fecha estimada de llegada</span>
+          <strong>{{ deliveryDate }}</strong>
+        </div>
+      </form>
+    </aside>
+  </div>
+</section>
+

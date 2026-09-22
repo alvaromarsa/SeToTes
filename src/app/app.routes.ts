@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { BolsasComponent } from './features/bolsas/bolsas.component';
+import { Checkout } from './features/checkout/checkout/checkout';
 import { FundasComponent } from './features/fundas/fundas.component';
 import { HomeComponent } from './features/home/home';
 import { Login } from './features/login/login';
@@ -19,4 +20,5 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'register', component: Register },
   { path: 'user-profile', component: UserProfile },
+  { path: 'checkout', component: Checkout },
 ];

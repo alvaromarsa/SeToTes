@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
+import { FormUtils } from '../../shared/utils/form-utils';
+
 @Component({
   selector: 'app-user-profile',
   standalone: true,
@@ -10,6 +12,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserProfile {
+  readonly formUtils = FormUtils;
   private readonly fb = inject(FormBuilder);
 
   readonly profileForm = this.fb.nonNullable.group({
@@ -33,10 +36,5 @@ export class UserProfile {
 
     const payload = this.profileForm.getRawValue();
     console.log('Profile update:', payload);
-  }
-
-  hasError(fieldName: string, errorName: string): boolean {
-    const control = this.profileForm.get(fieldName);
-    return !!(control && control.touched && control.hasError(errorName));
   }
 }

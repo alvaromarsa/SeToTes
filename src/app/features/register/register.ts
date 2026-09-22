@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 
+import { FormUtils } from '../../shared/utils/form-utils';
+
 const passwordsMatchValidator: ValidatorFn = (
   control: AbstractControl,
 ): ValidationErrors | null => {
@@ -19,6 +21,7 @@ const passwordsMatchValidator: ValidatorFn = (
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Register {
+  readonly formUtils = FormUtils;
   private readonly fb = inject(FormBuilder);
 
   readonly registerForm = this.fb.nonNullable.group(
@@ -46,10 +49,5 @@ export class Register {
 
     const payload = this.registerForm.getRawValue();
     console.log('Register request:', payload);
-  }
-
-  hasError(fieldName: string, errorName: string): boolean {
-    const control = this.registerForm.get(fieldName);
-    return !!(control && control.touched && control.hasError(errorName));
   }
 }

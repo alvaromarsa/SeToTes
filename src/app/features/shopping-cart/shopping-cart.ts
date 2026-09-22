@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-shopping-cart',
@@ -9,6 +10,8 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ShoppingCart {
+  private readonly router = inject(Router);
+
   isOpen = false;
 
   toggleCart(): void {
@@ -17,5 +20,10 @@ export class ShoppingCart {
 
   closeCart(): void {
     this.isOpen = false;
+  }
+
+  goToCheckout(): void {
+    this.closeCart();
+    void this.router.navigateByUrl('/checkout');
   }
 }

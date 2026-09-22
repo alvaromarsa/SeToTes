@@ -1,15 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+
+import { FormUtils } from '../../shared/utils/form-utils';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
   styleUrl: './login.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login {
+  readonly formUtils = FormUtils;
   private readonly fb = inject(FormBuilder);
 
   readonly loginForm = this.fb.nonNullable.group({
@@ -30,10 +34,5 @@ export class Login {
 
     const payload = this.loginForm.getRawValue();
     console.log('Login request:', payload);
-  }
-
-  hasError(fieldName: string, errorName: string): boolean {
-    const control = this.loginForm.get(fieldName);
-    return !!(control && control.touched && control.hasError(errorName));
   }
 }

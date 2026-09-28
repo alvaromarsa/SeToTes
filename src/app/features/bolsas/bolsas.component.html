@@ -5,24 +5,18 @@
   </div>
 
   <div class="feature__grid">
-    <article class="product-card">
-      <div class="product-card__image product-card__image--beige">B</div>
-      <h3>Bolsa Everyday</h3>
-      <p>Minimalista, práctica y pensada para cada día.</p>
-      <div class="product-card__meta">
-        <span>€48</span>
-        <button>Comprar</button>
-      </div>
-    </article>
-
-    <article class="product-card">
-      <div class="product-card__image product-card__image--dark">B</div>
-      <h3>Bolsa Club</h3>
-      <p>Estilo urbano y acabado premium para salir.</p>
-      <div class="product-card__meta">
-        <span>€56</span>
-        <button>Comprar</button>
-      </div>
-    </article>
+    @for (product of products; track product.id) {
+      <article class="product-card">
+        <div class="product-card__image product-card__image--beige">
+          {{ product.color }}
+        </div>
+        <h3>{{ product.name }}</h3>
+        <p>Disponibles: {{ product.stock }}</p>
+        <div class="product-card__meta">
+          <span>€{{ product.price }}</span>
+          <button>Comprar</button>
+        </div>
+      </article>
+    }
   </div>
 </section>

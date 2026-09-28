@@ -1,0 +1,19 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  stock: number;
+  color: string;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ProductService {
+  private http = inject(HttpClient);
+
+  getProducts() {
+    return this.http.get<Product[]>('http://localhost:3000/api/products');
+  }
+}

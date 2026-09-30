@@ -2,10 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 const argon2 = require('argon2');
-
 const app = express();
+const jwt = require('jsonwebtoken');
 
-app.use(cors({ origin: 'http://localhost:4200' }));
+app.use(cors({
+  origin: 'http://localhost:4200',
+  credentials: true,
+}));
 app.use(express.json());
 
 
@@ -106,7 +109,76 @@ app.post('/api/auth/register', async (request, response) => {
   }
 });
 
+app.post('/api/auth/login', async (request, response) => {
+  const { email, password } = request.body ?? {};
+
+  if (
+    typeof email !== 'string' ||
+    typeof password !== 'string' ||
+    email.trim() === '' ||
+    password === ''
+  ) {
+    return response.status(400).json({
+      message: 'El email y la contraseña son obligatorios',
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, full_name, phone, email, password_hash, created_at
+       FROM users
+       WHERE email = $1`,
+      [email.trim().toLowerCase()]
+    );
+
+    const user = result.rows[0];
+
+    if (!user || !(await argon2.verify(user.password_hash, password))) {
+      return response.status(401).json({
+        message: 'Email o contraseña incorrectos',
+      });
+    }
+
+    const token = jwt.sign(
+      { sub: String(user.id) },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '1h',
+        algorithm: 'HS256',
+      }
+    );
+
+    response.cookie('access_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000,
+      path: '/',
+    });
+
+    return response.json({
+      message: 'Inicio de sesión correcto',
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        phone: user.phone,
+        email: user.email,
+        created_at: user.created_at,
+      },
+    });
+  } catch (error) {
+    console.error('Error al iniciar sesión:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo iniciar sesión',
+    });
+  }
+});
+
 const port = 3000;
+
+if (!process.env.JWT_SECRET) {
+  throw new Error('Falta JWT_SECRET en backend/.env');
+}
 
 app.listen(port, () => {
   console.log(`Backend disponible en http://localhost:${port}`);

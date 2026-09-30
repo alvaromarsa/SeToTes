@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-
+import { AuthService, RegisterResponse } from '../../core/services/auth.service';
 import { FormUtils } from '../../shared/utils/form-utils';
+import { HttpErrorResponse } from '@angular/common/http';
 
 const passwordsMatchValidator: ValidatorFn = (
   control: AbstractControl,
@@ -23,6 +24,7 @@ const passwordsMatchValidator: ValidatorFn = (
 export class Register {
   readonly formUtils = FormUtils;
   private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
 
   readonly registerForm = this.fb.nonNullable.group(
     {
@@ -47,7 +49,25 @@ export class Register {
       return;
     }
 
-    const payload = this.registerForm.getRawValue();
-    console.log('Register request:', payload);
+    const formValue = this.registerForm.getRawValue();
+
+    const payload = {
+      fullName: formValue.fullName,
+      phone: formValue.phone,
+      email: formValue.email,
+      password: formValue.password,
+    };
+
+    this.authService.register(payload).subscribe({
+      next: (response: RegisterResponse) => {
+        console.log(response.message);
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error(
+          'No se pudo registrar el usuario:',
+          error.error?.message ?? error.message
+        );
+      },
+    });
   }
 }

@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import {BehaviorSubject, tap, Observable } from 'rxjs';
 
 export interface RegisterRequest {
   fullName: string;
@@ -16,13 +16,23 @@ export interface LoginRequest {
 
 export interface RegisterResponse {
   message: string;
-  user: {
-    id: number;
-    full_name: string;
-    phone: string;
-    email: string;
-    created_at: string;
-  };
+  user: AuthUser;
+}
+
+export interface LogoutResponse {
+  message: string;
+}
+
+export interface AuthUser {
+  id: number;
+  full_name: string;
+  phone: string;
+  email: string;
+  created_at: string;
+}
+
+export interface CurrentUserResponse {
+  user: AuthUser;
 }
 
 @Injectable({
@@ -31,6 +41,9 @@ export interface RegisterResponse {
 
 export class AuthService {
   private apiUrl = 'http://localhost:3000/api/auth';
+  private readonly currentUserSubject =new BehaviorSubject<AuthUser | null>(null);
+
+  readonly currentUser$ = this.currentUserSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
@@ -42,10 +55,31 @@ export class AuthService {
   }
 
   login(data: LoginRequest): Observable<RegisterResponse> {
-  return this.http.post<RegisterResponse>(
-    `${this.apiUrl}/login`,
-    data,
-    { withCredentials: true }
-  );
+    return this.http.post<RegisterResponse>(
+      `${this.apiUrl}/login`,
+      data,
+      { withCredentials: true }
+    ).pipe(
+        tap((response) => this.currentUserSubject.next(response.user))
+    );
+  }
+
+  getCurrentUser(): Observable<CurrentUserResponse> {
+    return this.http.get<CurrentUserResponse>(
+      `${this.apiUrl}/me`,
+      { withCredentials: true }
+    ).pipe(
+        tap((response) => this.currentUserSubject.next(response.user)))
+    ;
+  }
+
+  logout(): Observable<LogoutResponse> {
+    return this.http.post<LogoutResponse>(
+      `${this.apiUrl}/logout`,
+      {},
+      { withCredentials: true }
+    ).pipe(
+      tap(() => this.currentUserSubject.next(null)))
+    ;
   }
 }

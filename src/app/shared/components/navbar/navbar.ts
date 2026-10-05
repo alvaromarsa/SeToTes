@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ShoppingCart } from '../../../features/shopping-cart/shopping-cart';
+import { AuthService, AuthUser } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-navbar',
@@ -10,28 +11,32 @@ import { ShoppingCart } from '../../../features/shopping-cart/shopping-cart';
   styleUrl: './navbar.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Navbar {
+export class Navbar implements OnInit {
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
-  goToUserArea(): void {
-    const isLoggedIn = this.isUserLoggedIn();
-    const target = isLoggedIn ? '/user-profile' : '/login';
+  currentUser: AuthUser | null = null;
 
+  ngOnInit(): void {
+    this.authService.currentUser$.subscribe((user) => {
+      this.currentUser = user;
+      this.cdr.markForCheck();
+    });
+  }
+ goToUserArea(): void {
+    const target = this.currentUser ? '/user-profile' : '/login';
     void this.router.navigateByUrl(target);
   }
 
-  private isUserLoggedIn(): boolean {
-    const rawSession = localStorage.getItem('totebag_session');
-
-    if (!rawSession) {
-      return false;
-    }
-
-    try {
-      const session = JSON.parse(rawSession) as { loggedIn?: boolean; user?: unknown; token?: string };
-      return Boolean(session.loggedIn || session.user || session.token);
-    } catch {
-      return false;
-    }
+  logout(): void {
+    this.authService.logout().subscribe({
+      next: () => {
+        void this.router.navigateByUrl('/login');
+      },
+      error: () => {
+        console.error('No se pudo cerrar la sesión');
+      },
+    });
   }
 }

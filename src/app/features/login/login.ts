@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AuthService, LoginRequest, RegisterResponse } from '../../core/services/auth.service';
-import { RouterLink } from '@angular/router';
+import { AuthService, CurrentUserResponse, LoginRequest, RegisterResponse } from '../../core/services/auth.service';
+import { Router, RouterLink } from '@angular/router';
 
 import { FormUtils } from '../../shared/utils/form-utils';
 
@@ -18,6 +18,7 @@ export class Login {
   readonly formUtils = FormUtils;
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   readonly loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -45,6 +46,18 @@ export class Login {
     this.authService.login(payload).subscribe({
       next: (response: RegisterResponse) => {
         console.log(response.message);
+
+        this.authService.getCurrentUser().subscribe({
+          next: (session: CurrentUserResponse) => {
+            void this.router.navigateByUrl('/user-profile');
+          },
+          error: (error: HttpErrorResponse) => {
+              console.error(
+                'No se pudo iniciar sesión:',
+                error.error?.message ?? error.message
+              );
+            },
+          });
       },
       error: (error: HttpErrorResponse) => {
         console.error(

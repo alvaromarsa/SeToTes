@@ -25,7 +25,16 @@
         <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
       </svg>
     </button>
-
+    @if (currentUser) {
+      <button
+        class="navbar__button"
+        type="button"
+        (click)="logout()"
+        aria-label="Cerrar sesión"
+      >
+        Cerrar sesión
+      </button>
+    }
     <app-shopping-cart></app-shopping-cart>
   </div>
 </nav>

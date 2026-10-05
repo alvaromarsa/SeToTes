@@ -4,13 +4,45 @@ const pool = require('./db');
 const argon2 = require('argon2');
 const app = express();
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 app.use(cors({
   origin: 'http://localhost:4200',
   credentials: true,
 }));
 app.use(express.json());
+app.use(cookieParser());
 
+function requireAuth(request, response, next) {
+  const token = request.cookies?.access_token;
+
+  if (!token) {
+    return response.status(401).json({
+      message: 'Necesitas iniciar sesión',
+    });
+  }
+
+  try {
+    const payload = jwt.verify(
+      token,
+      process.env.JWT_SECRET,
+      { algorithms: ['HS256'] }
+    );
+
+    if (typeof payload === 'string' || typeof payload.sub !== 'string') {
+      return response.status(401).json({
+        message: 'La sesión no es válida',
+      });
+    }
+
+    request.authenticatedUserId = payload.sub;
+    return next();
+  } catch {
+    return response.status(401).json({
+      message: 'La sesión no es válida o ha caducado',
+    });
+  }
+}
 
 app.get('/api/products', async (request, response) => {
   try {
@@ -174,11 +206,48 @@ app.post('/api/auth/login', async (request, response) => {
   }
 });
 
-const port = 3000;
-
 if (!process.env.JWT_SECRET) {
   throw new Error('Falta JWT_SECRET en backend/.env');
 }
+
+app.get('/api/auth/me', requireAuth, async (request, response) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, full_name, phone, email, created_at
+       FROM users
+       WHERE id = $1`,
+      [request.authenticatedUserId]
+    );
+
+    if (result.rows.length === 0) {
+      return response.status(401).json({
+        message: 'La sesión no es válida',
+      });
+    }
+
+    return response.json({ user: result.rows[0] });
+  } catch (error) {
+    console.error('Error al consultar la sesión:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo comprobar la sesión',
+    });
+  }
+});
+
+app.post('/api/auth/logout', (request, response) => {
+  response.clearCookie('access_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+  });
+
+  return response.json({
+    message: 'Sesión cerrada correctamente',
+  });
+});
+
+const port = 3000;
 
 app.listen(port, () => {
   console.log(`Backend disponible en http://localhost:${port}`);

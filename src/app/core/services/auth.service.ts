@@ -29,9 +29,25 @@ export interface AuthUser {
   phone: string;
   email: string;
   created_at: string;
+  address?: string | null;
+  city?: string | null;
+  postal_code?: string | null;
 }
 
 export interface CurrentUserResponse {
+  user: AuthUser;
+}
+export interface UpdateProfileRequest {
+  fullName: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  postalCode: string;
+}
+
+export interface UpdateProfileResponse {
+  message: string;
   user: AuthUser;
 }
 
@@ -81,5 +97,16 @@ export class AuthService {
     ).pipe(
       tap(() => this.currentUserSubject.next(null)))
     ;
+  }
+
+  updateCurrentUser(data: UpdateProfileRequest): Observable<UpdateProfileResponse> {
+  return this.http.put<UpdateProfileResponse>(
+      `${this.apiUrl}/me`,
+      data,
+      { withCredentials: true }
+    )
+    .pipe(
+      tap((response) => this.currentUserSubject.next(response.user))
+    );
   }
 }

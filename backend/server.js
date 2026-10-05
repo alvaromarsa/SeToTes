@@ -213,7 +213,7 @@ if (!process.env.JWT_SECRET) {
 app.get('/api/auth/me', requireAuth, async (request, response) => {
   try {
     const result = await pool.query(
-      `SELECT id, full_name, phone, email, created_at
+      `SELECT id, full_name, phone, email, address, city, postal_code, created_at
        FROM users
        WHERE id = $1`,
       [request.authenticatedUserId]
@@ -230,6 +230,73 @@ app.get('/api/auth/me', requireAuth, async (request, response) => {
     console.error('Error al consultar la sesión:', error.message);
     return response.status(500).json({
       message: 'No se pudo comprobar la sesión',
+    });
+  }
+});
+
+app.put('/api/auth/me', requireAuth, async (request, response) => {
+  const { fullName, phone, email, address, city, postalCode } =
+    request.body ?? {};
+
+  if (
+    typeof fullName !== 'string' ||
+    fullName.trim() === '' ||
+    typeof phone !== 'string' ||
+    phone.trim() === '' ||
+    typeof email !== 'string' ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
+    typeof address !== 'string' ||
+    typeof city !== 'string' ||
+    typeof postalCode !== 'string' ||
+    (postalCode.trim() !== '' && !/^\d{5}$/.test(postalCode.trim()))
+  ) {
+    return response.status(400).json({
+      message: 'Los datos del perfil no son válidos',
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `UPDATE users
+       SET full_name = $1,
+           phone = $2,
+           email = $3,
+           address = $4,
+           city = $5,
+           postal_code = $6
+       WHERE id = $7
+       RETURNING id, full_name, phone, email, address, city, postal_code, created_at`,
+      [
+        fullName.trim(),
+        phone.trim(),
+        email.trim().toLowerCase(),
+        address.trim() || null,
+        city.trim() || null,
+        postalCode.trim() || null,
+        request.authenticatedUserId,
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return response.status(401).json({
+        message: 'La sesión no es válida',
+      });
+    }
+
+    return response.json({
+      message: 'Perfil actualizado correctamente',
+      user: result.rows[0],
+    });
+  } catch (error) {
+    if (error.code === '23505') {
+      return response.status(409).json({
+        message: 'Ya existe una cuenta con ese email',
+      });
+    }
+
+    console.error('Error al actualizar el perfil:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo actualizar el perfil',
     });
   }
 });

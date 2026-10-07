@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { AuthService, CurrentUserResponse, LoginRequest, RegisterResponse } from '../../core/services/auth.service';
+import { AuthService } from '../../core/services/auth.service';
+import type { LoginRequest, RegisterResponse, CurrentUserResponse } from '../../core/models/auth.models';
 import { Router, RouterLink } from '@angular/router';
 
 import { FormUtils } from '../../shared/utils/form-utils';

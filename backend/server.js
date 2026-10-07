@@ -44,6 +44,28 @@ function requireAuth(request, response, next) {
   }
 }
 
+async function requireAdmin(request, response, next) {
+  try {
+    const result = await pool.query(
+      'SELECT role FROM users WHERE id = $1',
+      [request.authenticatedUserId]
+    );
+
+    if (result.rows.length === 0 || result.rows[0].role !== 'admin') {
+      return response.status(403).json({
+        message: 'No tienes permisos para realizar esta acción',
+      });
+    }
+
+    return next();
+  } catch (error) {
+    console.error('Error al comprobar los permisos:', error.message);
+    return response.status(500).json({
+      message: 'No se pudieron comprobar los permisos',
+    });
+  }
+}
+
 app.get('/api/products', async (request, response) => {
   try {
     const result = await pool.query(
@@ -59,7 +81,7 @@ app.get('/api/products', async (request, response) => {
   }
 });
 
-app.post('/api/products', async (request, response) => {
+app.post('/api/products', requireAuth, requireAdmin, async (request, response) => {
   const { name, price, stock, color } = request.body ?? {};
 
   if (
@@ -119,7 +141,7 @@ app.post('/api/auth/register', async (request, response) => {
     const result = await pool.query(
       `INSERT INTO users (full_name, phone, email, password_hash)
        VALUES ($1, $2, $3, $4)
-       RETURNING id, full_name, phone, email, created_at`,
+       RETURNING id, full_name, phone, email, created_at, role`,
       [fullName.trim(), phone.trim(), normalizedEmail, passwordHash]
     );
 
@@ -157,7 +179,7 @@ app.post('/api/auth/login', async (request, response) => {
 
   try {
     const result = await pool.query(
-      `SELECT id, full_name, phone, email, password_hash, created_at
+      `SELECT id, full_name, phone, email, password_hash, created_at, role
        FROM users
        WHERE email = $1`,
       [email.trim().toLowerCase()]
@@ -196,6 +218,7 @@ app.post('/api/auth/login', async (request, response) => {
         phone: user.phone,
         email: user.email,
         created_at: user.created_at,
+        role: user.role,
       },
     });
   } catch (error) {
@@ -213,7 +236,7 @@ if (!process.env.JWT_SECRET) {
 app.get('/api/auth/me', requireAuth, async (request, response) => {
   try {
     const result = await pool.query(
-      `SELECT id, full_name, phone, email, address, city, postal_code, created_at
+      `SELECT id, full_name, phone, email, address, city, postal_code, created_at, role
        FROM users
        WHERE id = $1`,
       [request.authenticatedUserId]
@@ -265,7 +288,7 @@ app.put('/api/auth/me', requireAuth, async (request, response) => {
            city = $5,
            postal_code = $6
        WHERE id = $7
-       RETURNING id, full_name, phone, email, address, city, postal_code, created_at`,
+       RETURNING id, full_name, phone, email, address, city, postal_code, created_at, role`,
       [
         fullName.trim(),
         phone.trim(),

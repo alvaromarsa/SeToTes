@@ -9,6 +9,8 @@ import { NeceseresComponent } from './features/neceseres/neceseres.component';
 import { Register } from './features/register/register';
 import { TelasComponent } from './features/telas/telas.component';
 import { UserProfile } from './features/user-profile/user-profile';
+import { AdminPanel } from './features/admin/pages/admin-panel/admin-panel';
+import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'bolsas', pathMatch: 'full' },
@@ -21,4 +23,5 @@ export const routes: Routes = [
   { path: 'register', component: Register },
   { path: 'user-profile', component: UserProfile },
   { path: 'checkout', component: Checkout },
+  { path: 'adminpanel', component: AdminPanel, canActivate: [adminGuard] },
 ];

@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ShoppingCart } from '../../../features/shopping-cart/shopping-cart';
-import { AuthService, AuthUser } from '../../../core/services/auth.service';
+import { AuthService } from '../../../core/services/auth.service';
+import type { AuthUser } from '../../../core/models/auth.models';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-navbar',
@@ -22,6 +24,13 @@ export class Navbar implements OnInit {
     this.authService.currentUser$.subscribe((user) => {
       this.currentUser = user;
       this.cdr.markForCheck();
+    });
+    this.authService.getCurrentUser().subscribe({
+      error: (error: HttpErrorResponse) => {
+        if (error.status !== 401) {
+          console.error('No se pudo recuperar la sesión:', error.message);
+        }
+      },
     });
   }
  goToUserArea(): void {

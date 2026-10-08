@@ -1,0 +1,151 @@
+<main class="product-management">
+  <header class="product-management__header">
+    <a class="product-management__back" routerLink="/adminpanel">
+      <span aria-hidden="true">←</span> Volver al panel
+    </a>
+    <p class="product-management__eyebrow">Administración · Catálogo</p>
+    <h1>Gestionar productos</h1>
+    <p class="product-management__intro">
+      Añade artículos y consulta de un vistazo el precio, el stock y el color.
+    </p>
+  </header>
+
+  <div class="product-management__layout">
+    <section class="admin-surface product-form-panel" aria-labelledby="create-product-title">
+      <div class="admin-surface__heading">
+        <p class="admin-surface__eyebrow">Nuevo artículo</p>
+        <h2 id="create-product-title">Crear producto</h2>
+        <p>Completa los datos para añadir un artículo al catálogo.</p>
+      </div>
+
+      <form class="product-form" [formGroup]="productForm" (ngSubmit)="onSubmit()">
+        <div class="product-form__field">
+          <label for="name">Nombre</label>
+          <input
+            class="product-form__input"
+            id="name"
+            type="text"
+            formControlName="name"
+            placeholder="Ej.: Tote bag de lino"
+            autocomplete="off"
+          >
+          @if (formUtils.isValidField(productForm, 'name')) {
+            <small class="product-form__error">{{ formUtils.getFieldError(productForm, 'name') }}</small>
+          }
+        </div>
+
+        <div class="product-form__field">
+          <label for="price">Precio</label>
+          <div class="product-form__input-wrap">
+            <input
+              class="product-form__input"
+              id="price"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="price"
+              placeholder="0,00"
+            >
+            <span aria-hidden="true">€</span>
+          </div>
+          @if (formUtils.isValidField(productForm, 'price')) {
+            <small class="product-form__error">{{ formUtils.getFieldError(productForm, 'price') }}</small>
+          }
+        </div>
+
+        <div class="product-form__field">
+          <label for="stock">Unidades disponibles</label>
+          <input
+            class="product-form__input"
+            id="stock"
+            type="number"
+            min="0"
+            step="1"
+            formControlName="stock"
+            placeholder="0"
+          >
+          @if (formUtils.isValidField(productForm, 'stock')) {
+            <small class="product-form__error">{{ formUtils.getFieldError(productForm, 'stock') }}</small>
+          }
+        </div>
+
+        <div class="product-form__field">
+          <label for="color">Color</label>
+          <input
+            class="product-form__input"
+            id="color"
+            type="text"
+            formControlName="color"
+            placeholder="Ej.: natural"
+            autocomplete="off"
+          >
+          @if (formUtils.isValidField(productForm, 'color')) {
+            <small class="product-form__error">{{ formUtils.getFieldError(productForm, 'color') }}</small>
+          }
+        </div>
+
+        <button class="product-form__submit" type="submit" [disabled]="isCreating">
+          {{ isCreating ? 'Creando producto…' : 'Añadir producto' }}
+        </button>
+
+        @if (createSuccessMessage) {
+          <p class="form-feedback form-feedback--success" role="status">{{ createSuccessMessage }}</p>
+        }
+
+        @if (createErrorMessage) {
+          <p class="form-feedback form-feedback--error" role="alert">{{ createErrorMessage }}</p>
+        }
+      </form>
+    </section>
+
+    <section class="admin-surface product-catalog" aria-labelledby="product-catalog-title">
+      <div class="admin-surface__heading product-catalog__heading">
+        <div>
+          <p class="admin-surface__eyebrow">Inventario</p>
+          <h2 id="product-catalog-title">Productos actuales</h2>
+        </div>
+        @if (!isLoading && !errorMessage) {
+          <span class="product-catalog__count">{{ products.length }} artículos</span>
+        }
+      </div>
+
+      @if (isLoading) {
+        <div class="catalog-message" role="status">
+          <span class="catalog-message__spinner" aria-hidden="true"></span>
+          <p>Cargando productos…</p>
+        </div>
+      } @else if (errorMessage) {
+        <p class="catalog-message catalog-message--error" role="alert">{{ errorMessage }}</p>
+      } @else if (products.length === 0) {
+        <div class="catalog-message">
+          <p>Aún no hay productos. Usa el formulario para añadir el primero.</p>
+        </div>
+      } @else {
+        <ul class="product-catalog__list">
+          @for (product of products; track product.id) {
+            <li class="product-card">
+              <div class="product-card__top">
+                <div>
+                  <p class="product-card__id">Producto #{{ product.id }}</p>
+                  <h3>{{ product.name }}</h3>
+                </div>
+                <span class="product-card__stock">{{ product.stock }} uds.</span>
+              </div>
+
+              <div class="product-card__details">
+                <div>
+                  <span>Precio</span>
+                  <strong>{{ product.price }} €</strong>
+                </div>
+                <div>
+                  <span>Color</span>
+                  <strong class="product-card__color">{{ product.color || 'Sin especificar' }}</strong>
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+  </div>
+</main>

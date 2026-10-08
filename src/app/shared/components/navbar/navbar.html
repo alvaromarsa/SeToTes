@@ -16,6 +16,11 @@
     <li class="navbar__item">
       <a class="navbar__button" routerLink="/telas" routerLinkActive="active">Telas</a>
     </li>
+    @if (currentUser?.role === 'admin') {
+      <li class="navbar__item">
+        <a class="navbar__button" routerLink="/adminpanel">Panel de administración</a>
+      </li>
+    }
   </ul>
 
   <div class="navbar__actions">

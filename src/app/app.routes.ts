@@ -10,6 +10,7 @@ import { Register } from './features/register/register';
 import { TelasComponent } from './features/telas/telas.component';
 import { UserProfile } from './features/user-profile/user-profile';
 import { AdminPanel } from './features/admin/pages/admin-panel/admin-panel';
+import { ProductManagement } from './features/admin/pages/product-management/product-management';
 import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
@@ -24,4 +25,5 @@ export const routes: Routes = [
   { path: 'user-profile', component: UserProfile },
   { path: 'checkout', component: Checkout },
   { path: 'adminpanel', component: AdminPanel, canActivate: [adminGuard] },
+  { path: 'adminpanel/products', component: ProductManagement, canActivate: [adminGuard] },
 ];

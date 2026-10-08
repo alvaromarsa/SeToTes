@@ -10,10 +10,19 @@ export interface Product {
 }
 
 @Injectable({ providedIn: 'root' })
+
 export class ProductService {
   private http = inject(HttpClient);
 
   getProducts() {
     return this.http.get<Product[]>('http://localhost:3000/api/products');
   }
+
+  createProduct(product: Omit<Product, 'id'>) {
+  return this.http.post<Product>(
+    'http://localhost:3000/api/products',
+    product,
+    { withCredentials: true },
+  );
+}
 }

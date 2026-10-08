@@ -1,2 +1,29 @@
-<h1>Panel de administración</h1>
-<p>Desde aquí se gestionarán los productos de la tienda.</p>
+<main class="admin-dashboard">
+  <header class="admin-dashboard__header">
+    <p class="admin-dashboard__eyebrow">Administración</p>
+    <h1>Panel de administración</h1>
+    <p class="admin-dashboard__intro">
+      Gestiona el catálogo de la tienda desde un único lugar.
+    </p>
+  </header>
+
+  <section class="admin-dashboard__grid" aria-label="Secciones de administración">
+    <a class="admin-card" routerLink="/adminpanel/products">
+      <span class="admin-card__number">01</span>
+      <div>
+        <h2>Gestionar productos</h2>
+        <p>Crea productos y consulta el catálogo disponible.</p>
+      </div>
+      <span class="admin-card__action">Abrir gestión <span aria-hidden="true">→</span></span>
+    </a>
+
+    <article class="admin-card admin-card--upcoming" aria-disabled="true">
+      <span class="admin-card__number">02</span>
+      <div>
+        <h2>Gestionar usuarios</h2>
+        <p>La gestión de usuarios se añadirá más adelante.</p>
+      </div>
+      <span class="admin-card__badge">Próximamente</span>
+    </article>
+  </section>
+</main>

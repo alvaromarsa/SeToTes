@@ -20,10 +20,10 @@ export class ProductManagement implements OnInit {
   errorMessage = '';
   isLoading = true;
   readonly formUtils = FormUtils;
-  isCreating = false;
-  createSuccessMessage = '';
-  createErrorMessage = '';
-
+  editingProductId: number | null = null;
+  isSaving = false;
+  saveSuccessMessage = '';
+  saveErrorMessage = '';
 
   ngOnInit(): void {
     this.productService.getProducts().subscribe({
@@ -49,33 +49,70 @@ export class ProductManagement implements OnInit {
     color: ['', [Validators.required]],
   });
 
+  startEditing(product: Product): void {
+
+    this.saveSuccessMessage = '';
+    this.saveErrorMessage = '';
+
+    this.editingProductId = product.id;
+
+    this.productForm.setValue({
+      name: product.name,
+      price: Number(product.price),
+      stock: Number(product.stock),
+      color: product.color ?? '',
+    });
+
+  }
+
+  cancelEditing(): void {
+    this.editingProductId = null;
+    this.productForm.reset();
+    this.saveSuccessMessage = '';
+    this.saveErrorMessage = '';
+  }
+
   onSubmit(): void {
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
       return;
     }
 
-  this.isCreating = true;
-  this.createSuccessMessage = '';
-  this.createErrorMessage = '';
+    this.isSaving = true;
+    this.saveSuccessMessage = '';
+    this.saveErrorMessage = '';
 
-  const newProduct = this.productForm.getRawValue();
+    const productData = this.productForm.getRawValue();
+    const productId = this.editingProductId;
 
-  this.productService.createProduct(newProduct).subscribe({
-    next: (createdProduct: Product) => {
-      this.products = [...this.products, createdProduct];
-      this.productForm.reset();
+    const request$ =
+      productId === null
+        ? this.productService.createProduct(productData)
+        : this.productService.updateProduct(productId, productData);
 
-      this.createSuccessMessage = 'Producto creado correctamente.';
-      this.isCreating = false;
-      this.cdr.markForCheck();
-    },
-    error: (error: unknown) => {
-      console.error('No se pudo crear el producto:', error);
-      this.createErrorMessage = 'No se pudo crear el producto.';
-      this.isCreating = false;
-      this.cdr.markForCheck();
-    },
-  });
-}
+    request$.subscribe({
+      next: (savedProduct: Product) => {
+        if (productId === null) {
+          this.products = [...this.products, savedProduct];
+          this.saveSuccessMessage = 'Producto creado correctamente.';
+        } else {
+          this.products = this.products.map((product) =>
+            product.id === savedProduct.id ? savedProduct : product
+          );
+          this.saveSuccessMessage = 'Producto actualizado correctamente.';
+        }
+
+        this.editingProductId = null;
+        this.productForm.reset();
+        this.isSaving = false;
+        this.cdr.markForCheck();
+      },
+      error: (error: unknown) => {
+        console.error('No se pudo guardar el producto:', error);
+        this.saveErrorMessage = 'No se pudo guardar el producto.';
+        this.isSaving = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
 }

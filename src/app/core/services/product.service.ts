@@ -19,10 +19,18 @@ export class ProductService {
   }
 
   createProduct(product: Omit<Product, 'id'>) {
-  return this.http.post<Product>(
-    'http://localhost:3000/api/products',
-    product,
-    { withCredentials: true },
-  );
-}
+    return this.http.post<Product>(
+      'http://localhost:3000/api/products',
+      product,
+      { withCredentials: true },
+    );
+  }
+
+  updateProduct(id: number, product: Omit<Product, 'id'>) {
+    return this.http.put<Product>(
+      `http://localhost:3000/api/products/${id}`,
+      product,
+      { withCredentials: true },
+    );
+  }
 }

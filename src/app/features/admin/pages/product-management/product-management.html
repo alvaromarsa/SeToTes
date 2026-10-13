@@ -13,8 +13,14 @@
   <div class="product-management__layout">
     <section class="admin-surface product-form-panel" aria-labelledby="create-product-title">
       <div class="admin-surface__heading">
-        <p class="admin-surface__eyebrow">Nuevo artículo</p>
-        <h2 id="create-product-title">Crear producto</h2>
+        <p class="admin-surface__eyebrow">
+          {{ editingProductId === null ? 'Nuevo artículo' : 'Editar artículo' }}
+        </p>
+
+        <h2 id="create-product-title">
+          {{ editingProductId === null ? 'Crear producto' : 'Editar producto' }}
+        </h2>
+
         <p>Completa los datos para añadir un artículo al catálogo.</p>
       </div>
 
@@ -84,16 +90,37 @@
           }
         </div>
 
-        <button class="product-form__submit" type="submit" [disabled]="isCreating">
-          {{ isCreating ? 'Creando producto…' : 'Añadir producto' }}
-        </button>
+        <div class="product-form__actions">
+          <button class="product-form__submit" type="submit" [disabled]="isSaving">
+            {{
+              editingProductId === null
+                ? (isSaving ? 'Creando producto…' : 'Añadir producto')
+                : (isSaving ? 'Guardando cambios…' : 'Guardar cambios')
+            }}
+          </button>
 
-        @if (createSuccessMessage) {
-          <p class="form-feedback form-feedback--success" role="status">{{ createSuccessMessage }}</p>
+          @if (editingProductId !== null) {
+            <button
+              class="product-form__cancel"
+              type="button"
+              [disabled]="isSaving"
+              (click)="cancelEditing()"
+            >
+              Cancelar
+            </button>
+          }
+        </div>
+
+        @if (saveSuccessMessage) {
+          <p class="form-feedback form-feedback--success" role="status">
+            {{ saveSuccessMessage }}
+          </p>
         }
 
-        @if (createErrorMessage) {
-          <p class="form-feedback form-feedback--error" role="alert">{{ createErrorMessage }}</p>
+        @if (saveErrorMessage) {
+          <p class="form-feedback form-feedback--error" role="alert">
+            {{ saveErrorMessage }}
+          </p>
         }
       </form>
     </section>
@@ -141,6 +168,11 @@
                   <span>Color</span>
                   <strong class="product-card__color">{{ product.color || 'Sin especificar' }}</strong>
                 </div>
+              </div>
+              <div class="product-card__actions">
+                <button class="product-card__edit" type="button" [disabled]="isSaving" (click)="startEditing(product)">
+                  Editar
+                </button>
               </div>
             </li>
           }

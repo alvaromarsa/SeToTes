@@ -4,6 +4,10 @@
     <h2>Bolsas</h2>
   </div>
 
+  @if (errorMessage) {
+    <p class="feature__error" role="alert">{{ errorMessage }}</p>
+  }
+
   <div class="feature__grid">
     @for (product of products; track product.id) {
       <article class="product-card">
@@ -14,7 +18,7 @@
         <p>Disponibles: {{ product.stock }}</p>
         <div class="product-card__meta">
           <span>€{{ product.price }}</span>
-          <button>Comprar</button>
+          <button type="button" [disabled]="product.stock === 0" (click)="addToCart(product)">Comprar</button>
         </div>
       </article>
     }

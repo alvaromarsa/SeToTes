@@ -20,6 +20,21 @@
   color: #111827;
 }
 
+.shopping-cart__badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
 .shopping-cart:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 24px rgba(17, 24, 39, 0.12);
@@ -165,19 +180,4 @@
   color: #fff;
   font-weight: 700;
   cursor: pointer;
-}
-
-.shopping-cart__badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 9px;
-  background: #111;
-  color: #fff;
-  font-size: 11px;
-  line-height: 18px;
-  text-align: center;
 }

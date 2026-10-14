@@ -21,7 +21,7 @@ export class BolsasComponent implements OnInit {
   errorMessage = '';
 
   ngOnInit(): void {
-    this.productService.getProducts().subscribe({
+    this.productService.getProducts('bolsas').subscribe({
       next: (products) => {
         this.products = products;
         this.cdr.markForCheck();

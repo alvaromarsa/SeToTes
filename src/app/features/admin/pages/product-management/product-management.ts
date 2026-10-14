@@ -1,13 +1,15 @@
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { TitleCasePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 
-import { Product, ProductService } from '../../../../core/services/product.service';
+import { Product, ProductService, PRODUCT_CATEGORIES, ProductCategory } from '../../../../core/services/product.service';
 import { FormUtils } from '../../../../shared/utils/form-utils';
 
 @Component({
   selector: 'app-product-management',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, TitleCasePipe],
   templateUrl: './product-management.html',
   styleUrl: './product-management.css',
 })
@@ -20,6 +22,7 @@ export class ProductManagement implements OnInit {
   errorMessage = '';
   isLoading = true;
   readonly formUtils = FormUtils;
+  readonly categories = PRODUCT_CATEGORIES;
   editingProductId: number | null = null;
   isSaving = false;
   saveSuccessMessage = '';
@@ -47,6 +50,7 @@ export class ProductManagement implements OnInit {
     price: [0, [Validators.required, Validators.min(0)]],
     stock: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
     color: ['', [Validators.required]],
+    category: ['bolsas' as ProductCategory, [Validators.required]],
   });
 
   startEditing(product: Product): void {
@@ -61,6 +65,7 @@ export class ProductManagement implements OnInit {
       price: Number(product.price),
       stock: Number(product.stock),
       color: product.color ?? '',
+      category: product.category,
     });
 
   }
@@ -107,9 +112,10 @@ export class ProductManagement implements OnInit {
         this.isSaving = false;
         this.cdr.markForCheck();
       },
-      error: (error: unknown) => {
+      error: (error: HttpErrorResponse) => {
         console.error('No se pudo guardar el producto:', error);
-        this.saveErrorMessage = 'No se pudo guardar el producto.';
+        this.saveErrorMessage =
+          error.error?.message ?? 'No se pudo guardar el producto.';
         this.isSaving = false;
         this.cdr.markForCheck();
       },

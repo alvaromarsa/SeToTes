@@ -6,6 +6,8 @@ const app = express();
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 
+const CATEGORIES = ['bolsas', 'neceseres', 'fundas', 'telas'];
+
 app.use(cors({
   origin: 'http://localhost:4200',
   credentials: true,
@@ -71,10 +73,28 @@ async function requireAdmin(request, response, next) {
 }
 
 app.get('/api/products', async (request, response) => {
+  const { category } = request.query;
+
+  if (category !== undefined && !CATEGORIES.includes(category)) {
+    return response.status(400).json({
+      message: 'La categoría no es válida',
+    });
+  }
+
   try {
-    const result = await pool.query(
-      'SELECT id, name, price, stock, color FROM products ORDER BY id'
-    );
+   const result =
+      category === undefined
+        ? await pool.query(
+            'SELECT id, name, price, stock, color, category FROM products ORDER BY id'
+          )
+        : await pool.query(
+            `SELECT id, name, price, stock, color, category
+             FROM products
+             WHERE category = $1
+             ORDER BY id`,
+            [category]
+          );
+
 
     response.json(result.rows);
   } catch (error) {
@@ -86,11 +106,12 @@ app.get('/api/products', async (request, response) => {
 });
 
 app.post('/api/products', requireAuth, requireAdmin, async (request, response) => {
-  const { name, price, stock, color } = request.body ?? {};
+  const { name, price, stock, color, category } = request.body ?? {};
 
   if (
     typeof name !== 'string' ||
     name.trim() === '' ||
+    !CATEGORIES.includes(category) ||
     typeof price !== 'number' ||
     !Number.isFinite(price) ||
     price < 0 ||
@@ -105,10 +126,10 @@ app.post('/api/products', requireAuth, requireAdmin, async (request, response) =
 
   try {
     const result = await pool.query(
-      `INSERT INTO products (name, price, stock, color)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, price, stock, color`,
-      [name.trim(), price, stock, color ?? null]
+      `INSERT INTO products (name, price, stock, color, category)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, name, price, stock, color, category`,
+      [name.trim(), price, stock, color ?? null, category]
     );
 
     return response.status(201).json(result.rows[0]);
@@ -122,11 +143,12 @@ app.post('/api/products', requireAuth, requireAdmin, async (request, response) =
 
 app.put('/api/products/:id', requireAuth, requireAdmin, async (request, response) => {
   const productId = Number(request.params.id);
-  const { name, price, stock, color } = request.body ?? {};
+  const { name, price, stock, color, category } = request.body ?? {};
 
   if (
     !Number.isInteger(productId) ||
     productId <= 0 ||
+    !CATEGORIES.includes(category) ||
     typeof name !== 'string' ||
     name.trim() === '' ||
     typeof price !== 'number' ||
@@ -144,10 +166,10 @@ app.put('/api/products/:id', requireAuth, requireAdmin, async (request, response
   try {
     const result = await pool.query(
       `UPDATE products
-       SET name = $1, price = $2, stock = $3, color = $4
-       WHERE id = $5
-       RETURNING id, name, price, stock, color`,
-      [name.trim(), price, stock, color ?? null, productId]
+       SET name = $1, price = $2, stock = $3, color = $4, category = $5
+       WHERE id = $6
+       RETURNING id, name, price, stock, color, category`,
+      [name.trim(), price, stock, color ?? null, category, productId]
     );
 
     if (result.rows.length === 0) {

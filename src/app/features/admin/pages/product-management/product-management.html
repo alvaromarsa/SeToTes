@@ -90,6 +90,15 @@
           }
         </div>
 
+        <div class="product-form__field">
+          <label for="category">Categoría</label>
+          <select class="product-form__input" id="category" formControlName="category">
+            @for (category of categories; track category) {
+              <option [value]="category">{{ category | titlecase }}</option>
+            }
+          </select>
+        </div>
+
         <div class="product-form__actions">
           <button class="product-form__submit" type="submit" [disabled]="isSaving">
             {{
@@ -167,6 +176,10 @@
                 <div>
                   <span>Color</span>
                   <strong class="product-card__color">{{ product.color || 'Sin especificar' }}</strong>
+                </div>
+                 <div>
+                  <span>Categoría</span>
+                  <strong>{{ product.category | titlecase }}</strong>
                 </div>
               </div>
               <div class="product-card__actions">

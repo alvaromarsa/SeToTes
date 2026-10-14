@@ -1,21 +1,27 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
+export const PRODUCT_CATEGORIES = ['bolsas', 'neceseres', 'fundas', 'telas'] as const;
+
+export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
+
 export interface Product {
   id: number;
   name: string;
   price: number;
   stock: number;
-  color: string;
+  color: string | null;
+  category: ProductCategory;
 }
 
 @Injectable({ providedIn: 'root' })
-
 export class ProductService {
   private http = inject(HttpClient);
 
-  getProducts() {
-    return this.http.get<Product[]>('http://localhost:3000/api/products');
+  getProducts(category?: ProductCategory) {
+    return this.http.get<Product[]>('http://localhost:3000/api/products', {
+      params: category ? { category } : {},
+    });
   }
 
   createProduct(product: Omit<Product, 'id'>) {

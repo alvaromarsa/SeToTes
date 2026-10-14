@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { AsyncPipe} from '@angular/common';
+import { AsyncPipe, CurrencyPipe } from '@angular/common';
 import { Router } from '@angular/router';
 
 import { CartService } from '../../core/services/cart.service';
@@ -7,7 +7,7 @@ import { CartService } from '../../core/services/cart.service';
 @Component({
   selector: 'app-shopping-cart',
   standalone: true,
-  imports: [AsyncPipe],
+  imports: [AsyncPipe, CurrencyPipe],
   templateUrl: './shopping-cart.html',
   styleUrl: './shopping-cart.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

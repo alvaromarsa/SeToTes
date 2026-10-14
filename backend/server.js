@@ -506,6 +506,98 @@ app.post('/api/cart/items', requireAuth, async (request, response) => {
   }
 });
 
+app.patch('/api/cart/items/:productId', requireAuth, async (request, response) => {
+  const productId = Number(request.params.productId);
+  const { quantity } = request.body ?? {};
+
+  if (
+    !Number.isInteger(productId) ||
+    productId <= 0 ||
+    !Number.isInteger(quantity) ||
+    quantity <= 0 ||
+    quantity > 99
+  ) {
+    return response.status(400).json({
+      message: 'Los datos del carrito no son válidos',
+    });
+  }
+
+  try {
+    const product = await pool.query(
+      'SELECT stock FROM products WHERE id = $1',
+      [productId]
+    );
+
+    if (product.rows.length === 0) {
+      return response.status(404).json({
+        message: 'No se encontró el producto',
+      });
+    }
+
+    const { stock } = product.rows[0];
+
+    if (quantity > stock) {
+      return response.status(409).json({
+        message: `No hay stock suficiente: quedan ${stock} unidades`,
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE cart_items
+       SET quantity = $1, updated_at = now()
+       WHERE user_id = $2 AND product_id = $3
+       RETURNING product_id, quantity`,
+      [quantity, request.authenticatedUserId, productId]
+    );
+
+    if (result.rows.length === 0) {
+      return response.status(404).json({
+        message: 'Ese producto no está en tu carrito',
+      });
+    }
+
+    return response.json({
+      productId: result.rows[0].product_id,
+      quantity: result.rows[0].quantity,
+    });
+  } catch (error) {
+    console.error('Error al cambiar la cantidad:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo cambiar la cantidad',
+    });
+  }
+});
+
+app.delete('/api/cart/items/:productId', requireAuth, async (request, response) => {
+  const productId = Number(request.params.productId);
+
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return response.status(400).json({
+      message: 'El producto no es válido',
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM cart_items WHERE user_id = $1 AND product_id = $2',
+      [request.authenticatedUserId, productId]
+    );
+
+    if (result.rowCount === 0) {
+      return response.status(404).json({
+        message: 'Ese producto no está en tu carrito',
+      });
+    }
+
+    return response.status(204).send();
+  } catch (error) {
+    console.error('Error al quitar del carrito:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo quitar el producto del carrito',
+    });
+  }
+});
+
 const port = 3000;
 
 app.listen(port, () => {

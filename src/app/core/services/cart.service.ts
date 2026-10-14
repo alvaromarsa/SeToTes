@@ -49,6 +49,24 @@ export class CartService {
       .pipe(switchMap(() => this.loadCart()));
   }
 
+  updateQuantity(productId: number, quantity: number): Observable<CartResponse> {
+    return this.http
+      .patch<AddToCartResponse>(
+        `${this.apiUrl}/items/${productId}`,
+        { quantity },
+        { withCredentials: true },
+      )
+      .pipe(switchMap(() => this.loadCart()));
+  }
+
+  removeItem(productId: number): Observable<CartResponse> {
+    return this.http
+      .delete<void>(`${this.apiUrl}/items/${productId}`, {
+        withCredentials: true,
+      })
+      .pipe(switchMap(() => this.loadCart()));
+  }
+
   clearLocalCart(): void {
     this.cartSubject.next({ items: [], total: 0 });
   }

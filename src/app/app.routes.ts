@@ -9,6 +9,7 @@ import { UserProfile } from './features/user-profile/user-profile';
 import { AdminPanel } from './features/admin/pages/admin-panel/admin-panel';
 import { ProductManagement } from './features/admin/pages/product-management/product-management';
 import { adminGuard } from './core/guards/admin.guard';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -19,8 +20,8 @@ export const routes: Routes = [
   { path: 'home', component: HomeComponent },
   { path: 'login', component: Login },
   { path: 'register', component: Register },
-  { path: 'user-profile', component: UserProfile },
-  { path: 'checkout', component: Checkout },
+  { path: 'user-profile', component: UserProfile, canActivate: [authGuard] },
+  { path: 'checkout', component: Checkout, canActivate: [authGuard] },
   { path: 'adminpanel', component: AdminPanel, canActivate: [adminGuard] },
   { path: 'adminpanel/products', component: ProductManagement, canActivate: [adminGuard] },
   { path: '**', redirectTo: 'home' }

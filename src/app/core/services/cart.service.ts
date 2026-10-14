@@ -14,6 +14,7 @@ export class CartService {
   private readonly cartSubject = new BehaviorSubject<CartResponse>({
     items: [],
     total: 0,
+    shippingCost: 0,
   });
 
   readonly cart$ = this.cartSubject.asObservable();
@@ -68,6 +69,6 @@ export class CartService {
   }
 
   clearLocalCart(): void {
-    this.cartSubject.next({ items: [], total: 0 });
+    this.cartSubject.next({ items: [], total: 0, shippingCost: 0 });
   }
 }

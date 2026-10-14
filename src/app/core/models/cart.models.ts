@@ -12,6 +12,7 @@ export interface CartItem {
 export interface CartResponse {
   items: CartItem[];
   total: number;
+  shippingCost: number;
 }
 
 export interface AddToCartResponse {

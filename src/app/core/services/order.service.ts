@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 
-import type { CreateOrderRequest, OrderResponse } from '../models/order.models';
+import type { CreateOrderRequest, OrderResponse, OrderDetail, OrderSummary } from '../models/order.models';
 import { CartService } from './cart.service';
 
 @Injectable({ providedIn: 'root' })
@@ -15,5 +15,17 @@ export class OrderService {
     return this.http
       .post<OrderResponse>(this.apiUrl, data, { withCredentials: true })
       .pipe(tap(() => this.cartService.clearLocalCart()));
+  }
+
+  getMyOrders(): Observable<OrderSummary[]> {
+    return this.http.get<OrderSummary[]>(this.apiUrl, {
+      withCredentials: true,
+    });
+  }
+
+  getOrder(id: number): Observable<OrderDetail> {
+    return this.http.get<OrderDetail>(`${this.apiUrl}/${id}`, {
+      withCredentials: true,
+    });
   }
 }

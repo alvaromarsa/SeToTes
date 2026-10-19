@@ -16,6 +16,17 @@ class OrderError extends Error {
   }
 }
 
+function formatOrder(row) {
+  return {
+    id: row.id,
+    status: row.status,
+    subtotal: Number(row.subtotal),
+    shippingCost: Number(row.shipping_cost),
+    total: Number(row.total),
+    createdAt: row.created_at,
+  };
+}
+
 app.use(cors({
   origin: 'http://localhost:4200',
   credentials: true,
@@ -707,14 +718,7 @@ app.post('/api/orders', requireAuth, async (request, response) => {
 
     await client.query('COMMIT');
 
-    return response.status(201).json({
-      id: order.id,
-      status: order.status,
-      subtotal: Number(order.subtotal),
-      shippingCost: Number(order.shipping_cost),
-      total: Number(order.total),
-      createdAt: order.created_at,
-    });
+    return response.status(201).json(formatOrder(order));
   } catch (error) {
     await client.query('ROLLBACK');
 
@@ -731,26 +735,15 @@ app.post('/api/orders', requireAuth, async (request, response) => {
   }
 });
 
-function formatOrder(row) {
-  return {
-    id: row.id,
-    status: row.status,
-    subtotal: Number(row.subtotal),
-    shippingCost: Number(row.shipping_cost),
-    total: Number(row.total),
-    createdAt: row.created_at,
-  };
-}
-
 app.get('/api/orders', requireAuth, async (request, response) => {
   try {
     const result = await pool.query(
       `SELECT o.id, o.status, o.subtotal, o.shipping_cost, o.total, o.created_at,
-              COALESCE(SUM(oi.quantity), 0)::int AS item_count
+              (SELECT COALESCE(SUM(oi.quantity), 0)::integer
+               FROM order_items oi
+               WHERE oi.order_id = o.id) AS item_count
        FROM orders o
-       LEFT JOIN order_items oi ON oi.order_id = o.id
        WHERE o.user_id = $1
-       GROUP BY o.id
        ORDER BY o.created_at DESC, o.id DESC`,
       [request.authenticatedUserId]
     );
@@ -822,6 +815,13 @@ app.get('/api/orders/:id', requireAuth, async (request, response) => {
         lineTotal: Number(item.line_total),
       })),
     });
+  } catch (error) {
+    console.error('Error al consultar el pedido:', error);
+    return response.status(500).json({
+      message: 'No se pudo cargar el pedido',
+    });
+  }
+});
 
 const port = 3000;
 

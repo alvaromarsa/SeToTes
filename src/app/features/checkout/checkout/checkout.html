@@ -13,6 +13,7 @@
           <strong>{{ order.total | currency:'EUR':'symbol':'1.2-2' }}</strong>
         </p>
         <a class="checkout-submit" routerLink="/bolsas">Seguir comprando</a>
+        <a class="checkout-submit" [routerLink]="['/orders', order.id]">Ver mi pedido</a>
       </div>
     } @else {
       <div class="checkout-grid">

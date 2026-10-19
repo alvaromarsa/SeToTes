@@ -10,6 +10,8 @@ import { AdminPanel } from './features/admin/pages/admin-panel/admin-panel';
 import { ProductManagement } from './features/admin/pages/product-management/product-management';
 import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth.guard';
+import { Orders } from './features/orders/orders';
+import { OrderDetailPage } from './features/order-detail/order-detail';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -24,5 +26,8 @@ export const routes: Routes = [
   { path: 'checkout', component: Checkout, canActivate: [authGuard] },
   { path: 'adminpanel', component: AdminPanel, canActivate: [adminGuard] },
   { path: 'adminpanel/products', component: ProductManagement, canActivate: [adminGuard] },
+  { path: 'orders', component: Orders, canActivate: [authGuard] },
+  { path: 'orders/:id', component: OrderDetailPage, canActivate: [authGuard] },
   { path: '**', redirectTo: 'home' }
+
 ];

@@ -3,7 +3,7 @@
     <p class="admin-dashboard__eyebrow">Administración</p>
     <h1>Panel de administración</h1>
     <p class="admin-dashboard__intro">
-      Gestiona el catálogo de la tienda desde un único lugar.
+      Gestiona el catálogo y los pedidos de la tienda desde un único lugar.
     </p>
   </header>
 
@@ -17,8 +17,17 @@
       <span class="admin-card__action">Abrir gestión <span aria-hidden="true">→</span></span>
     </a>
 
-    <article class="admin-card admin-card--upcoming" aria-disabled="true">
+    <a class="admin-card" routerLink="/adminpanel/orders">
       <span class="admin-card__number">02</span>
+      <div>
+        <h2>Gestionar pedidos</h2>
+        <p>Consulta los pedidos y cambia su estado.</p>
+      </div>
+      <span class="admin-card__action">Abrir gestión <span aria-hidden="true">→</span></span>
+    </a>
+
+    <article class="admin-card admin-card--upcoming" aria-disabled="true">
+      <span class="admin-card__number">03</span>
       <div>
         <h2>Gestionar usuarios</h2>
         <p>La gestión de usuarios se añadirá más adelante.</p>

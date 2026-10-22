@@ -1,0 +1,83 @@
+<main class="om-shell">
+  <a class="om-back" routerLink="/adminpanel/orders"><span aria-hidden="true">←</span> Volver a pedidos</a>
+
+  @if (isLoading) {
+    <p role="status">Cargando pedido…</p>
+  } @else if (loadError) {
+    <p class="om-error" role="alert">{{ loadError }}</p>
+  } @else if (order) {
+    <header class="om-detail-header">
+      <div>
+        <h1>Pedido #{{ order.id }}</h1>
+        <p>{{ order.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+      </div>
+      <span class="om-status om-status--{{ order.status }}">{{ statusLabels[order.status] }}</span>
+    </header>
+
+    <section class="om-card">
+      <h2>Cliente</h2>
+      <p>{{ order.customerName }}</p>
+      <p>{{ order.customerEmail }}</p>
+    </section>
+
+    <section class="om-card">
+      <h2>Artículos</h2>
+      <ul class="om-items">
+        @for (item of order.items; track item.productId) {
+          <li>
+            <div>
+              <strong>{{ item.name }}</strong>
+              <span>{{ item.quantity }} × {{ item.unitPrice | currency: 'EUR' : 'symbol' : '1.2-2' }}</span>
+            </div>
+            <strong>{{ item.lineTotal | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
+          </li>
+        }
+      </ul>
+      <div class="om-summary">
+        <div><span>Subtotal</span><strong>{{ order.subtotal | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong></div>
+        <div><span>Envío</span><strong>{{ order.shippingCost | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong></div>
+        <div class="om-summary__total"><span>Total</span><strong>{{ order.total | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong></div>
+      </div>
+    </section>
+
+    <section class="om-card">
+      <h2>Datos de envío</h2>
+      <p>{{ order.shipping.fullName }}</p>
+      <p>{{ order.shipping.address }}</p>
+      <p>{{ order.shipping.postalCode }} {{ order.shipping.city }}</p>
+      <p>{{ order.shipping.phone }}</p>
+    </section>
+
+    <section class="om-card">
+      <h2>Cambiar estado</h2>
+
+      @if (order.allowedStatuses.length > 0) {
+        <div class="om-actions">
+          @for (status of order.allowedStatuses; track status) {
+            <button
+              type="button"
+              class="om-button"
+              [class.om-button--danger]="status === 'cancelled'"
+              [disabled]="isUpdating"
+              (click)="changeStatus(status)"
+            >
+              {{ statusLabels[status] }}
+            </button>
+          }
+        </div>
+        @if (order.allowedStatuses.includes('cancelled')) {
+          <p class="om-note">Cancelar el pedido devuelve las unidades al stock.</p>
+        }
+      } @else {
+        <p class="om-note">Este pedido está en un estado final y no admite más cambios.</p>
+      }
+
+      @if (actionSuccess) {
+        <p class="om-success" role="status">{{ actionSuccess }}</p>
+      }
+      @if (actionError) {
+        <p class="om-error" role="alert">{{ actionError }}</p>
+      }
+    </section>
+  }
+</main>

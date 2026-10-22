@@ -1,9 +1,18 @@
-export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'cancelled';
+export const ORDER_STATUSES = [
+  'pending',
+  'paid',
+  'shipped',
+  'delivered',
+  'cancelled',
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Pendiente de pago',
   paid: 'Pagado',
   shipped: 'Enviado',
+  delivered: 'Entregado',
   cancelled: 'Cancelado',
 };
 
@@ -47,4 +56,15 @@ export interface ShippingInfo {
 export interface OrderDetail extends OrderResponse {
   shipping: ShippingInfo;
   items: OrderItem[];
+}
+
+export interface AdminOrderSummary extends OrderSummary {
+  customerName: string;
+  customerEmail: string;
+}
+
+export interface AdminOrderDetail extends OrderDetail {
+  customerName: string;
+  customerEmail: string;
+  allowedStatuses: OrderStatus[];
 }

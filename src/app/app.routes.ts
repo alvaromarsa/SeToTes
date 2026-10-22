@@ -12,6 +12,8 @@ import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth.guard';
 import { Orders } from './features/orders/orders';
 import { OrderDetailPage } from './features/order-detail/order-detail';
+import { OrderManagement } from './features/admin/pages/order-management/order-management';
+import { OrderManagementDetail } from './features/admin/pages/order-management-detail/order-management-detail';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
@@ -28,6 +30,8 @@ export const routes: Routes = [
   { path: 'adminpanel/products', component: ProductManagement, canActivate: [adminGuard] },
   { path: 'orders', component: Orders, canActivate: [authGuard] },
   { path: 'orders/:id', component: OrderDetailPage, canActivate: [authGuard] },
+  { path: 'adminpanel/orders', component: OrderManagement, canActivate: [adminGuard] },
+  { path: 'adminpanel/orders/:id', component: OrderManagementDetail, canActivate: [adminGuard] },
   { path: '**', redirectTo: 'home' }
 
 ];

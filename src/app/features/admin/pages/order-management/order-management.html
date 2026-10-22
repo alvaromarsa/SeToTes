@@ -1,0 +1,59 @@
+<main class="om-shell">
+  <header class="om-header">
+    <a class="om-back" routerLink="/adminpanel"><span aria-hidden="true">←</span> Volver al panel</a>
+    <p class="om-eyebrow">Administración · Pedidos</p>
+    <h1>Gestionar pedidos</h1>
+  </header>
+
+  <div class="om-filter">
+    <label for="status-filter">Estado</label>
+    <select id="status-filter" (change)="onFilterChange($event)">
+      <option value="">Todos</option>
+      @for (status of statuses; track status) {
+        <option [value]="status">{{ statusLabels[status] }}</option>
+      }
+    </select>
+  </div>
+
+  @if (isLoading) {
+    <p role="status">Cargando pedidos…</p>
+  } @else if (errorMessage) {
+    <p class="om-error" role="alert">{{ errorMessage }}</p>
+  } @else if (orders.length === 0) {
+    <p>No hay pedidos con este filtro.</p>
+  } @else {
+    <div class="om-table-wrap">
+      <table class="om-table">
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Artículos</th>
+            <th>Estado</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders; track order.id) {
+            <tr>
+              <td>
+                <a class="om-link" [routerLink]="['/adminpanel/orders', order.id]">#{{ order.id }}</a>
+              </td>
+              <td>{{ order.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                {{ order.customerName }}
+                <small>{{ order.customerEmail }}</small>
+              </td>
+              <td>{{ order.itemCount }}</td>
+              <td>
+                <span class="om-status om-status--{{ order.status }}">{{ statusLabels[order.status] }}</span>
+              </td>
+              <td>{{ order.total | currency: 'EUR' : 'symbol' : '1.2-2' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</main>

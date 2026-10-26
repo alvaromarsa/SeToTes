@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { AuthService } from '../../core/services/auth.service';
-import type { RegisterResponse } from '../../core/models/auth.models';
-import { FormUtils } from '../../shared/utils/form-utils';
+import { AuthService } from '@core/services/auth.service';
+import type { RegisterResponse } from '@core/models/auth.models';
+import { FormUtils } from '@shared/utils/form-utils';
 import { HttpErrorResponse } from '@angular/common/http';
 
 const passwordsMatchValidator: ValidatorFn = (

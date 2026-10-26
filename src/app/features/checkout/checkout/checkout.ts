@@ -11,11 +11,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { take } from 'rxjs';
 
-import type { OrderResponse } from '../../../core/models/order.models';
-import { AuthService } from '../../../core/services/auth.service';
-import { CartService } from '../../../core/services/cart.service';
-import { OrderService } from '../../../core/services/order.service';
-import { FormUtils } from '../../../shared/utils/form-utils';
+import type { OrderResponse } from '@core/models/order.models';
+import { AuthService } from '@core/services/auth.service';
+import { CartService } from '@core/services/cart.service';
+import { OrderService } from '@core/services/order.service';
+import { FormUtils } from '@shared/utils/form-utils';
 
 @Component({
   selector: 'app-checkout',

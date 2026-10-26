@@ -4,8 +4,8 @@ import { RouterLink } from '@angular/router';
 import { TitleCasePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 
-import { Product, ProductService, PRODUCT_CATEGORIES, ProductCategory } from '../../../../core/services/product.service';
-import { FormUtils } from '../../../../shared/utils/form-utils';
+import { Product, ProductService, PRODUCT_CATEGORIES, ProductCategory } from '@core/services/product.service';
+import { FormUtils } from '@shared/utils/form-utils';
 
 @Component({
   selector: 'app-product-management',

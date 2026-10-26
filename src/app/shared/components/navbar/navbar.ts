@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { ShoppingCart } from '../../../features/shopping-cart/shopping-cart';
-import { AuthService } from '../../../core/services/auth.service';
-import type { AuthUser } from '../../../core/models/auth.models';
+import { ShoppingCart } from '@features/shopping-cart/shopping-cart';
+import { AuthService } from '@core/services/auth.service';
+import type { AuthUser } from '@core/models/auth.models';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({

@@ -2,8 +2,8 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit,} from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { ORDER_STATUS_LABELS, type OrderSummary,} from '../../core/models/order.models';
-import { OrderService } from '../../core/services/order.service';
+import { ORDER_STATUS_LABELS, type OrderSummary,} from '@core/models/order.models';
+import { OrderService } from '@core/services/order.service';
 
 @Component({
   selector: 'app-orders',

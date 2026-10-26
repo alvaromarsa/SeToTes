@@ -13,8 +13,8 @@ import {
   ORDER_STATUS_LABELS,
   type AdminOrderDetail,
   type OrderStatus,
-} from '../../../../core/models/order.models';
-import { AdminOrderService } from '../../../../core/services/admin-order.service';
+} from '@core/models/order.models';
+import { AdminOrderService } from '@core/services/admin-order.service';
 
 @Component({
   selector: 'app-order-management-detail',

@@ -2,10 +2,10 @@ import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { AuthService } from '../../core/services/auth.service';
-import type { UpdateProfileRequest } from '../../core/models/auth.models';
+import { AuthService } from '@core/services/auth.service';
+import type { UpdateProfileRequest } from '@core/models/auth.models';
 
-import { FormUtils } from '../../shared/utils/form-utils';
+import { FormUtils } from '@shared/utils/form-utils';
 
 @Component({
   selector: 'app-user-profile',

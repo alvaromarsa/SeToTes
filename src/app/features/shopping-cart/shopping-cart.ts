@@ -9,8 +9,8 @@ import {
 import { Router } from '@angular/router';
 import type { Observable } from 'rxjs';
 
-import type { CartItem } from '../../core/models/cart.models';
-import { CartService } from '../../core/services/cart.service';
+import type { CartItem } from '@core/models/cart.models';
+import { CartService } from '@core/services/cart.service';
 
 @Component({
   selector: 'app-shopping-cart',

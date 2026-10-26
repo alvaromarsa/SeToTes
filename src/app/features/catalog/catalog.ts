@@ -2,8 +2,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
-import { CartService } from '../../core/services/cart.service';
-import { Product, ProductCategory, ProductService,} from '../../core/services/product.service';
+import { CartService } from '@core/services/cart.service';
+import { Product, ProductCategory, ProductService,} from '@core/services/product.service';
 
 interface CategoryInfo {
   tag: string;

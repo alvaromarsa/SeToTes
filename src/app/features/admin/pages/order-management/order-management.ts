@@ -8,8 +8,8 @@ import {
   ORDER_STATUSES,
   type AdminOrderSummary,
   type OrderStatus,
-} from '../../../../core/models/order.models';
-import { AdminOrderService } from '../../../../core/services/admin-order.service';
+} from '@core/models/order.models';
+import { AdminOrderService } from '@core/services/admin-order.service';
 
 @Component({
   selector: 'app-order-management',

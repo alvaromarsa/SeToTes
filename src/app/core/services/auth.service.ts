@@ -71,4 +71,12 @@ export class AuthService {
       tap((response) => this.currentUserSubject.next(response.user))
     );
   }
+
+  hasSession(): boolean {
+    return this.currentUserSubject.value !== null;
+  }
+
+  clearSession(): void {
+    this.currentUserSubject.next(null);
+  }
 }

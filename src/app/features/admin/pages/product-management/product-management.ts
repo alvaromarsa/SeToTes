@@ -13,14 +13,16 @@ import { RouterLink } from '@angular/router';
 import { TitleCasePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 
+import type { ProductImage } from '@core/models/product-image.models';
 import { Product, ProductService, PRODUCT_CATEGORIES, ProductCategory } from '@core/services/product.service';
+import { ProductImageManager } from '@features/admin/components/product-image-manager/product-image-manager';
 import { FormUtils } from '@shared/utils/form-utils';
 
 type CategoryFilter = ProductCategory | 'all';
 
 @Component({
   selector: 'app-product-management',
-  imports: [ReactiveFormsModule, RouterLink, TitleCasePipe],
+  imports: [ReactiveFormsModule, RouterLink, TitleCasePipe, ProductImageManager],
   templateUrl: './product-management.html',
   styleUrl: './product-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -131,15 +133,7 @@ export class ProductManagement implements OnInit {
     this.saveErrorMessage = '';
 
     this.editingProductId = product.id;
-
-    this.productForm.setValue({
-      name: product.name,
-      price: Number(product.price),
-      stock: Number(product.stock),
-      color: product.color ?? '',
-      category: product.category,
-    });
-
+    this.fillForm(product);
     this.revealForm();
   }
 
@@ -171,17 +165,20 @@ export class ProductManagement implements OnInit {
     request$.subscribe({
       next: (savedProduct: Product) => {
         if (productId === null) {
+          // Tras crear, se sigue editando el producto para poder añadirle imágenes
           this.products = [...this.products, savedProduct];
-          this.saveSuccessMessage = 'Producto creado correctamente.';
+          this.editingProductId = savedProduct.id;
+          this.fillForm(savedProduct);
+          this.saveSuccessMessage = 'Producto creado. Ahora puedes añadir sus imágenes.';
         } else {
           this.products = this.products.map((product) =>
             product.id === savedProduct.id ? savedProduct : product
           );
+          this.editingProductId = null;
+          this.resetForm();
           this.saveSuccessMessage = 'Producto actualizado correctamente.';
         }
 
-        this.editingProductId = null;
-        this.resetForm();
         this.isSaving = false;
         this.cdr.markForCheck();
       },
@@ -192,6 +189,31 @@ export class ProductManagement implements OnInit {
         this.isSaving = false;
         this.cdr.markForCheck();
       },
+    });
+  }
+
+  // La subida, el borrado y el orden ya se han guardado en el servidor; aquí solo se refleja en la lista
+  onImagesChange(productId: number, images: ProductImage[]): void {
+    this.products = this.products.map((product) =>
+      product.id === productId
+        ? {
+            ...product,
+            images,
+            mainImage: images.length > 0
+              ? { largeUrl: images[0].largeUrl, cardUrl: images[0].cardUrl }
+              : null,
+          }
+        : product
+    );
+  }
+
+  private fillForm(product: Product): void {
+    this.productForm.reset({
+      name: product.name,
+      price: Number(product.price),
+      stock: Number(product.stock),
+      color: product.color ?? '',
+      category: product.category,
     });
   }
 

@@ -11,9 +11,18 @@
   <div class="feature__grid">
     @for (product of products; track product.id) {
       <article class="product-card">
-        <div class="product-card__image product-card__image--{{ info.imageClass }}">
-          {{ product.color }}
-        </div>
+        @if (product.mainImage; as mainImage) {
+          <img
+            class="product-card__photo"
+            [src]="mainImage.cardUrl"
+            [alt]="product.name"
+            loading="lazy"
+          >
+        } @else {
+          <div class="product-card__image product-card__image--{{ info.imageClass }}">
+            {{ product.color }}
+          </div>
+        }
         <h3>{{ product.name }}</h3>
         <p>Disponibles: {{ product.stock }}</p>
         <div class="product-card__meta">

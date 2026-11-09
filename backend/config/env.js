@@ -25,4 +25,19 @@ if (corsOrigins.includes('*')) {
   throw new Error('CORS_ORIGIN no puede ser "*" porque las peticiones llevan credenciales');
 }
 
-module.exports = { corsOrigins };
+const DEFAULT_PUBLIC_BASE_URL = 'http://localhost:3000';
+
+if (process.env.NODE_ENV === 'production' && !process.env.PUBLIC_BASE_URL) {
+  throw new Error('Falta PUBLIC_BASE_URL en backend/.env (obligatorio en producción)');
+}
+
+// Sin "/" final para poder concatenar rutas
+const publicBaseUrl = (process.env.PUBLIC_BASE_URL ?? DEFAULT_PUBLIC_BASE_URL)
+  .trim()
+  .replace(/\/+$/, '');
+
+if (publicBaseUrl === '') {
+  throw new Error('PUBLIC_BASE_URL en backend/.env está vacía');
+}
+
+module.exports = { corsOrigins, publicBaseUrl };

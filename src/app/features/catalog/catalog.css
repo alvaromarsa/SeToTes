@@ -53,6 +53,17 @@
   margin-bottom: 1rem;
 }
 
+/* Proporción fija: reserva el hueco antes de que cargue la imagen (sin saltos) */
+.product-card__photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  margin-bottom: 1rem;
+  background: #f3f4f6;
+  object-fit: cover;
+}
+
 .product-card__image--beige { background: linear-gradient(135deg, #f7efe4 0%, #e7d5b5 100%); }
 .product-card__image--dark { background: linear-gradient(135deg, #1f2937 0%, #374151 100%); color: #fff; }
 .product-card__image--sand { background: linear-gradient(135deg, #efe4d6 0%, #d8c0a4 100%); }

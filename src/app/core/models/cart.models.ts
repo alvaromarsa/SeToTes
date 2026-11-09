@@ -7,6 +7,7 @@ export interface CartItem {
   stock: number;
   quantity: number;
   lineTotal: number;
+  mainImage: { cardUrl: string } | null;
 }
 
 export interface CartResponse {

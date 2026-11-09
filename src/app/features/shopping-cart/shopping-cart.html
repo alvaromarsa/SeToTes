@@ -27,7 +27,11 @@
       <div class="cart-panel__items">
         @for (item of cart.items; track item.productId) {
           <article class="cart-panel__item">
-            <div class="cart-panel__thumb cart-panel__thumb--beige"></div>
+            @if (item.mainImage; as mainImage) {
+              <img class="cart-panel__thumb" [src]="mainImage.cardUrl" alt="" loading="lazy">
+            } @else {
+              <div class="cart-panel__thumb cart-panel__thumb--beige"></div>
+            }
             <div class="cart-panel__info">
               <h3>{{ item.name }}</h3>
 

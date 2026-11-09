@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { API_BASE_URL } from '@core/config/api.config';
+import type { ProductImage, ProductMainImage } from '@core/models/product-image.models';
 
 export const PRODUCT_CATEGORIES = ['bolsas', 'neceseres', 'fundas', 'telas'] as const;
 
@@ -14,7 +15,12 @@ export interface Product {
   stock: number;
   color: string | null;
   category: ProductCategory;
+  images: ProductImage[];
+  mainImage: ProductMainImage | null;
 }
+
+// Datos que el formulario del admin envía al crear o editar (las imágenes van aparte)
+export type ProductInput = Pick<Product, 'name' | 'price' | 'stock' | 'color' | 'category'>;
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
@@ -27,7 +33,11 @@ export class ProductService {
     });
   }
 
-  createProduct(product: Omit<Product, 'id'>) {
+  getProduct(id: number) {
+    return this.http.get<Product>(`${this.apiUrl}/${id}`);
+  }
+
+  createProduct(product: ProductInput) {
     return this.http.post<Product>(
       this.apiUrl,
       product,
@@ -35,7 +45,7 @@ export class ProductService {
     );
   }
 
-  updateProduct(id: number, product: Omit<Product, 'id'>) {
+  updateProduct(id: number, product: ProductInput) {
     return this.http.put<Product>(
       `${this.apiUrl}/${id}`,
       product,

@@ -3,6 +3,7 @@ const express = require('express');
 const pool = require('../db');
 const { SHIPPING_COST } = require('../config/constants');
 const { requireAuth } = require('../middleware/auth');
+const storage = require('../storage');
 
 const router = express.Router();
 
@@ -13,9 +14,17 @@ router.get('/', async (request, response) => {
     const result = await pool.query(
       `SELECT p.id AS product_id, p.name, p.color, p.category,
               p.price, p.stock, ci.quantity,
-              (p.price * ci.quantity) AS line_total
+              (p.price * ci.quantity) AS line_total,
+              main_image.file_key AS main_image_key
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
+       LEFT JOIN LATERAL (
+         SELECT pi.file_key
+         FROM product_images pi
+         WHERE pi.product_id = p.id
+         ORDER BY pi.position, pi.id
+         LIMIT 1
+       ) main_image ON true
        WHERE ci.user_id = $1
        ORDER BY ci.created_at`,
       [request.authenticatedUserId]
@@ -30,6 +39,9 @@ router.get('/', async (request, response) => {
       stock: row.stock,
       quantity: row.quantity,
       lineTotal: Number(row.line_total),
+      mainImage: row.main_image_key
+        ? { cardUrl: storage.publicUrl(row.main_image_key, 'card') }
+        : null,
     }));
 
     const total = Math.round(

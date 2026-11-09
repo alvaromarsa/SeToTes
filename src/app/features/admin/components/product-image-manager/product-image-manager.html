@@ -1,0 +1,160 @@
+<section class="image-manager" aria-labelledby="image-manager-title">
+  <div class="image-manager__heading">
+    <h3 id="image-manager-title" class="image-manager__title" tabindex="-1">Imágenes</h3>
+    <span class="image-manager__count">{{ images().length }} / {{ maxImages }}</span>
+  </div>
+  <p class="image-manager__hint">
+    La primera imagen es la principal: es la que se ve en el catálogo y en el carrito.
+  </p>
+
+  @if (images().length === 0) {
+    <p class="image-manager__notice">
+      Este producto no tiene imágenes. Puedes guardarlo así, pero en la tienda se mostrará sin foto.
+    </p>
+  }
+
+  @if (images().length > 0) {
+    <ol class="image-manager__grid">
+      @for (image of images(); track image.id; let index = $index, first = $first, last = $last) {
+        <li class="image-manager__item">
+          <img
+            class="image-manager__image"
+            [src]="image.cardUrl"
+            [alt]="'Imagen ' + (index + 1) + ' de ' + productName()"
+          >
+          @if (first) {
+            <span class="image-manager__badge">Principal</span>
+          }
+
+          @if (confirmDeleteImageId === image.id) {
+            <div class="image-manager__confirm" role="group" [attr.aria-label]="'Confirmar eliminación de la imagen ' + (index + 1)">
+              <p>¿Eliminar esta imagen?</p>
+              <button
+                class="image-manager__button image-manager__button--danger"
+                type="button"
+                [disabled]="isBusy"
+                (click)="confirmDelete(image.id)"
+              >
+                {{ deletingImageId === image.id ? 'Eliminando…' : 'Sí, eliminar' }}
+              </button>
+              <button class="image-manager__button" type="button" [disabled]="isBusy" (click)="cancelDelete()">
+                Cancelar
+              </button>
+            </div>
+          } @else {
+            <div class="image-manager__actions">
+              <button
+                class="image-manager__button"
+                type="button"
+                [attr.data-move]="image.id + '-before'"
+                [disabled]="isBusy || first"
+                [attr.aria-label]="'Mover la imagen ' + (index + 1) + ' antes'"
+                (click)="move(index, -1)"
+              >
+                <span aria-hidden="true">←</span> Antes
+              </button>
+              <button
+                class="image-manager__button"
+                type="button"
+                [attr.data-move]="image.id + '-after'"
+                [disabled]="isBusy || last"
+                [attr.aria-label]="'Mover la imagen ' + (index + 1) + ' después'"
+                (click)="move(index, 1)"
+              >
+                Después <span aria-hidden="true">→</span>
+              </button>
+              <button
+                class="image-manager__button image-manager__button--danger"
+                type="button"
+                [disabled]="isBusy"
+                [attr.aria-label]="'Eliminar la imagen ' + (index + 1)"
+                (click)="askDelete(image.id)"
+              >
+                Eliminar
+              </button>
+            </div>
+          }
+        </li>
+      }
+    </ol>
+  }
+
+  <label
+    class="image-manager__dropzone"
+    [class.image-manager__dropzone--active]="isDragging"
+    [class.image-manager__dropzone--disabled]="remainingSlots <= 0 || isBusy"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+  >
+    <input
+      class="image-manager__input"
+      type="file"
+      multiple
+      [accept]="acceptedTypes"
+      [disabled]="remainingSlots <= 0 || isBusy"
+      (change)="onFileInput($event)"
+    >
+    <strong>Arrastra las imágenes aquí o pulsa para elegirlas</strong>
+    @if (remainingSlots > 0) {
+      <span>
+        JPEG, PNG o WebP · Máx. {{ maxSizeMb }} MB cada una ·
+        {{ remainingSlots === 1 ? 'Puedes añadir 1 más' : 'Puedes añadir ' + remainingSlots + ' más' }}
+      </span>
+    } @else if (pendingImages.length === 0) {
+      <span>Este producto ya tiene el máximo de {{ maxImages }} imágenes. Elimina alguna para añadir otra.</span>
+    } @else {
+      <span>Con las imágenes elegidas se llega al máximo de {{ maxImages }}. Súbelas o quita alguna.</span>
+    }
+  </label>
+
+  @if (validationErrors.length > 0) {
+    <ul class="image-manager__errors" role="alert">
+      @for (message of validationErrors; track $index) {
+        <li>{{ message }}</li>
+      }
+    </ul>
+  }
+
+  @if (pendingImages.length > 0) {
+    <div class="image-manager__pending">
+      <p class="image-manager__pending-title">Vista previa ({{ pendingImages.length }} sin subir)</p>
+      <ul class="image-manager__grid">
+        @for (pending of pendingImages; track pending.previewUrl) {
+          <li class="image-manager__item">
+            <img class="image-manager__image" [src]="pending.previewUrl" [alt]="'Vista previa de ' + pending.file.name">
+            <div class="image-manager__actions">
+              <button
+                class="image-manager__button"
+                type="button"
+                [disabled]="isUploading"
+                [attr.aria-label]="'Quitar ' + pending.file.name + ' de la subida'"
+                (click)="removePending(pending)"
+              >
+                Quitar
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+      <div class="image-manager__pending-actions">
+        <button class="image-manager__upload" type="button" [disabled]="isBusy" (click)="upload()">
+          {{
+            isUploading
+              ? 'Subiendo…'
+              : (pendingImages.length === 1 ? 'Subir 1 imagen' : 'Subir ' + pendingImages.length + ' imágenes')
+          }}
+        </button>
+        <button class="image-manager__button" type="button" [disabled]="isUploading" (click)="clearPending()">
+          Descartar
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (serverError) {
+    <p class="image-manager__server-error" role="alert">{{ serverError }}</p>
+  }
+
+  <p class="image-manager__status" role="status">{{ statusMessage }}</p>
+</section>

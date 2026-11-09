@@ -145,6 +145,17 @@
           </p>
         }
       </form>
+
+      @if (editingProduct; as product) {
+        <app-product-image-manager
+          [productId]="product.id"
+          [productName]="product.name"
+          [images]="product.images"
+          (imagesChange)="onImagesChange(product.id, $event)"
+        />
+      } @else {
+        <p class="product-form__images-hint">Podrás añadir imágenes en cuanto crees el producto.</p>
+      }
     </section>
 
     <section class="admin-surface product-catalog" aria-labelledby="product-catalog-title">
@@ -213,9 +224,17 @@
               @for (product of filteredProducts; track product.id) {
                 <li class="product-card" [class.product-card--editing]="product.id === editingProductId">
                   <div class="product-card__top">
-                    <div>
-                      <p class="product-card__id">Producto #{{ product.id }}</p>
-                      <h3>{{ product.name }}</h3>
+                    <div class="product-card__identity">
+                      @if (product.mainImage; as mainImage) {
+                        <img class="product-card__thumb" [src]="mainImage.cardUrl" alt="" loading="lazy">
+                      }
+                      <div>
+                        <p class="product-card__id">Producto #{{ product.id }}</p>
+                        <h3>{{ product.name }}</h3>
+                        @if (!product.mainImage) {
+                          <span class="product-card__no-image">Sin imágenes</span>
+                        }
+                      </div>
                     </div>
                     <span class="product-card__stock">{{ product.stock }} uds.</span>
                   </div>

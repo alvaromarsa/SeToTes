@@ -128,6 +128,10 @@
   background: linear-gradient(135deg, #f0d1b4, #e7ded4);
 }
 
+img.cart-panel__thumb {
+  object-fit: cover;
+}
+
 .cart-panel__thumb--green {
   background: linear-gradient(135deg, #dff9c7, #b8ff8c);
 }

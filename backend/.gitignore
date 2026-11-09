@@ -6,6 +6,7 @@
 # Dependencies
 node_modules/
 
-# User uploaded files (keep the folder)
-uploads/*
-!uploads/.gitkeep
+# User uploaded files (keep the folders through their .gitkeep)
+uploads/**
+!uploads/**/
+!uploads/**/.gitkeep

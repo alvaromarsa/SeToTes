@@ -524,3 +524,29 @@
     overflow-y: auto;
   }
 }
+
+.product-form__images-hint {
+  margin: 1.25rem 0 0;
+  color: #6b6865;
+  font-size: 0.88rem;
+}
+
+.product-card__identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.product-card__thumb {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.product-card__no-image {
+  color: #8a5a44;
+  font-size: 0.75rem;
+  font-weight: 700;
+}

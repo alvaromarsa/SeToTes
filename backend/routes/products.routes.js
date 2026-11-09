@@ -3,6 +3,7 @@ const express = require('express');
 const pool = require('../db');
 const { CATEGORIES } = require('../config/constants');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { PRODUCT_IMAGES_SQL, formatProduct } = require('../utils/products');
 
 const router = express.Router();
 
@@ -19,21 +20,55 @@ router.get('/', async (request, response) => {
     const result =
       category === undefined
         ? await pool.query(
-            'SELECT id, name, price, stock, color, category FROM products ORDER BY id'
+            `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
+             FROM products p
+             ORDER BY p.id`
           )
         : await pool.query(
-            `SELECT id, name, price, stock, color, category
-             FROM products
-             WHERE category = $1
-             ORDER BY id`,
+            `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
+             FROM products p
+             WHERE p.category = $1
+             ORDER BY p.id`,
             [category]
           );
 
-    response.json(result.rows);
+    response.json(result.rows.map(formatProduct));
   } catch (error) {
     console.error('Error al consultar productos:', error.message);
     response.status(500).json({
       message: 'No se pudieron cargar los productos',
+    });
+  }
+});
+
+router.get('/:id', async (request, response) => {
+  const productId = Number(request.params.id);
+
+  if (!Number.isInteger(productId) || productId <= 0) {
+    return response.status(400).json({
+      message: 'El producto no es válido',
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
+       FROM products p
+       WHERE p.id = $1`,
+      [productId]
+    );
+
+    if (result.rows.length === 0) {
+      return response.status(404).json({
+        message: 'No se encontró el producto',
+      });
+    }
+
+    return response.json(formatProduct(result.rows[0]));
+  } catch (error) {
+    console.error('Error al consultar el producto:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo cargar el producto',
     });
   }
 });
@@ -65,7 +100,8 @@ router.post('/', requireAuth, requireAdmin, async (request, response) => {
       [name.trim(), price, stock, color ?? null, category]
     );
 
-    return response.status(201).json(result.rows[0]);
+    // Un producto recién creado aún no tiene imágenes
+    return response.status(201).json(formatProduct({ ...result.rows[0], images: [] }));
   } catch (error) {
     console.error('Error al crear el producto:', error.message);
     return response.status(500).json({
@@ -98,10 +134,10 @@ router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
 
   try {
     const result = await pool.query(
-      `UPDATE products
+      `UPDATE products AS p
        SET name = $1, price = $2, stock = $3, color = $4, category = $5
-       WHERE id = $6
-       RETURNING id, name, price, stock, color, category`,
+       WHERE p.id = $6
+       RETURNING p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}`,
       [name.trim(), price, stock, color ?? null, category, productId]
     );
 
@@ -111,7 +147,7 @@ router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
       });
     }
 
-    return response.json(result.rows[0]);
+    return response.json(formatProduct(result.rows[0]));
   } catch (error) {
     console.error('Error al actualizar el producto:', error.message);
     return response.status(500).json({

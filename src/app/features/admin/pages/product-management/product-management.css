@@ -470,9 +470,9 @@
   color: #fff;
 }
 
-/* Deja hueco para la navbar sticky (88px) al hacer scroll hasta el formulario */
+/* Deja hueco para la navbar sticky al hacer scroll hasta el formulario */
 .product-form-panel {
-  scroll-margin-top: calc(88px + 1rem);
+  scroll-margin-top: calc(var(--navbar-height) + 1rem);
 }
 
 .product-form-panel--editing,
@@ -519,8 +519,8 @@
 @media (min-width: 851px) {
   .product-form-panel {
     position: sticky;
-    top: calc(88px + 1rem);
-    max-height: calc(100vh - 88px - 2rem);
+    top: calc(var(--navbar-height) + 1rem);
+    max-height: calc(100vh - var(--navbar-height) - 2rem);
     overflow-y: auto;
   }
 }

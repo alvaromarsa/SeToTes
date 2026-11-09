@@ -1,99 +1,108 @@
-.navbar {
+/* Mobile-first: logo y acciones en la primera fila, categorías en la segunda */
+:host {
+  --navbar-bg: #0ffff2;
+  --navbar-text: #111827;
+  --navbar-muted: #374151;
+  --navbar-border: rgba(17, 24, 39, 0.14);
+  --navbar-hover: #f3f4f6;
+
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
+  display: block;
+  min-height: var(--navbar-height);
+  background: var(--navbar-bg);
+  border-bottom: 1px solid var(--navbar-border);
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.06);
+}
+
+.navbar {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'brand actions'
+    'categories categories';
   align-items: center;
-  width: 100%;
-  min-height: 88px;
-  padding: 0.75rem 1.5rem;
-  background: #0FFFF2;
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  box-sizing: border-box;
-  gap: 0.75rem;
+  column-gap: 1rem;
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding: 0 1rem;
+  color: var(--navbar-text);
+}
+
+.navbar a:focus-visible,
+.navbar button:focus-visible {
+  outline: 3px solid var(--navbar-text);
+  outline-offset: -3px;
 }
 
 .navbar__brand {
-  width: 72px;
-  height: 72px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #d1d5db;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  overflow: hidden;
-  flex-shrink: 0;
+  grid-area: brand;
   justify-self: start;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  text-decoration: none;
-}
-
-.navbar__brand:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.08);
-}
-
-.navbar__brand-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.navbar__list {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
-.navbar__item {
-  margin: 0;
-}
-
-.navbar__button {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  color: #111827;
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: 0.7rem 1.2rem;
-  border-radius: 999px;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  min-height: 64px;
+  border-radius: 8px;
 }
 
-.navbar__button:hover,
-.navbar__button.active {
-  background: #111827;
-  color: white;
-  border-color: #111827;
-  transform: translateY(-1px);
+.navbar__logo {
+  width: auto;
+  height: 40px;
+  max-width: 160px;
+  object-fit: contain;
+}
+
+/* Una sola línea con scroll horizontal propio si no cabe */
+.navbar__categories {
+  grid-area: categories;
+  min-width: 0;
+  margin: 0 -1rem;
+  padding: 0 1rem;
+  border-top: 1px solid var(--navbar-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.navbar__category-list {
+  display: flex;
+  gap: 0.25rem;
+  width: max-content;
+}
+
+.navbar__category {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  color: var(--navbar-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.navbar__category:hover {
+  color: var(--navbar-text);
+}
+
+.navbar__category.active {
+  color: var(--navbar-text);
+  font-weight: 700;
+  box-shadow: inset 0 -3px 0 currentColor;
 }
 
 .navbar__actions {
+  grid-area: actions;
   display: flex;
   align-items: center;
-  justify-self: end;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
-.navbar__user {
+.user-menu {
+  position: relative;
+}
+
+/* Mismo aspecto que el botón del carrito (shopping-cart.css) */
+.user-menu__button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -102,53 +111,87 @@
   border: 1px solid #d1d5db;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 8px 18px rgba(17, 24, 39, 0.08);
-  color: #111827;
-  text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  color: var(--navbar-text);
+  cursor: pointer;
 }
 
-.navbar__user:hover,
-.navbar__user.active {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(17, 24, 39, 0.12);
+.user-menu__button:hover,
+.user-menu__button[aria-expanded='true'] {
+  background: #fff;
 }
 
-.navbar__user-icon {
+.user-menu__icon {
   width: 24px;
   height: 24px;
-  display: block;
 }
 
-app-shopping-cart {
+.user-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: max-content;
+  min-width: 13rem;
+  /* Anclado al botón de usuario, que queda a ~5rem del borde derecho: así no se sale por la izquierda */
+  max-width: calc(100vw - 6rem);
+  padding: 0.5rem;
+  border: 1px solid var(--navbar-border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(17, 24, 39, 0.16);
+}
+
+.user-menu__greeting {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  color: var(--navbar-muted);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.user-menu__item {
   display: flex;
   align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-radius: 8px;
+  color: var(--navbar-text);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
 }
 
-@media (max-width: 640px) {
+.user-menu__item:hover,
+.user-menu__item:focus-visible {
+  background: var(--navbar-hover);
+}
+
+.user-menu__separator {
+  height: 1px;
+  margin: 0.5rem 0;
+  background: var(--navbar-border);
+}
+
+@media (min-width: 768px) {
   .navbar {
-    grid-template-columns: auto 1fr auto;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'brand categories actions';
+    column-gap: 1.5rem;
+    padding: 0 1.5rem;
   }
 
-  .navbar__list {
-    grid-column: 1 / -1;
-    order: 3;
-    justify-content: center;
-    gap: 0.5rem;
+  .navbar__categories {
+    margin: 0;
+    padding: 0;
+    border-top: 0;
   }
 
-  .navbar__brand {
-    justify-self: start;
+  .navbar__category-list {
+    margin-inline: auto;
   }
 
-  .navbar__button {
-    font-size: 0.85rem;
-    padding: 0.6rem 0.9rem;
-  }
-
-  .navbar__actions {
-    gap: 0.5rem;
+  .navbar__category {
+    min-height: 64px;
   }
 }

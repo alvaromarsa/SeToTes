@@ -30,52 +30,35 @@
             <div class="cart-panel__thumb cart-panel__thumb--beige"></div>
             <div class="cart-panel__info">
               <h3>{{ item.name }}</h3>
-                    <div class="cart-panel__items">
-                      @for (item of cart.items; track item.productId) {
-                        <article class="cart-panel__item">
-                          <div class="cart-panel__thumb cart-panel__thumb--beige"></div>
-                          <div class="cart-panel__info">
-                            <h3>{{ item.name }}</h3>
 
-                            <div class="cart-panel__quantity">
-                              <button
-                                type="button"
-                                aria-label="Quitar una unidad"
-                                [disabled]="isUpdating || item.quantity <= 1"
-                                (click)="decrease(item)"
-                              >
-                                −
-                              </button>
-                              <span>{{ item.quantity }}</span>
-                              <button
-                                type="button"
-                                aria-label="Añadir una unidad"
-                                [disabled]="isUpdating || item.quantity >= item.stock"
-                                (click)="increase(item)"
-                              >
-                                +
-                              </button>
-                              <button
-                                type="button"
-                                class="cart-panel__remove"
-                                [disabled]="isUpdating"
-                                (click)="remove(item)"
-                              >
-                              Quitar
-                              </button>
-                            </div>
+              <div class="cart-panel__quantity">
+                <button
+                  type="button"
+                  aria-label="Quitar una unidad"
+                  [disabled]="isUpdating || item.quantity <= 1"
+                  (click)="decrease(item)"
+                >
+                  −
+                </button>
+                <span>{{ item.quantity }}</span>
+                <button
+                  type="button"
+                  aria-label="Añadir una unidad"
+                  [disabled]="isUpdating || item.quantity >= item.stock"
+                  (click)="increase(item)"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  class="cart-panel__remove"
+                  [disabled]="isUpdating"
+                  (click)="remove(item)"
+                >
+                  Quitar
+                </button>
+              </div>
 
-                            <strong>{{ item.lineTotal | currency: 'EUR' }}</strong>
-                          </div>
-                        </article>
-                      } @empty {
-                        <p class="cart-panel__empty">Tu carrito está vacío</p>
-                      }
-                    </div>
-
-                    @if (errorMessage) {
-                      <p class="cart-panel__error" role="alert">{{ errorMessage }}</p>
-                    }
               <strong>{{ item.lineTotal | currency: 'EUR' }}</strong>
             </div>
           </article>
@@ -83,6 +66,10 @@
           <p class="cart-panel__empty">Tu carrito está vacío</p>
         }
       </div>
+
+      @if (errorMessage) {
+        <p class="cart-panel__error" role="alert">{{ errorMessage }}</p>
+      }
 
       <div class="cart-panel__summary">
         <div>

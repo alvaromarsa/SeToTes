@@ -1,3 +1,15 @@
 /* You can add global styles to this file, and also import other style files */
 
 @import 'tailwindcss';
+
+/* Altura del navbar sticky (navbar.css). La usan otras pantallas para sus offsets de scroll y sticky.
+   Móvil: fila principal 64px + fila de categorías 44px + bordes 2px. Escritorio (mismo corte que navbar.css): 64px + borde 1px. */
+:root {
+  --navbar-height: 110px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --navbar-height: 65px;
+  }
+}

@@ -1,9 +1,22 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  Injector,
+  OnInit,
+  viewChild,
+  viewChildren,
+} from '@angular/core';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
+import { filter } from 'rxjs';
+
 import { ShoppingCart } from '@features/shopping-cart/shopping-cart';
 import { AuthService } from '@core/services/auth.service';
 import type { AuthUser } from '@core/models/auth.models';
-import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-navbar',
@@ -12,13 +25,29 @@ import { HttpErrorResponse } from '@angular/common/http';
   templateUrl: './navbar.html',
   styleUrl: './navbar.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(document:click)': 'onDocumentClick($event)',
+  },
 })
 export class Navbar implements OnInit {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly injector = inject(Injector);
+
+  private readonly userMenu = viewChild.required<ElementRef<HTMLElement>>('userMenu');
+  private readonly userMenuButton = viewChild.required<ElementRef<HTMLButtonElement>>('userMenuButton');
+  private readonly menuItems = viewChildren<ElementRef<HTMLElement>>('menuItem');
+
+  readonly categories = [
+    { path: '/bolsas', label: 'Bolsas' },
+    { path: '/neceseres', label: 'Neceseres' },
+    { path: '/fundas', label: 'Fundas' },
+    { path: '/telas', label: 'Telas' },
+  ];
 
   currentUser: AuthUser | null = null;
+  isUserMenuOpen = false;
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe((user) => {
@@ -32,13 +61,81 @@ export class Navbar implements OnInit {
         }
       },
     });
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.closeUserMenu();
+        this.cdr.markForCheck();
+      });
   }
- goToUserArea(): void {
-    const target = this.currentUser ? '/user-profile' : '/login';
-    void this.router.navigateByUrl(target);
+
+  toggleUserMenu(): void {
+    if (this.isUserMenuOpen) {
+      this.closeUserMenu();
+    } else {
+      this.openUserMenu('first');
+    }
+  }
+
+  closeUserMenu(returnFocus = false): void {
+    this.isUserMenuOpen = false;
+
+    if (returnFocus) {
+      this.userMenuButton().nativeElement.focus();
+    }
+  }
+
+  // Patrón "menu button" de WAI-ARIA: flechas abren el menú desde el botón
+  onUserMenuButtonKeydown(event: KeyboardEvent): void {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      this.openUserMenu(event.key === 'ArrowDown' ? 'first' : 'last');
+    } else if (event.key === 'Escape' && this.isUserMenuOpen) {
+      this.closeUserMenu(true);
+    }
+  }
+
+  onMenuKeydown(event: KeyboardEvent): void {
+    const items = this.menuItems().map((item) => item.nativeElement);
+    const currentIndex = items.indexOf(document.activeElement as HTMLElement);
+    const lastIndex = items.length - 1;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        items[currentIndex >= lastIndex ? 0 : currentIndex + 1]?.focus();
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        items[currentIndex <= 0 ? lastIndex : currentIndex - 1]?.focus();
+        break;
+      case 'Home':
+        event.preventDefault();
+        items[0]?.focus();
+        break;
+      case 'End':
+        event.preventDefault();
+        items[lastIndex]?.focus();
+        break;
+      case 'Escape':
+        event.preventDefault();
+        this.closeUserMenu(true);
+        break;
+      case 'Tab':
+        // El foco sigue su orden natural; el menú no debe quedarse abierto detrás
+        this.closeUserMenu();
+        break;
+    }
+  }
+
+  onDocumentClick(event: MouseEvent): void {
+    if (this.isUserMenuOpen && !this.userMenu().nativeElement.contains(event.target as Node)) {
+      this.closeUserMenu();
+    }
   }
 
   logout(): void {
+    this.closeUserMenu();
     this.authService.logout().subscribe({
       next: () => {
         void this.router.navigateByUrl('/login');
@@ -47,5 +144,18 @@ export class Navbar implements OnInit {
         console.error('No se pudo cerrar la sesión');
       },
     });
+  }
+
+  private openUserMenu(focusTarget: 'first' | 'last'): void {
+    this.isUserMenuOpen = true;
+
+    // Los elementos del menú solo existen tras el siguiente render
+    afterNextRender(
+      () => {
+        const items = this.menuItems();
+        items[focusTarget === 'first' ? 0 : items.length - 1]?.nativeElement.focus();
+      },
+      { injector: this.injector },
+    );
   }
 }

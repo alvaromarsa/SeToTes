@@ -1,48 +1,87 @@
-<nav class="navbar" aria-label="Navegación principal">
-  <a class="navbar__brand" routerLink="/home" routerLinkActive="active" aria-label="Ir a la página de inicio">
-    <img src="/favicon.ico" alt="Logo de la empresa" class="navbar__brand-image" />
+<header class="navbar">
+  <a class="navbar__brand" routerLink="/home">
+    <!-- Logo: sustituye este src por el logo definitivo (por ejemplo, /logo.svg en public/) -->
+    <img class="navbar__logo" src="/favicon.ico" alt="ToteBag, ir a la página de inicio" />
   </a>
 
-  <ul class="navbar__list">
-    <li class="navbar__item">
-      <a class="navbar__button" routerLink="/bolsas" routerLinkActive="active">Bolsas</a>
-    </li>
-    <li class="navbar__item">
-      <a class="navbar__button" routerLink="/neceseres" routerLinkActive="active">Neceseres</a>
-    </li>
-    <li class="navbar__item">
-      <a class="navbar__button" routerLink="/fundas" routerLinkActive="active">Fundas</a>
-    </li>
-    <li class="navbar__item">
-      <a class="navbar__button" routerLink="/telas" routerLinkActive="active">Telas</a>
-    </li>
-    @if (currentUser?.role === 'admin') {
-      <li class="navbar__item">
-        <a class="navbar__button" routerLink="/adminpanel">Panel de administración</a>
-      </li>
-    }
-  </ul>
+  <nav class="navbar__categories" aria-label="Categorías">
+    <ul class="navbar__category-list">
+      @for (category of categories; track category.path) {
+        <li>
+          <a
+            class="navbar__category"
+            [routerLink]="category.path"
+            routerLinkActive="active"
+            ariaCurrentWhenActive="page"
+          >
+            {{ category.label }}
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
 
   <div class="navbar__actions">
-    <button class="navbar__user" type="button" (click)="goToUserArea()" aria-label="Acceder a mi cuenta">
-      <svg class="navbar__user-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 21C20 18.7909 17.3137 17 14 17H10C6.68629 17 4 18.7909 4 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
-      </svg>
-    </button>
-    @if (currentUser) {
-      <a class="navbar__button" routerLink="/orders" routerLinkActive="active">
-        Mis pedidos
-      </a>
+    <div #userMenu class="user-menu">
       <button
-        class="navbar__button"
+        #userMenuButton
+        class="user-menu__button"
         type="button"
-        (click)="logout()"
-        aria-label="Cerrar sesión"
+        aria-haspopup="menu"
+        [attr.aria-controls]="isUserMenuOpen ? 'user-menu' : null"
+        [attr.aria-expanded]="isUserMenuOpen"
+        [attr.aria-label]="currentUser ? 'Menú de mi cuenta' : 'Menú de acceso'"
+        (click)="toggleUserMenu()"
+        (keydown)="onUserMenuButtonKeydown($event)"
       >
-        Cerrar sesión
+        <svg class="user-menu__icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 21C20 18.7909 17.3137 17 14 17H10C6.68629 17 4 18.7909 4 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.8"/>
+        </svg>
       </button>
-    }
+
+      @if (isUserMenuOpen) {
+        <div class="user-menu__panel">
+          @if (currentUser) {
+            <p class="user-menu__greeting">Hola, {{ currentUser.full_name }}</p>
+          }
+
+          <ul
+            id="user-menu"
+            class="user-menu__list"
+            role="menu"
+            [attr.aria-label]="currentUser ? 'Mi cuenta' : 'Acceso'"
+            (keydown)="onMenuKeydown($event)"
+          >
+            @if (currentUser) {
+              <li role="none">
+                <a #menuItem class="user-menu__item" role="menuitem" tabindex="-1" routerLink="/user-profile" (click)="closeUserMenu()">Mi perfil</a>
+              </li>
+              <li role="none">
+                <a #menuItem class="user-menu__item" role="menuitem" tabindex="-1" routerLink="/orders" (click)="closeUserMenu()">Mis pedidos</a>
+              </li>
+              @if (currentUser.role === 'admin') {
+                <li role="none">
+                  <a #menuItem class="user-menu__item" role="menuitem" tabindex="-1" routerLink="/adminpanel" (click)="closeUserMenu()">Panel de administración</a>
+                </li>
+              }
+              <li class="user-menu__separator" role="separator"></li>
+              <li role="none">
+                <button #menuItem class="user-menu__item" role="menuitem" tabindex="-1" type="button" (click)="logout()">Cerrar sesión</button>
+              </li>
+            } @else {
+              <li role="none">
+                <a #menuItem class="user-menu__item" role="menuitem" tabindex="-1" routerLink="/login" (click)="closeUserMenu()">Iniciar sesión</a>
+              </li>
+              <li role="none">
+                <a #menuItem class="user-menu__item" role="menuitem" tabindex="-1" routerLink="/register" (click)="closeUserMenu()">Crear cuenta</a>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+
     <app-shopping-cart></app-shopping-cart>
   </div>
-</nav>
+</header>

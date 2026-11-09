@@ -6,7 +6,7 @@ import {
   Component,
   inject,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import type { Observable } from 'rxjs';
 
 import type { CartItem } from '@core/models/cart.models';
@@ -15,7 +15,7 @@ import { CartService } from '@core/services/cart.service';
 @Component({
   selector: 'app-shopping-cart',
   standalone: true,
-  imports: [AsyncPipe, CurrencyPipe],
+  imports: [AsyncPipe, CurrencyPipe, RouterLink],
   templateUrl: './shopping-cart.html',
   styleUrl: './shopping-cart.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -27,13 +27,18 @@
       <div class="cart-panel__items">
         @for (item of cart.items; track item.productId) {
           <article class="cart-panel__item">
-            @if (item.mainImage; as mainImage) {
-              <img class="cart-panel__thumb" [src]="mainImage.cardUrl" alt="" loading="lazy">
-            } @else {
-              <div class="cart-panel__thumb cart-panel__thumb--beige"></div>
-            }
+            <!-- Mismo destino que el nombre: fuera del orden de tabulación para no repetir parada -->
+            <a [routerLink]="['/producto', item.productId]" tabindex="-1" aria-hidden="true" (click)="closeCart()">
+              @if (item.mainImage; as mainImage) {
+                <img class="cart-panel__thumb" [src]="mainImage.cardUrl" alt="" loading="lazy">
+              } @else {
+                <div class="cart-panel__thumb cart-panel__thumb--beige"></div>
+              }
+            </a>
             <div class="cart-panel__info">
-              <h3>{{ item.name }}</h3>
+              <h3>
+                <a class="cart-panel__link" [routerLink]="['/producto', item.productId]" (click)="closeCart()">{{ item.name }}</a>
+              </h3>
 
               <div class="cart-panel__quantity">
                 <button

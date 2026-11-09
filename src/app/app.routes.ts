@@ -18,6 +18,11 @@ export const routes: Routes = [
       import('./features/home/home').then((m) => m.HomeComponent),
   },
   {
+    path: 'producto/:id',
+    loadComponent: () =>
+      import('./features/product-detail/product-detail').then((m) => m.ProductDetail),
+  },
+  {
     path: 'login',
     loadComponent: () =>
       import('./features/login/login').then((m) => m.Login),

@@ -11,19 +11,22 @@
   <div class="feature__grid">
     @for (product of products; track product.id) {
       <article class="product-card">
-        @if (product.mainImage; as mainImage) {
-          <img
-            class="product-card__photo"
-            [src]="mainImage.cardUrl"
-            [alt]="product.name"
-            loading="lazy"
-          >
-        } @else {
-          <div class="product-card__image product-card__image--{{ info.imageClass }}">
-            {{ product.color }}
-          </div>
-        }
-        <h3>{{ product.name }}</h3>
+        <!-- Mismo destino que el nombre: fuera del orden de tabulación para no repetir parada -->
+        <a class="product-card__media" [routerLink]="['/producto', product.id]" tabindex="-1" aria-hidden="true">
+          @if (product.mainImage; as mainImage) {
+            <img
+              class="product-card__photo"
+              [src]="mainImage.cardUrl"
+              [alt]="product.name"
+              loading="lazy"
+            >
+          } @else {
+            <div class="product-card__image product-card__image--{{ info.imageClass }}">
+              {{ product.color }}
+            </div>
+          }
+        </a>
+        <h3><a class="product-card__link" [routerLink]="['/producto', product.id]">{{ product.name }}</a></h3>
         <p>Disponibles: {{ product.stock }}</p>
         <div class="product-card__meta">
           <span>{{ product.price | currency: 'EUR' : 'symbol' : '1.2-2' }}</span>

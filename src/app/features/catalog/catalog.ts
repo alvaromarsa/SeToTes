@@ -1,30 +1,16 @@
 import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
+import { CATEGORY_INFO } from '@core/config/categories.config';
 import { CartService } from '@core/services/cart.service';
 import { Product, ProductCategory, ProductService,} from '@core/services/product.service';
-
-interface CategoryInfo {
-  tag: string;
-  title: string;
-  imageClass: string;
-}
-
-//Record<ProductCategory, CategoryInfo>. Obliga a que haya una entrada para cada categoría de la lista.
-// Si mañana añado 'mochilas' a PRODUCT_CATEGORIES y me olvido de describirla aquí, TypeScript no compila. Es un seguro contra olvidos.
-const CATEGORY_INFO: Record<ProductCategory, CategoryInfo> = {
-  bolsas: { tag: 'Colección', title: 'Bolsas', imageClass: 'beige' },
-  neceseres: { tag: 'Organización', title: 'Neceseres', imageClass: 'sand' },
-  fundas: { tag: 'Protección', title: 'Fundas', imageClass: 'graphite' },
-  telas: { tag: 'Materiales', title: 'Telas', imageClass: 'linen' },
-};
 
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CurrencyPipe],
+  imports: [CurrencyPipe, RouterLink],
   templateUrl: './catalog.html',
   styleUrl: './catalog.css',
 })

@@ -1,0 +1,136 @@
+<main class="product-detail">
+  @switch (viewState) {
+    @case ('loading') {
+      <p class="product-detail__message" role="status">Cargando producto…</p>
+    }
+
+    @case ('error') {
+      <div class="product-detail__message" role="alert">
+        <h1>No se pudo cargar el producto</h1>
+        <p>Ha ocurrido un error. Inténtalo de nuevo en unos minutos.</p>
+        <a class="product-detail__back" routerLink="/home">Volver a la tienda</a>
+      </div>
+    }
+
+    @case ('not-found') {
+      <div class="product-detail__message">
+        <h1>Producto no encontrado</h1>
+        <p>Puede que el enlace no sea correcto o que el producto ya no esté a la venta.</p>
+        <p>Vuelve al catálogo:</p>
+        <ul class="product-detail__categories">
+          @for (category of categories; track category) {
+            <li>
+              <a class="product-detail__back" [routerLink]="categoryPath(category)">{{ categoryInfo[category].title }}</a>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    @case ('loaded') {
+      @if (product; as product) {
+        <nav class="breadcrumbs" aria-label="Migas de pan">
+          <ol>
+            <li><a routerLink="/home">Inicio</a></li>
+            <li><a [routerLink]="categoryPath(product.category)">{{ categoryInfo[product.category].title }}</a></li>
+            <li><span aria-current="page">{{ product.name }}</span></li>
+          </ol>
+        </nav>
+
+        <div class="product-detail__layout">
+          <section class="gallery" aria-label="Fotos del producto">
+            @if (product.images.length > 0) {
+              <!-- Pista con scroll-snap: en móvil se desliza con el dedo; las flechas cambian de foto -->
+              <div
+                #galleryTrack
+                class="gallery__track"
+                tabindex="0"
+                [attr.aria-label]="product.images.length > 1 ? 'Fotos de ' + product.name + '. Usa las flechas para cambiar de foto' : 'Foto de ' + product.name"
+                (scroll)="onTrackScroll()"
+                (keydown)="onGalleryKeydown($event, false)"
+              >
+                @for (image of product.images; track image.id; let index = $index) {
+                  <img
+                    class="gallery__image"
+                    [src]="image.largeUrl"
+                    [alt]="product.name + ', foto ' + (index + 1) + ' de ' + product.images.length"
+                    [attr.loading]="index === 0 ? null : 'lazy'"
+                  >
+                }
+              </div>
+
+              @if (product.images.length > 1) {
+                <div class="gallery__thumbnails" role="group" aria-label="Miniaturas" (keydown)="onGalleryKeydown($event, true)">
+                  @for (image of product.images; track image.id; let index = $index) {
+                    <button
+                      #thumbnail
+                      class="gallery__thumbnail"
+                      type="button"
+                      [attr.aria-label]="'Ver foto ' + (index + 1)"
+                      [attr.aria-current]="index === activeImageIndex ? 'true' : null"
+                      (click)="selectImage(index)"
+                    >
+                      <img [src]="image.cardUrl" alt="" loading="lazy">
+                    </button>
+                  }
+                </div>
+              }
+            } @else {
+              <div class="gallery__placeholder gallery__placeholder--{{ categoryInfo[product.category].imageClass }}">
+                {{ product.color }}
+              </div>
+            }
+          </section>
+
+          <section class="product-info" aria-labelledby="product-name">
+            <h1 id="product-name">{{ product.name }}</h1>
+            <p class="product-info__price">{{ product.price | currency: 'EUR' : 'symbol' : '1.2-2' }}</p>
+
+            <dl class="product-info__details">
+              <div>
+                <dt>Categoría</dt>
+                <dd><a [routerLink]="categoryPath(product.category)">{{ categoryInfo[product.category].title }}</a></dd>
+              </div>
+              <div>
+                <dt>Color</dt>
+                <dd>{{ product.color || 'Sin especificar' }}</dd>
+              </div>
+            </dl>
+
+            @if (availability; as availability) {
+              <p class="availability availability--{{ availability.tone }}">{{ availability.label }}</p>
+            }
+
+            <div class="purchase">
+              @if (product.stock > 0) {
+                <div class="purchase__quantity">
+                  <label for="quantity">Cantidad</label>
+                  <select id="quantity" [formControl]="quantityControl">
+                    @for (quantity of quantityOptions; track quantity) {
+                      <option [ngValue]="quantity">{{ quantity }}</option>
+                    }
+                  </select>
+                </div>
+              }
+
+              <button
+                class="purchase__button"
+                type="button"
+                [disabled]="isAdding || product.stock === 0"
+                (click)="addToCart()"
+              >
+                {{ product.stock === 0 ? 'Agotado' : (isAdding ? 'Añadiendo…' : 'Añadir al carrito') }}
+              </button>
+            </div>
+
+            @if (addErrorMessage) {
+              <p class="purchase__error" role="alert">{{ addErrorMessage }}</p>
+            }
+
+            <p class="purchase__success" aria-live="polite">{{ addSuccessMessage }}</p>
+          </section>
+        </div>
+      }
+    }
+  }
+</main>

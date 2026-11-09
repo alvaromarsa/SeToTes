@@ -1,4 +1,4 @@
-# ToteBag
+# SeToTes
 
 Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con frontend en Angular, API REST en Node/Express y base de datos PostgreSQL: catálogo por categorías, carrito persistente, pedidos con control de stock y un panel de administración para gestionar productos y pedidos.
 

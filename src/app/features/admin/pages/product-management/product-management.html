@@ -242,7 +242,7 @@
                   <div class="product-card__details">
                     <div>
                       <span>Precio</span>
-                      <strong>{{ product.price }} €</strong>
+                      <strong>{{ product.price | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
                     </div>
                     <div>
                       <span>Color</span>

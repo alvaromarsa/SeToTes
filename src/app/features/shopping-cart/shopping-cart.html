@@ -63,7 +63,7 @@
                 </button>
               </div>
 
-              <strong>{{ item.lineTotal | currency: 'EUR' }}</strong>
+              <strong>{{ item.lineTotal | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
             </div>
           </article>
         } @empty {
@@ -78,7 +78,7 @@
       <div class="cart-panel__summary">
         <div>
           <span>Subtotal</span>
-          <strong>{{ cart.total | currency: 'EUR' }}</strong>
+          <strong>{{ cart.total | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
         </div>
         <button type="button" class="cart-panel__checkout" [disabled]="cart.items.length === 0" (click)="goToCheckout()">
           Tramitar pedido

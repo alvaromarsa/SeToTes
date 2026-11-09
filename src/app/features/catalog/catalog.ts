@@ -1,3 +1,4 @@
+import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -23,6 +24,7 @@ const CATEGORY_INFO: Record<ProductCategory, CategoryInfo> = {
 @Component({
   selector: 'app-catalog',
   standalone: true,
+  imports: [CurrencyPipe],
   templateUrl: './catalog.html',
   styleUrl: './catalog.css',
 })

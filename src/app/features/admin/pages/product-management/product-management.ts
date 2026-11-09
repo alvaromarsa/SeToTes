@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { TitleCasePipe } from '@angular/common';
+import { CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 
 import type { ProductImage } from '@core/models/product-image.models';
@@ -22,7 +22,7 @@ type CategoryFilter = ProductCategory | 'all';
 
 @Component({
   selector: 'app-product-management',
-  imports: [ReactiveFormsModule, RouterLink, TitleCasePipe, ProductImageManager],
+  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, TitleCasePipe, ProductImageManager],
   templateUrl: './product-management.html',
   styleUrl: './product-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -210,8 +210,8 @@ export class ProductManagement implements OnInit {
   private fillForm(product: Product): void {
     this.productForm.reset({
       name: product.name,
-      price: Number(product.price),
-      stock: Number(product.stock),
+      price: product.price,
+      stock: product.stock,
       color: product.color ?? '',
       category: product.category,
     });

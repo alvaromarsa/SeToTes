@@ -19,14 +19,14 @@ function formatImage(image) {
   };
 }
 
-// price se devuelve tal cual (texto de numeric) para no cambiar el formato actual
+// pg devuelve los numeric como texto: price se convierte a número
 function formatProduct(row) {
   const images = row.images.map(formatImage);
 
   return {
     id: row.id,
     name: row.name,
-    price: row.price,
+    price: Number(row.price),
     stock: row.stock,
     color: row.color,
     category: row.category,

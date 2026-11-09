@@ -1,4 +1,13 @@
-import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  OnInit,
+  viewChild,
+  viewChildren,
+} from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TitleCasePipe } from '@angular/common';
@@ -7,22 +16,31 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Product, ProductService, PRODUCT_CATEGORIES, ProductCategory } from '@core/services/product.service';
 import { FormUtils } from '@shared/utils/form-utils';
 
+type CategoryFilter = ProductCategory | 'all';
+
 @Component({
   selector: 'app-product-management',
   imports: [ReactiveFormsModule, RouterLink, TitleCasePipe],
   templateUrl: './product-management.html',
   styleUrl: './product-management.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductManagement implements OnInit {
   private readonly productService = inject(ProductService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly fb = inject(FormBuilder);
 
+  private readonly formPanel = viewChild.required<ElementRef<HTMLElement>>('formPanel');
+  private readonly nameInput = viewChild.required<ElementRef<HTMLInputElement>>('nameInput');
+  private readonly categoryTabs = viewChildren<ElementRef<HTMLButtonElement>>('categoryTab');
+
   products: Product[] = [];
   errorMessage = '';
   isLoading = true;
   readonly formUtils = FormUtils;
   readonly categories = PRODUCT_CATEGORIES;
+  readonly categoryFilters: readonly CategoryFilter[] = ['all', ...PRODUCT_CATEGORIES];
+  selectedCategory: CategoryFilter = 'all';
   editingProductId: number | null = null;
   isSaving = false;
   saveSuccessMessage = '';
@@ -53,6 +71,60 @@ export class ProductManagement implements OnInit {
     category: ['bolsas' as ProductCategory, [Validators.required]],
   });
 
+  get filteredProducts(): Product[] {
+    return this.selectedCategory === 'all'
+      ? this.products
+      : this.products.filter((product) => product.category === this.selectedCategory);
+  }
+
+  get editingProduct(): Product | null {
+    return this.products.find((product) => product.id === this.editingProductId) ?? null;
+  }
+
+  countProducts(filter: CategoryFilter): number {
+    return filter === 'all'
+      ? this.products.length
+      : this.products.filter((product) => product.category === filter).length;
+  }
+
+  selectCategory(filter: CategoryFilter): void {
+    this.selectedCategory = filter;
+
+    // Al crear, la categoría sigue a la pestaña mientras el usuario no la haya cambiado a mano
+    const categoryControl = this.productForm.controls.category;
+    if (this.editingProductId === null && categoryControl.pristine) {
+      categoryControl.setValue(this.defaultCategory());
+    }
+  }
+
+  // Navegación con teclado del patrón "tabs" de WAI-ARIA: flechas, Inicio y Fin
+  onTabKeydown(event: KeyboardEvent): void {
+    const lastIndex = this.categoryFilters.length - 1;
+    const currentIndex = this.categoryFilters.indexOf(this.selectedCategory);
+    let nextIndex: number;
+
+    switch (event.key) {
+      case 'ArrowRight':
+        nextIndex = currentIndex === lastIndex ? 0 : currentIndex + 1;
+        break;
+      case 'ArrowLeft':
+        nextIndex = currentIndex === 0 ? lastIndex : currentIndex - 1;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = lastIndex;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    this.selectCategory(this.categoryFilters[nextIndex]);
+    this.categoryTabs()[nextIndex]?.nativeElement.focus();
+  }
+
   startEditing(product: Product): void {
 
     this.saveSuccessMessage = '';
@@ -68,11 +140,12 @@ export class ProductManagement implements OnInit {
       category: product.category,
     });
 
+    this.revealForm();
   }
 
   cancelEditing(): void {
     this.editingProductId = null;
-    this.productForm.reset();
+    this.resetForm();
     this.saveSuccessMessage = '';
     this.saveErrorMessage = '';
   }
@@ -108,7 +181,7 @@ export class ProductManagement implements OnInit {
         }
 
         this.editingProductId = null;
-        this.productForm.reset();
+        this.resetForm();
         this.isSaving = false;
         this.cdr.markForCheck();
       },
@@ -120,5 +193,26 @@ export class ProductManagement implements OnInit {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  private defaultCategory(): ProductCategory {
+    return this.selectedCategory === 'all'
+      ? this.productForm.controls.category.defaultValue
+      : this.selectedCategory;
+  }
+
+  private resetForm(): void {
+    this.productForm.reset({ category: this.defaultCategory() });
+  }
+
+  private revealForm(): void {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // En pantallas anchas el panel es sticky y ya está a la vista, así que el scroll no lo mueve
+    this.formPanel().nativeElement.scrollIntoView({
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      block: 'start',
+    });
+    this.nameInput().nativeElement.focus({ preventScroll: true });
   }
 }

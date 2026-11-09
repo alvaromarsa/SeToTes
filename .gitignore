@@ -45,3 +45,13 @@ Thumbs.db
 
 # backend environment variables
 /backend/.env
+
+# Dependencies and build output in any folder (also backend/)
+node_modules/
+dist/
+.angular/
+
+# Environment variables (keep the example file)
+.env
+.env.*
+!.env.example

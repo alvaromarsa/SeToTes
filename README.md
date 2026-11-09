@@ -1,59 +1,120 @@
 # ToteBag
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.3.
+Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con frontend en Angular, API REST en Node/Express y base de datos PostgreSQL: catálogo por categorías, carrito persistente, pedidos con control de stock y un panel de administración para gestionar productos y pedidos.
 
-## Development server
+## Stack
 
-To start a local development server, run:
+| Capa | Tecnologías |
+| --- | --- |
+| Frontend | Angular 21 (componentes standalone, control flow `@if`/`@for`), RxJS, formularios reactivos, Tailwind CSS 4 |
+| Backend | Node.js, Express 5 (CommonJS), `pg` con SQL escrito a mano, argon2, jsonwebtoken, cookie-parser, cors, dotenv |
+| Base de datos | PostgreSQL 16 |
+
+## Funcionalidades
+
+**Clientes**
+- Catálogo con una página por categoría (`/bolsas`, `/neceseres`, `/fundas`, `/telas`).
+- Registro e inicio de sesión. Contraseñas con hash argon2.
+- Perfil de usuario editable (nombre, teléfono, email, dirección, ciudad y código postal).
+- Carrito guardado en la base de datos: añadir productos, cambiar cantidades y quitarlos, con comprobación de stock.
+- Checkout con datos de envío y gastos de envío fijos.
+- Historial de pedidos y detalle de cada pedido.
+
+**Administración** (rol `admin`)
+- Crear y editar productos (nombre, precio, stock, color y categoría).
+- Listado de todos los pedidos con filtro por estado, y detalle con datos del cliente y del envío.
+- Cambio de estado de los pedidos según transiciones permitidas. Al cancelar un pedido se devuelve el stock.
+
+## Puesta en marcha
+
+Requisitos: Node.js, npm, Angular CLI y PostgreSQL.
+
+### 1. Base de datos
 
 ```bash
+createdb -U <usuario> totebag_db
+psql -U <usuario> -d totebag_db -f backend/database/schema.sql
+```
+
+Más detalles sobre migraciones y cómo regenerar el esquema en [backend/database/README.md](backend/database/README.md).
+
+### 2. Backend (http://localhost:3000)
+
+```bash
+cd backend
+npm install
+cp .env.example .env   # y rellena los valores reales
+node server.js
+```
+
+El servidor no arranca si falta `JWT_SECRET` en `backend/.env`.
+
+### 3. Frontend (http://localhost:4200)
+
+Desde la raíz del proyecto:
+
+```bash
+npm install
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+La URL de la API está en `src/app/core/config/api.config.ts`. El backend solo acepta peticiones CORS con credenciales desde `http://localhost:4200`.
 
-## Code scaffolding
+## Estructura
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
+```
+.
+├── src/app/
+│   ├── core/
+│   │   ├── config/          # URL base de la API
+│   │   ├── guards/          # authGuard, adminGuard
+│   │   ├── interceptors/    # credenciales y sesión caducada (401)
+│   │   ├── models/          # interfaces de datos
+│   │   └── services/        # auth, productos, carrito, pedidos, pedidos (admin)
+│   ├── features/            # pantallas, cargadas con lazy loading
+│   │   ├── admin/           # rutas hijas: panel, productos, pedidos, detalle de pedido
+│   │   ├── catalog/  checkout/  home/  login/  register/
+│   │   ├── orders/  order-detail/  shopping-cart/  user-profile/
+│   └── shared/
+│       ├── components/navbar/
+│       └── utils/form-utils.ts
+└── backend/
+    ├── app.js               # construye la app Express y monta las rutas
+    ├── server.js            # solo arranca el servidor
+    ├── db.js                # pool de conexiones PostgreSQL
+    ├── config/              # carga de .env y constantes (categorías, estados, envío)
+    ├── middleware/auth.js   # requireAuth, requireAdmin
+    ├── routes/              # auth, products, cart, orders, admin-orders
+    ├── utils/
+    └── database/            # schema.sql y migraciones
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Los imports del frontend usan los alias `@core/*`, `@features/*` y `@shared/*`.
 
-```bash
-ng generate --help
+## Decisiones técnicas
+
+### Transacciones con bloqueo de filas
+Crear un pedido es una sola transacción (`BEGIN`/`COMMIT`/`ROLLBACK` sobre un cliente del pool, liberado en `finally`). Las líneas del carrito y sus productos se bloquean con `SELECT … FOR UPDATE OF ci, p`, en orden por id de producto, antes de comprobar el stock. Así dos compras simultáneas del último artículo no pueden venderlo dos veces. Dentro de la misma transacción se crea el pedido, se copian las líneas, se descuenta el stock y se vacía el carrito. El cambio de estado de un pedido en administración también bloquea el pedido con `FOR UPDATE` y, si se cancela, devuelve el stock en la misma transacción.
+
+### Precios calculados en el servidor
+El cliente solo envía ids de producto, cantidades y datos de envío; nunca precios. Subtotal, gastos de envío y total se calculan en SQL a partir de la tabla `products`, con columnas `numeric`. Cada línea de pedido guarda el nombre y el precio unitario del momento de la compra, de modo que el pedido no cambia si después se edita el producto.
+
+### Sesión en cookie httpOnly
+Al iniciar sesión, el backend firma un JWT (HS256, 1 hora) y lo envía en la cookie `access_token` con `httpOnly`, `sameSite: 'lax'` y `secure` en producción. JavaScript no puede leer el token. El id de usuario se obtiene siempre del token, nunca del body, y las consultas de carrito y pedidos filtran por ese usuario. `requireAdmin` comprueba el rol en la base de datos en cada petición.
+
+### Máquina de estados de pedidos
+Los estados (`pending`, `paid`, `shipped`, `delivered`, `cancelled`) y sus transiciones válidas están definidos en `backend/config/constants.js`:
+
+```
+pending → paid | cancelled
+paid    → shipped | cancelled
+shipped → delivered
 ```
 
-## Building
+`delivered` y `cancelled` son finales. Una transición no permitida devuelve `409`. El detalle de pedido de administración devuelve `allowedStatuses`, y el frontend solo ofrece esas opciones. La base de datos también restringe los valores con un `CHECK`.
 
-To build the project run:
+### Lazy loading
+Todas las pantallas se cargan bajo demanda con `loadComponent`. La zona de administración es un grupo de rutas hijas (`loadChildren`) protegido con `canActivateChild: [adminGuard]`, así que su código solo se descarga cuando se entra en ella.
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### Interceptor de sesión
+Hay dos interceptores funcionales. `credentialsInterceptor` añade `withCredentials` solo a las peticiones dirigidas a la API, para que viaje la cookie. `authErrorInterceptor` detecta un `401` cuando el usuario tenía sesión (sesión caducada), limpia el estado del usuario y redirige a `/login`. Excluye el propio login, para que unas credenciales incorrectas no se traten como sesión caducada.

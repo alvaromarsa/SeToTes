@@ -1,0 +1,11 @@
+# Environment variables (keep the example file)
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# User uploaded files (keep the folder)
+uploads/*
+!uploads/.gitkeep

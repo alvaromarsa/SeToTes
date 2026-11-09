@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {BehaviorSubject, tap, Observable } from 'rxjs';
 
+import { API_BASE_URL } from '@core/config/api.config';
 import type {
   AuthUser,
   CurrentUserResponse,
@@ -18,7 +19,7 @@ import type {
 })
 
 export class AuthService {
-  private apiUrl = 'http://localhost:3000/api/auth';
+  private apiUrl = `${API_BASE_URL}/api/auth`;
   private readonly currentUserSubject =new BehaviorSubject<AuthUser | null>(null);
 
   readonly currentUser$ = this.currentUserSubject.asObservable();

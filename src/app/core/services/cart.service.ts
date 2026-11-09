@@ -2,13 +2,14 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, map, Observable, switchMap, tap } from 'rxjs';
 
+import { API_BASE_URL } from '@core/config/api.config';
 import type { AddToCartResponse, CartResponse } from '../models/cart.models';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class CartService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:3000/api/cart';
+  private readonly apiUrl = `${API_BASE_URL}/api/cart`;
   private readonly authService = inject(AuthService);
 
   private readonly cartSubject = new BehaviorSubject<CartResponse>({

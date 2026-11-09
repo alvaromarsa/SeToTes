@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 
+import { API_BASE_URL } from '@core/config/api.config';
 import type { CreateOrderRequest, OrderResponse, OrderDetail, OrderSummary } from '../models/order.models';
 import { CartService } from './cart.service';
 
@@ -9,7 +10,7 @@ import { CartService } from './cart.service';
 export class OrderService {
   private readonly http = inject(HttpClient);
   private readonly cartService = inject(CartService);
-  private readonly apiUrl = 'http://localhost:3000/api/orders';
+  private readonly apiUrl = `${API_BASE_URL}/api/orders`;
 
   createOrder(data: CreateOrderRequest): Observable<OrderResponse> {
     return this.http

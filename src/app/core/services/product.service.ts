@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
+import { API_BASE_URL } from '@core/config/api.config';
+
 export const PRODUCT_CATEGORIES = ['bolsas', 'neceseres', 'fundas', 'telas'] as const;
 
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
@@ -17,16 +19,17 @@ export interface Product {
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private http = inject(HttpClient);
+  private readonly apiUrl = `${API_BASE_URL}/api/products`;
 
   getProducts(category?: ProductCategory) {
-    return this.http.get<Product[]>('http://localhost:3000/api/products', {
+    return this.http.get<Product[]>(this.apiUrl, {
       params: category ? { category } : {},
     });
   }
 
   createProduct(product: Omit<Product, 'id'>) {
     return this.http.post<Product>(
-      'http://localhost:3000/api/products',
+      this.apiUrl,
       product,
       { withCredentials: true },
     );
@@ -34,7 +37,7 @@ export class ProductService {
 
   updateProduct(id: number, product: Omit<Product, 'id'>) {
     return this.http.put<Product>(
-      `http://localhost:3000/api/products/${id}`,
+      `${this.apiUrl}/${id}`,
       product,
       { withCredentials: true },
     );

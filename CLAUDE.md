@@ -9,7 +9,7 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 
 ## Comandos
 - Frontend: `ng serve`, `ng build` (debe compilar sin errores tras cada cambio).
-- Backend: `cd backend && node server.js` (reiniciar tras cambios). CommonJS (`require`). Archivos `.js`, NO TypeScript.
+- Backend: `cd backend && npm run dev` (`node --watch`, se reinicia solo al guardar; `npm start` sin recarga). CommonJS (`require`). Archivos `.js`, NO TypeScript.
 
 ## Backend
 - Express 5, `pg` con SQL escrito a mano (sin ORM), argon2, jsonwebtoken en cookie httpOnly `access_token`, cookie-parser, cors, dotenv.
@@ -18,12 +18,13 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Escrituras de varios pasos: transacción con `pool.connect()`, BEGIN/COMMIT/ROLLBACK y `client.release()` en `finally`. Bloqueo `FOR UPDATE` para stock.
 - Seguridad: el id de usuario sale SIEMPRE de la cookie, nunca del body. Filtrar por propietario en datos del usuario. Rutas de admin con `requireAuth` y `requireAdmin`. Validar entradas y usar listas blancas. Errores 500 genéricos al cliente; el detalle, en el log del servidor.
 - Respuestas JSON en camelCase, mensajes de error en español, códigos 400/401/403/404/409/500 con sentido. Los `numeric` se convierten con `Number()`.
+- Variables de entorno: se cargan y validan en `config/env.js`; toda variable nueva va también en `backend/.env.example`. `CORS_ORIGIN` = orígenes separados por comas (por defecto `http://localhost:4200` en desarrollo, obligatoria en producción, nunca `*` porque se usan credenciales).
 - NUNCA leas, edites, imprimas ni subas `.env` ni ningún secreto.
 
 ## Frontend
 - Angular con componentes standalone, `@if`/`@for`, sin NgModules. Rutas con `loadComponent`/`loadChildren`.
 - Alias de importación: `@core/*`, `@features/*`, `@shared/*`.
-- HTTP con HttpClient. Los interceptores añaden credenciales y gestionan la sesión caducada (401). URL base en `core/config/api.config.ts`.
+- HTTP con HttpClient. Los interceptores añaden credenciales y gestionan la sesión caducada (401). URL base en `core/config/api.config.ts`: los servicios usan SIEMPRE `API_BASE_URL` (importada desde `@core/config/api.config`), nunca una URL escrita a mano.
 - Estado compartido: BehaviorSubject privado + `asObservable()` público. Componentes con OnPush y `markForCheck()` tras suscripciones. Formularios reactivos con `FormUtils`.
 - Textos de interfaz en español; identificadores de código en inglés.
 

@@ -44,10 +44,22 @@ Más detalles sobre migraciones y cómo regenerar el esquema en [backend/databas
 cd backend
 npm install
 cp .env.example .env   # y rellena los valores reales
-node server.js
+npm run dev            # node --watch: se reinicia al guardar cambios
 ```
 
+Para arrancarlo sin recarga automática: `npm start`.
+
 El servidor no arranca si falta `JWT_SECRET` en `backend/.env`.
+
+Variables de entorno (todas en [backend/.env.example](backend/.env.example)):
+
+| Variable | Uso |
+| --- | --- |
+| `PORT` | Puerto del backend (por defecto `3000`). |
+| `NODE_ENV` | `production` activa la cookie `secure` y hace obligatoria `CORS_ORIGIN`. |
+| `CORS_ORIGIN` | Orígenes permitidos por CORS, separados por comas (`https://a.com,https://b.com`). En desarrollo, si no se define, se usa `http://localhost:4200`. En producción el servidor no arranca sin ella. No se admite `*` porque las peticiones llevan credenciales. |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Conexión a PostgreSQL. |
+| `JWT_SECRET` | Secreto para firmar los JWT. Obligatorio. |
 
 ### 3. Frontend (http://localhost:4200)
 
@@ -58,7 +70,7 @@ npm install
 ng serve
 ```
 
-La URL de la API está en `src/app/core/config/api.config.ts`. El backend solo acepta peticiones CORS con credenciales desde `http://localhost:4200`.
+La URL de la API está en un único sitio: la constante `API_BASE_URL` de `src/app/core/config/api.config.ts`. Todos los servicios construyen sus URLs a partir de ella (`${API_BASE_URL}/api/...`) y los interceptores la usan para reconocer las peticiones a la API. El origen del frontend tiene que estar incluido en `CORS_ORIGIN` del backend.
 
 ## Estructura
 

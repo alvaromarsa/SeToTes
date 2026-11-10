@@ -35,6 +35,7 @@ export class Checkout implements OnInit {
 
   readonly formUtils = FormUtils;
   readonly cart$ = this.cartService.cart$;
+  readonly hasUnavailableItems$ = this.cartService.hasUnavailableItems$;
 
   readonly checkoutForm = this.fb.nonNullable.group({
     fullName: ['', [Validators.required]],

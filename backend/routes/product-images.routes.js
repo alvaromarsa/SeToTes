@@ -46,15 +46,18 @@ async function selectImages(db, productId) {
 }
 
 // Bloquea la fila del producto: serializa las operaciones sobre sus imágenes
+// y con el cambio de visibilidad (admin-products.routes.js)
 async function lockProduct(client, productId) {
   const result = await client.query(
-    'SELECT id FROM products WHERE id = $1 FOR UPDATE',
+    'SELECT id, is_visible FROM products WHERE id = $1 FOR UPDATE',
     [productId]
   );
 
   if (result.rows.length === 0) {
     throw new ProductImageError(404, 'No se encontró el producto');
   }
+
+  return result.rows[0];
 }
 
 router.post('/', uploadProductImages, async (request, response) => {
@@ -245,7 +248,7 @@ router.delete('/:imageId', async (request, response) => {
 
   try {
     await client.query('BEGIN');
-    await lockProduct(client, productId);
+    const product = await lockProduct(client, productId);
 
     // Filtrar por product_id impide borrar la imagen de otro producto
     const deleted = await client.query(
@@ -260,6 +263,21 @@ router.delete('/:imageId', async (request, response) => {
     }
 
     deletedKey = deleted.rows[0].file_key;
+
+    if (product.is_visible) {
+      const remaining = await client.query(
+        'SELECT COUNT(*)::integer AS image_count FROM product_images WHERE product_id = $1',
+        [productId]
+      );
+
+      // El ROLLBACK del catch deshace el DELETE
+      if (remaining.rows[0].image_count === 0) {
+        throw new ProductImageError(
+          409,
+          'Un producto visible necesita al menos una imagen; ocúltalo antes de eliminarla'
+        );
+      }
+    }
 
     // Recompacta las posiciones: 0, 1, 2… sin huecos
     await client.query(

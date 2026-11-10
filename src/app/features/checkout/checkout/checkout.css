@@ -194,6 +194,17 @@
   cursor: not-allowed;
 }
 
+.checkout-item__unavailable {
+  display: inline-block;
+  margin: 0.25rem 0;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #fff0ee;
+  color: #a12a20;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
 .checkout-error,
 .field__error {
   color: #b3261e;

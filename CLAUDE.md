@@ -19,6 +19,7 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Seguridad: el id de usuario sale SIEMPRE de la cookie, nunca del body. Filtrar por propietario en datos del usuario. Rutas de admin con `requireAuth` y `requireAdmin`. Validar entradas y usar listas blancas. Errores 500 genéricos al cliente; el detalle, en el log del servidor.
 - Respuestas JSON en camelCase, mensajes de error en español, códigos 400/401/403/404/409/500 con sentido. Los `numeric` se convierten con `Number()`.
 - Variables de entorno: se cargan y validan en `config/env.js`; toda variable nueva va también en `backend/.env.example`. `CORS_ORIGIN` = orígenes separados por comas (por defecto `http://localhost:4200` en desarrollo, obligatoria en producción, nunca `*` porque se usan credenciales).
+- Los productos tienen is_visible; los nuevos nacen ocultos; publicar exige >= 1 imagen; las rutas públicas solo muestran visibles y la administración usa /api/admin/products.
 - NUNCA leas, edites, imprimas ni subas `.env` ni ningún secreto.
 
 ## Frontend

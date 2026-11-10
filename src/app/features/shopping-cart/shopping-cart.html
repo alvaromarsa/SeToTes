@@ -27,18 +27,34 @@
       <div class="cart-panel__items">
         @for (item of cart.items; track item.productId) {
           <article class="cart-panel__item">
-            <!-- Mismo destino que el nombre: fuera del orden de tabulación para no repetir parada -->
-            <a [routerLink]="['/producto', item.productId]" tabindex="-1" aria-hidden="true" (click)="closeCart()">
+            <ng-template #thumb>
               @if (item.mainImage; as mainImage) {
                 <img class="cart-panel__thumb" [src]="mainImage.cardUrl" alt="" loading="lazy">
               } @else {
                 <div class="cart-panel__thumb cart-panel__thumb--beige"></div>
               }
-            </a>
+            </ng-template>
+
+            <!-- Un producto oculto no tiene página (404): sin enlace -->
+            @if (item.isAvailable) {
+              <!-- Mismo destino que el nombre: fuera del orden de tabulación para no repetir parada -->
+              <a [routerLink]="['/producto', item.productId]" tabindex="-1" aria-hidden="true" (click)="closeCart()">
+                <ng-container [ngTemplateOutlet]="thumb" />
+              </a>
+            } @else {
+              <div><ng-container [ngTemplateOutlet]="thumb" /></div>
+            }
             <div class="cart-panel__info">
               <h3>
-                <a class="cart-panel__link" [routerLink]="['/producto', item.productId]" (click)="closeCart()">{{ item.name }}</a>
+                @if (item.isAvailable) {
+                  <a class="cart-panel__link" [routerLink]="['/producto', item.productId]" (click)="closeCart()">{{ item.name }}</a>
+                } @else {
+                  {{ item.name }}
+                }
               </h3>
+              @if (!item.isAvailable) {
+                <span class="cart-panel__unavailable">No disponible</span>
+              }
 
               <div class="cart-panel__quantity">
                 <button
@@ -50,14 +66,16 @@
                   −
                 </button>
                 <span>{{ item.quantity }}</span>
-                <button
-                  type="button"
-                  aria-label="Añadir una unidad"
-                  [disabled]="isUpdating || item.quantity >= item.stock"
-                  (click)="increase(item)"
-                >
-                  +
-                </button>
+                @if (item.isAvailable) {
+                  <button
+                    type="button"
+                    aria-label="Añadir una unidad"
+                    [disabled]="isUpdating || item.quantity >= item.stock"
+                    (click)="increase(item)"
+                  >
+                    +
+                  </button>
+                }
                 <button
                   type="button"
                   class="cart-panel__remove"
@@ -85,7 +103,18 @@
           <span>Subtotal</span>
           <strong>{{ cart.total | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
         </div>
-        <button type="button" class="cart-panel__checkout" [disabled]="cart.items.length === 0" (click)="goToCheckout()">
+        @if (hasUnavailableItems$ | async) {
+          <p class="cart-panel__notice" id="cart-unavailable-notice">
+            Hay productos que ya no están disponibles. Quítalos para tramitar el pedido.
+          </p>
+        }
+        <button
+          type="button"
+          class="cart-panel__checkout"
+          [disabled]="cart.items.length === 0 || (hasUnavailableItems$ | async)"
+          [attr.aria-describedby]="(hasUnavailableItems$ | async) ? 'cart-unavailable-notice' : null"
+          (click)="goToCheckout()"
+        >
           Tramitar pedido
         </button>
       </div>

@@ -449,7 +449,8 @@
   outline-offset: 2px;
 }
 
-.category-tabs__tab[aria-selected='true'] {
+.category-tabs__tab[aria-selected='true'],
+.category-tabs__tab[aria-pressed='true'] {
   border-color: #111827;
   background: #111827;
   color: #fff;
@@ -465,7 +466,8 @@
   text-align: center;
 }
 
-.category-tabs__tab[aria-selected='true'] .category-tabs__count {
+.category-tabs__tab[aria-selected='true'] .category-tabs__count,
+.category-tabs__tab[aria-pressed='true'] .category-tabs__count {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
@@ -505,6 +507,10 @@
 .product-card__actions {
   align-items: center;
   gap: 0.65rem;
+}
+
+.product-card__visibility {
+  margin-right: auto;
 }
 
 .product-card__badge {

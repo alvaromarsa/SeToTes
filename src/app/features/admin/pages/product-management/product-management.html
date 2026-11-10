@@ -31,6 +31,14 @@
             Estás editando <strong>{{ product.name }}</strong>
             <span>Producto #{{ product.id }} · {{ product.category | titlecase }}</span>
           </p>
+          <app-visibility-switch
+            [isVisible]="product.isVisible"
+            [imagesCount]="product.imagesCount"
+            [productName]="product.name"
+            [isSaving]="savingVisibilityId === product.id"
+            [errorMessage]="visibilityErrors[product.id] ?? ''"
+            (visibilityChange)="setVisibility(product, $event)"
+          />
         } @else {
           <p>Completa los datos para añadir un artículo al catálogo.</p>
         }
@@ -170,6 +178,20 @@
       </div>
 
       @if (!isLoading && !errorMessage && products.length > 0) {
+        <!-- Se combina con las pestañas de categoría: estas cuentan sobre el estado elegido -->
+        <div class="category-tabs" role="group" aria-label="Filtrar por estado">
+          @for (status of statusFilters; track status.value) {
+            <button
+              class="category-tabs__tab"
+              type="button"
+              [attr.aria-pressed]="status.value === selectedStatus"
+              (click)="selectStatus(status.value)"
+            >
+              {{ status.label }}
+            </button>
+          }
+        </div>
+
         <div
           class="category-tabs"
           role="tablist"
@@ -214,10 +236,7 @@
         >
           @if (filteredProducts.length === 0) {
             <div class="catalog-message">
-              <p>
-                No hay productos en la categoría «{{ selectedCategory | titlecase }}».
-                Puedes añadir uno desde el formulario.
-              </p>
+              <p>{{ emptyFilterMessage }} Puedes añadir uno desde el formulario.</p>
             </div>
           } @else {
             <ul class="product-catalog__list">
@@ -254,6 +273,15 @@
                     </div>
                   </div>
                   <div class="product-card__actions">
+                    <app-visibility-switch
+                      class="product-card__visibility"
+                      [isVisible]="product.isVisible"
+                      [imagesCount]="product.imagesCount"
+                      [productName]="product.name"
+                      [isSaving]="savingVisibilityId === product.id"
+                      [errorMessage]="visibilityErrors[product.id] ?? ''"
+                      (visibilityChange)="setVisibility(product, $event)"
+                    />
                     @if (product.id === editingProductId) {
                       <span class="product-card__badge">En edición</span>
                     }

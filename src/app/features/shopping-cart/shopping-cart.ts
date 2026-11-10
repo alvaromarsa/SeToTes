@@ -1,4 +1,4 @@
-import { AsyncPipe, CurrencyPipe } from '@angular/common';
+import { AsyncPipe, CurrencyPipe, NgTemplateOutlet } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
@@ -15,7 +15,7 @@ import { CartService } from '@core/services/cart.service';
 @Component({
   selector: 'app-shopping-cart',
   standalone: true,
-  imports: [AsyncPipe, CurrencyPipe, RouterLink],
+  imports: [AsyncPipe, CurrencyPipe, NgTemplateOutlet, RouterLink],
   templateUrl: './shopping-cart.html',
   styleUrl: './shopping-cart.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,6 +27,7 @@ export class ShoppingCart {
 
   readonly cart$ = this.cartService.cart$;
   readonly itemCount$ = this.cartService.itemCount$;
+  readonly hasUnavailableItems$ = this.cartService.hasUnavailableItems$;
 
   isOpen = false;
   isUpdating = false;

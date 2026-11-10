@@ -34,6 +34,9 @@
                 <div class="checkout-item__details">
                   <div>
                     <h2>{{ item.name }}</h2>
+                    @if (!item.isAvailable) {
+                      <span class="checkout-item__unavailable">No disponible</span>
+                    }
                     <p>Color: {{ item.color || 'Sin especificar' }}</p>
                   </div>
                   <div class="checkout-item__meta">
@@ -119,10 +122,18 @@
               <p class="checkout-error" role="alert">{{ errorMessage }}</p>
             }
 
+            @if (hasUnavailableItems$ | async) {
+              <p class="checkout-error" id="checkout-unavailable-notice">
+                Hay productos en tu carrito que ya no están disponibles. Quítalos desde el carrito para
+                realizar el pedido.
+              </p>
+            }
+
             <button
               class="checkout-submit"
               type="submit"
-              [disabled]="isSubmitting || cart.items.length === 0"
+              [disabled]="isSubmitting || cart.items.length === 0 || (hasUnavailableItems$ | async)"
+              [attr.aria-describedby]="(hasUnavailableItems$ | async) ? 'checkout-unavailable-notice' : null"
             >
               {{ isSubmitting ? 'Creando pedido…' : 'Realizar pedido' }}
             </button>

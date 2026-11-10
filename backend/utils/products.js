@@ -37,4 +37,16 @@ function formatProduct(row) {
   };
 }
 
-module.exports = { PRODUCT_IMAGES_SQL, formatImage, formatProduct };
+// Solo para rutas de administración: añade el estado de publicación.
+// La fila debe incluir is_visible.
+function formatAdminProduct(row) {
+  const product = formatProduct(row);
+
+  return {
+    ...product,
+    isVisible: row.is_visible,
+    imagesCount: product.images.length,
+  };
+}
+
+module.exports = { PRODUCT_IMAGES_SQL, formatImage, formatProduct, formatAdminProduct };

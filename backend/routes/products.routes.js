@@ -3,7 +3,7 @@ const express = require('express');
 const pool = require('../db');
 const { CATEGORIES } = require('../config/constants');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { PRODUCT_IMAGES_SQL, formatProduct } = require('../utils/products');
+const { PRODUCT_IMAGES_SQL, formatAdminProduct, formatProduct } = require('../utils/products');
 
 const router = express.Router();
 
@@ -22,12 +22,13 @@ router.get('/', async (request, response) => {
         ? await pool.query(
             `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
              FROM products p
+             WHERE p.is_visible
              ORDER BY p.id`
           )
         : await pool.query(
             `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
              FROM products p
-             WHERE p.category = $1
+             WHERE p.is_visible AND p.category = $1
              ORDER BY p.id`,
             [category]
           );
@@ -54,7 +55,7 @@ router.get('/:id', async (request, response) => {
     const result = await pool.query(
       `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
        FROM products p
-       WHERE p.id = $1`,
+       WHERE p.id = $1 AND p.is_visible`,
       [productId]
     );
 
@@ -94,14 +95,14 @@ router.post('/', requireAuth, requireAdmin, async (request, response) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO products (name, price, stock, color, category)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, price, stock, color, category`,
+      `INSERT INTO products (name, price, stock, color, category, is_visible)
+       VALUES ($1, $2, $3, $4, $5, false)
+       RETURNING id, name, price, stock, color, category, is_visible`,
       [name.trim(), price, stock, color ?? null, category]
     );
 
-    // Un producto recién creado aún no tiene imágenes
-    return response.status(201).json(formatProduct({ ...result.rows[0], images: [] }));
+    // Solo lo usa el admin: formato de administración. Recién creado: oculto y sin imágenes
+    return response.status(201).json(formatAdminProduct({ ...result.rows[0], images: [] }));
   } catch (error) {
     console.error('Error al crear el producto:', error.message);
     return response.status(500).json({
@@ -137,7 +138,7 @@ router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
       `UPDATE products AS p
        SET name = $1, price = $2, stock = $3, color = $4, category = $5
        WHERE p.id = $6
-       RETURNING p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}`,
+       RETURNING p.id, p.name, p.price, p.stock, p.color, p.category, p.is_visible, ${PRODUCT_IMAGES_SQL}`,
       [name.trim(), price, stock, color ?? null, category, productId]
     );
 
@@ -147,7 +148,8 @@ router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
       });
     }
 
-    return response.json(formatProduct(result.rows[0]));
+    // Solo lo usa el admin: formato de administración (la visibilidad no cambia aquí)
+    return response.json(formatAdminProduct(result.rows[0]));
   } catch (error) {
     console.error('Error al actualizar el producto:', error.message);
     return response.status(500).json({

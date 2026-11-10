@@ -14,7 +14,7 @@ router.get('/', async (request, response) => {
     const result = await pool.query(
       `SELECT p.id AS product_id, p.name, p.color, p.category,
               p.price, p.stock, ci.quantity,
-              (p.price * ci.quantity) AS line_total,
+              (p.price * ci.quantity) AS line_total, p.is_visible,
               main_image.file_key AS main_image_key
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
@@ -39,6 +39,8 @@ router.get('/', async (request, response) => {
       stock: row.stock,
       quantity: row.quantity,
       lineTotal: Number(row.line_total),
+      // Un producto ocultado tras añadirlo sigue en el carrito, pero no se puede pedir
+      isAvailable: row.is_visible,
       mainImage: row.main_image_key
         ? { cardUrl: storage.publicUrl(row.main_image_key, 'card') }
         : null,
@@ -78,7 +80,7 @@ router.post('/items', async (request, response) => {
        FROM products p
        LEFT JOIN cart_items ci
          ON ci.product_id = p.id AND ci.user_id = $2
-       WHERE p.id = $1`,
+       WHERE p.id = $1 AND p.is_visible`,
       [productId, request.authenticatedUserId]
     );
 
@@ -136,8 +138,12 @@ router.patch('/items/:productId', async (request, response) => {
 
   try {
     const product = await pool.query(
-      'SELECT stock FROM products WHERE id = $1',
-      [productId]
+      `SELECT p.stock, p.is_visible, ci.quantity AS in_cart
+       FROM products p
+       LEFT JOIN cart_items ci
+         ON ci.product_id = p.id AND ci.user_id = $2
+       WHERE p.id = $1`,
+      [productId, request.authenticatedUserId]
     );
 
     if (product.rows.length === 0) {
@@ -146,7 +152,14 @@ router.patch('/items/:productId', async (request, response) => {
       });
     }
 
-    const { stock } = product.rows[0];
+    const { stock, is_visible, in_cart } = product.rows[0];
+
+    // Una línea de un producto oculto solo puede bajar de cantidad o quitarse
+    if (!is_visible && in_cart !== null && quantity > in_cart) {
+      return response.status(409).json({
+        message: 'Este producto ya no está disponible: puedes quitarlo, pero no añadir más unidades',
+      });
+    }
 
     if (quantity > stock) {
       return response.status(409).json({

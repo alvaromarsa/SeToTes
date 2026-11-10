@@ -1,0 +1,31 @@
+<div class="visibility">
+  <span class="visibility__badge" [class.visibility__badge--visible]="isVisible()">
+    {{ isVisible() ? 'Visible' : 'Oculto' }}
+  </span>
+
+  <button
+    class="visibility__switch"
+    type="button"
+    role="switch"
+    [attr.aria-checked]="isVisible()"
+    [attr.aria-label]="'Visible en la tienda: ' + productName()"
+    [attr.aria-describedby]="needsImage() ? hintId : null"
+    [disabled]="isDisabled()"
+    (click)="toggle()"
+  >
+    <span class="visibility__track" aria-hidden="true">
+      <span class="visibility__thumb"></span>
+    </span>
+    <span class="visibility__label" aria-hidden="true">
+      {{ isSaving() ? 'Guardando…' : 'Visible en la tienda' }}
+    </span>
+  </button>
+
+  @if (needsImage()) {
+    <small class="visibility__hint" [id]="hintId">Añade al menos una imagen para publicar</small>
+  }
+
+  @if (errorMessage()) {
+    <p class="visibility__error" role="alert">{{ errorMessage() }}</p>
+  }
+</div>

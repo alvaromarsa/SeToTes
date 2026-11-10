@@ -22,6 +22,9 @@ export class CartService {
   readonly itemCount$ = this.cart$.pipe(
     map((cart) => cart.items.reduce((sum, item) => sum + item.quantity, 0)),
   );
+  readonly hasUnavailableItems$ = this.cart$.pipe(
+    map((cart) => cart.items.some((item) => !item.isAvailable)),
+  );
 
   constructor() {
     this.authService.currentUser$.subscribe((user) => {

@@ -1,0 +1,96 @@
+/* Colores alineados con product-management.css */
+.visibility {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.visibility__badge {
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: #f1ece8;
+  color: #5b4d44;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.visibility__badge--visible {
+  background: #edf7ef;
+  color: #24613a;
+}
+
+.visibility__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  padding: 0 0.25rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: #292522;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.visibility__switch:focus-visible {
+  outline: 3px solid #8a5a44;
+  outline-offset: 2px;
+}
+
+.visibility__switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.visibility__track {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: #cbb9ac;
+  transition: background 150ms ease;
+}
+
+.visibility__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 150ms ease;
+}
+
+.visibility__switch[aria-checked='true'] .visibility__track {
+  background: #24613a;
+}
+
+.visibility__switch[aria-checked='true'] .visibility__thumb {
+  transform: translateX(20px);
+}
+
+.visibility__hint {
+  width: 100%;
+  color: #7a4b00;
+  font-size: 0.8rem;
+}
+
+.visibility__error {
+  width: 100%;
+  margin: 0;
+  color: #a12a20;
+  font-size: 0.82rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visibility__track,
+  .visibility__thumb {
+    transition: none;
+  }
+}

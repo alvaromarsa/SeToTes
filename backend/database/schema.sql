@@ -142,6 +142,7 @@ CREATE TABLE public.products (
     stock integer DEFAULT 0 NOT NULL,
     color text,
     category text NOT NULL,
+    is_visible boolean DEFAULT false NOT NULL,
     CONSTRAINT products_category_check CHECK ((category = ANY (ARRAY['bolsas'::text, 'neceseres'::text, 'fundas'::text, 'telas'::text]))),
     CONSTRAINT products_price_check CHECK ((price >= (0)::numeric)),
     CONSTRAINT products_stock_check CHECK ((stock >= 0))

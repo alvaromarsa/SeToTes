@@ -224,6 +224,23 @@ img.cart-panel__thumb {
   padding: 0 0.5rem;
 }
 
+.cart-panel__unavailable {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: #fff0ee;
+  color: #a12a20;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.cart-panel__notice {
+  margin: 0 0 0.75rem;
+  color: #a12a20;
+  font-size: 0.85rem;
+}
+
 .cart-panel__error {
   color: #b3261e;
   margin: 0.5rem 0;

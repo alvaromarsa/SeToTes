@@ -36,7 +36,7 @@ router.post('/', async (request, response) => {
     await client.query('BEGIN');
 
     const lines = await client.query(
-      `SELECT p.name, ci.quantity, p.stock
+      `SELECT p.name, ci.quantity, p.stock, p.is_visible
        FROM cart_items ci
        JOIN products p ON p.id = ci.product_id
        WHERE ci.user_id = $1
@@ -47,6 +47,15 @@ router.post('/', async (request, response) => {
 
     if (lines.rows.length === 0) {
       throw new OrderError(400, 'Tu carrito está vacío');
+    }
+
+    // Las filas ya están bloqueadas: ningún admin puede ocultar el producto a mitad del pedido
+    const hiddenLine = lines.rows.find((line) => !line.is_visible);
+    if (hiddenLine) {
+      throw new OrderError(
+        409,
+        `"${hiddenLine.name}" ya no está disponible. Quítalo del carrito para continuar`
+      );
     }
 
     for (const line of lines.rows) {

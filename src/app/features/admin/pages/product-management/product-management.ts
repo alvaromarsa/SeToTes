@@ -13,16 +13,20 @@ import { RouterLink } from '@angular/router';
 import { CurrencyPipe, TitleCasePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 
+import { CATEGORY_INFO } from '@core/config/categories.config';
+import type { AdminProduct } from '@core/models/admin-product.models';
 import type { ProductImage } from '@core/models/product-image.models';
-import { Product, ProductService, PRODUCT_CATEGORIES, ProductCategory } from '@core/services/product.service';
+import { ProductService, PRODUCT_CATEGORIES, ProductCategory } from '@core/services/product.service';
 import { ProductImageManager } from '@features/admin/components/product-image-manager/product-image-manager';
+import { VisibilitySwitch } from '@features/admin/components/visibility-switch/visibility-switch';
 import { FormUtils } from '@shared/utils/form-utils';
 
 type CategoryFilter = ProductCategory | 'all';
+type StatusFilter = 'all' | 'visible' | 'hidden';
 
 @Component({
   selector: 'app-product-management',
-  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, TitleCasePipe, ProductImageManager],
+  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, TitleCasePipe, ProductImageManager, VisibilitySwitch],
   templateUrl: './product-management.html',
   styleUrl: './product-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,22 +40,31 @@ export class ProductManagement implements OnInit {
   private readonly nameInput = viewChild.required<ElementRef<HTMLInputElement>>('nameInput');
   private readonly categoryTabs = viewChildren<ElementRef<HTMLButtonElement>>('categoryTab');
 
-  products: Product[] = [];
+  products: AdminProduct[] = [];
   errorMessage = '';
   isLoading = true;
   readonly formUtils = FormUtils;
   readonly categories = PRODUCT_CATEGORIES;
   readonly categoryFilters: readonly CategoryFilter[] = ['all', ...PRODUCT_CATEGORIES];
   selectedCategory: CategoryFilter = 'all';
+  readonly statusFilters: readonly { value: StatusFilter; label: string }[] = [
+    { value: 'all', label: 'Todos' },
+    { value: 'visible', label: 'Visibles' },
+    { value: 'hidden', label: 'Ocultos' },
+  ];
+  selectedStatus: StatusFilter = 'all';
+  savingVisibilityId: number | null = null;
+  // Solo hay entrada para los productos cuyo último cambio de visibilidad falló
+  visibilityErrors: Partial<Record<number, string>> = {};
   editingProductId: number | null = null;
   isSaving = false;
   saveSuccessMessage = '';
   saveErrorMessage = '';
 
   ngOnInit(): void {
-    this.productService.getProducts().subscribe({
+    this.productService.getAdminProducts().subscribe({
 
-      next: (products: Product[]) => {
+      next: (products: AdminProduct[]) => {
         this.products = products;
         this.isLoading = false;
         this.cdr.markForCheck();
@@ -73,20 +86,68 @@ export class ProductManagement implements OnInit {
     category: ['bolsas' as ProductCategory, [Validators.required]],
   });
 
-  get filteredProducts(): Product[] {
-    return this.selectedCategory === 'all'
+  // El filtro de estado se aplica primero: las pestañas de categoría cuentan sobre él
+  get statusFilteredProducts(): AdminProduct[] {
+    return this.selectedStatus === 'all'
       ? this.products
-      : this.products.filter((product) => product.category === this.selectedCategory);
+      : this.products.filter((product) => product.isVisible === (this.selectedStatus === 'visible'));
   }
 
-  get editingProduct(): Product | null {
+  get filteredProducts(): AdminProduct[] {
+    return this.selectedCategory === 'all'
+      ? this.statusFilteredProducts
+      : this.statusFilteredProducts.filter((product) => product.category === this.selectedCategory);
+  }
+
+  get emptyFilterMessage(): string {
+    const status = { all: '', visible: ' visibles', hidden: ' ocultos' }[this.selectedStatus];
+
+    return this.selectedCategory === 'all'
+      ? `No hay productos${status}.`
+      : `No hay productos${status} en la categoría «${CATEGORY_INFO[this.selectedCategory].title}».`;
+  }
+
+  get editingProduct(): AdminProduct | null {
     return this.products.find((product) => product.id === this.editingProductId) ?? null;
   }
 
   countProducts(filter: CategoryFilter): number {
     return filter === 'all'
-      ? this.products.length
-      : this.products.filter((product) => product.category === filter).length;
+      ? this.statusFilteredProducts.length
+      : this.statusFilteredProducts.filter((product) => product.category === filter).length;
+  }
+
+  selectStatus(status: StatusFilter): void {
+    this.selectedStatus = status;
+  }
+
+  setVisibility(product: AdminProduct, isVisible: boolean): void {
+    if (this.savingVisibilityId !== null) {
+      return;
+    }
+
+    this.savingVisibilityId = product.id;
+    const errors = { ...this.visibilityErrors };
+    delete errors[product.id];
+    this.visibilityErrors = errors;
+
+    this.productService.setProductVisibility(product.id, isVisible).subscribe({
+      next: (updated) => {
+        this.replaceProduct(updated);
+        this.savingVisibilityId = null;
+        this.cdr.markForCheck();
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('No se pudo cambiar la visibilidad:', error);
+        // El 409 (publicar sin imágenes) llega con un mensaje claro del servidor
+        this.visibilityErrors = {
+          ...this.visibilityErrors,
+          [product.id]: error.error?.message ?? 'No se pudo cambiar la visibilidad del producto.',
+        };
+        this.savingVisibilityId = null;
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   selectCategory(filter: CategoryFilter): void {
@@ -127,7 +188,7 @@ export class ProductManagement implements OnInit {
     this.categoryTabs()[nextIndex]?.nativeElement.focus();
   }
 
-  startEditing(product: Product): void {
+  startEditing(product: AdminProduct): void {
 
     this.saveSuccessMessage = '';
     this.saveErrorMessage = '';
@@ -163,17 +224,16 @@ export class ProductManagement implements OnInit {
         : this.productService.updateProduct(productId, productData);
 
     request$.subscribe({
-      next: (savedProduct: Product) => {
+      next: (savedProduct: AdminProduct) => {
         if (productId === null) {
-          // Tras crear, se sigue editando el producto para poder añadirle imágenes
+          // Tras crear, se sigue editando el producto para poder añadirle imágenes y publicarlo
           this.products = [...this.products, savedProduct];
           this.editingProductId = savedProduct.id;
           this.fillForm(savedProduct);
-          this.saveSuccessMessage = 'Producto creado. Ahora puedes añadir sus imágenes.';
+          this.saveSuccessMessage =
+            'Producto creado como oculto. Añade al menos una imagen y publícalo cuando esté listo';
         } else {
-          this.products = this.products.map((product) =>
-            product.id === savedProduct.id ? savedProduct : product
-          );
+          this.replaceProduct(savedProduct);
           this.editingProductId = null;
           this.resetForm();
           this.saveSuccessMessage = 'Producto actualizado correctamente.';
@@ -199,6 +259,7 @@ export class ProductManagement implements OnInit {
         ? {
             ...product,
             images,
+            imagesCount: images.length,
             mainImage: images.length > 0
               ? { largeUrl: images[0].largeUrl, cardUrl: images[0].cardUrl }
               : null,
@@ -207,7 +268,11 @@ export class ProductManagement implements OnInit {
     );
   }
 
-  private fillForm(product: Product): void {
+  private replaceProduct(updated: AdminProduct): void {
+    this.products = this.products.map((product) => (product.id === updated.id ? updated : product));
+  }
+
+  private fillForm(product: AdminProduct): void {
     this.productForm.reset({
       name: product.name,
       price: product.price,

@@ -23,6 +23,34 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
+-- Name: admin_audit_log; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.admin_audit_log (
+    id integer NOT NULL,
+    admin_id integer NOT NULL,
+    action text NOT NULL,
+    target_user_id integer NOT NULL,
+    details jsonb,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: admin_audit_log_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.admin_audit_log ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.admin_audit_log_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: cart_items; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -178,6 +206,8 @@ CREATE TABLE public.users (
     city text,
     postal_code text,
     role text DEFAULT 'customer'::text NOT NULL,
+    is_blocked boolean DEFAULT false NOT NULL,
+    blocked_at timestamp with time zone,
     CONSTRAINT users_role_check CHECK ((role = ANY (ARRAY['customer'::text, 'admin'::text])))
 );
 
@@ -194,6 +224,14 @@ ALTER TABLE public.users ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MAXVALUE
     CACHE 1
 );
+
+
+--
+-- Name: admin_audit_log admin_audit_log_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.admin_audit_log
+    ADD CONSTRAINT admin_audit_log_pkey PRIMARY KEY (id);
 
 
 --
@@ -258,6 +296,13 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: admin_audit_log_target_user_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX admin_audit_log_target_user_id_idx ON public.admin_audit_log USING btree (target_user_id);
 
 
 --

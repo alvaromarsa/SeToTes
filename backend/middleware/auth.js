@@ -1,9 +1,15 @@
 const jwt = require('jsonwebtoken');
 
 const pool = require('../db');
+const { AUTH_COOKIE_NAME, clearAuthCookie } = require('../utils/auth-cookie');
 
-function requireAuth(request, response, next) {
-  const token = request.cookies?.access_token;
+const BLOCKED_ACCOUNT_MESSAGE = 'Tu cuenta está bloqueada. Contacta con la tienda.';
+
+// Además de verificar el JWT, consulta la base de datos en cada petición:
+// así un bloqueo, un cambio de rol o un borrado tienen efecto inmediato,
+// sin esperar a que caduque el token.
+async function requireAuth(request, response, next) {
+  const token = request.cookies?.[AUTH_COOKIE_NAME];
 
   if (!token) {
     return response.status(401).json({
@@ -11,48 +17,69 @@ function requireAuth(request, response, next) {
     });
   }
 
+  let payload;
+
   try {
-    const payload = jwt.verify(
+    payload = jwt.verify(
       token,
       process.env.JWT_SECRET,
       { algorithms: ['HS256'] }
     );
-
-    if (typeof payload === 'string' || typeof payload.sub !== 'string') {
-      return response.status(401).json({
-        message: 'La sesión no es válida',
-      });
-    }
-
-    request.authenticatedUserId = payload.sub;
-    return next();
   } catch {
     return response.status(401).json({
       message: 'La sesión no es válida o ha caducado',
     });
   }
-}
 
-async function requireAdmin(request, response, next) {
+  // sub se firma como texto con el id numérico (ver el login en auth.routes.js)
+  if (typeof payload === 'string' || typeof payload.sub !== 'string' || !/^\d+$/.test(payload.sub)) {
+    return response.status(401).json({
+      message: 'La sesión no es válida',
+    });
+  }
+
   try {
     const result = await pool.query(
-      'SELECT role FROM users WHERE id = $1',
-      [request.authenticatedUserId]
+      'SELECT id, role, is_blocked FROM users WHERE id = $1',
+      [payload.sub]
     );
 
-    if (result.rows.length === 0 || result.rows[0].role !== 'admin') {
-      return response.status(403).json({
-        message: 'No tienes permisos para realizar esta acción',
+    const user = result.rows[0];
+
+    if (!user) {
+      clearAuthCookie(response);
+      return response.status(401).json({
+        message: 'La sesión no es válida',
       });
     }
 
+    if (user.is_blocked) {
+      clearAuthCookie(response);
+      return response.status(403).json({
+        message: BLOCKED_ACCOUNT_MESSAGE,
+      });
+    }
+
+    request.authenticatedUserId = payload.sub;
+    request.authenticatedUserRole = user.role;
     return next();
   } catch (error) {
-    console.error('Error al comprobar los permisos:', error.message);
+    console.error('Error al comprobar la sesión:', error.message);
     return response.status(500).json({
-      message: 'No se pudieron comprobar los permisos',
+      message: 'No se pudo comprobar la sesión',
     });
   }
 }
 
-module.exports = { requireAuth, requireAdmin };
+// Debe ir siempre detrás de requireAuth, que ya ha leído el rol de la base de datos
+function requireAdmin(request, response, next) {
+  if (request.authenticatedUserRole !== 'admin') {
+    return response.status(403).json({
+      message: 'No tienes permisos para realizar esta acción',
+    });
+  }
+
+  return next();
+}
+
+module.exports = { requireAuth, requireAdmin, BLOCKED_ACCOUNT_MESSAGE };

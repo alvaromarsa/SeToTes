@@ -36,5 +36,6 @@ app.use('/api/cart', require('./routes/cart.routes'));
 app.use('/api/orders', require('./routes/orders.routes'));
 app.use('/api/admin/orders', require('./routes/admin-orders.routes'));
 app.use('/api/admin/products', require('./routes/admin-products.routes'));
+app.use('/api/admin/users', require('./routes/admin-users.routes'));
 
 module.exports = app;

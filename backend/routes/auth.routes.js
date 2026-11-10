@@ -3,7 +3,8 @@ const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 
 const pool = require('../db');
-const { requireAuth } = require('../middleware/auth');
+const { BLOCKED_ACCOUNT_MESSAGE, requireAuth } = require('../middleware/auth');
+const { clearAuthCookie, setAuthCookie } = require('../utils/auth-cookie');
 
 const router = express.Router();
 
@@ -70,7 +71,7 @@ router.post('/login', async (request, response) => {
 
   try {
     const result = await pool.query(
-      `SELECT id, full_name, phone, email, password_hash, created_at, role
+      `SELECT id, full_name, phone, email, password_hash, created_at, role, is_blocked
        FROM users
        WHERE email = $1`,
       [email.trim().toLowerCase()]
@@ -84,6 +85,14 @@ router.post('/login', async (request, response) => {
       });
     }
 
+    // Solo después de comprobar la contraseña: quien no la conoce no puede
+    // averiguar si una cuenta existe o está bloqueada
+    if (user.is_blocked) {
+      return response.status(403).json({
+        message: BLOCKED_ACCOUNT_MESSAGE,
+      });
+    }
+
     const token = jwt.sign(
       { sub: String(user.id) },
       process.env.JWT_SECRET,
@@ -93,13 +102,7 @@ router.post('/login', async (request, response) => {
       }
     );
 
-    response.cookie('access_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 1000,
-      path: '/',
-    });
+    setAuthCookie(response, token);
 
     return response.json({
       message: 'Inicio de sesión correcto',
@@ -212,12 +215,7 @@ router.put('/me', requireAuth, async (request, response) => {
 });
 
 router.post('/logout', (request, response) => {
-  response.clearCookie('access_token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-  });
+  clearAuthCookie(response);
 
   return response.json({
     message: 'Sesión cerrada correctamente',

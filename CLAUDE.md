@@ -20,6 +20,9 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Respuestas JSON en camelCase, mensajes de error en español, códigos 400/401/403/404/409/500 con sentido. Los `numeric` se convierten con `Number()`.
 - Variables de entorno: se cargan y validan en `config/env.js`; toda variable nueva va también en `backend/.env.example`. `CORS_ORIGIN` = orígenes separados por comas (por defecto `http://localhost:4200` en desarrollo, obligatoria en producción, nunca `*` porque se usan credenciales).
 - Los productos tienen is_visible; los nuevos nacen ocultos; publicar exige >= 1 imagen; las rutas públicas solo muestran visibles y la administración usa /api/admin/products.
+- Usuarios (migración 003): `users.is_blocked` y `blocked_at`, y tabla `admin_audit_log` (sin FK, sin datos personales en `details`). Roles: `customer` | `admin` (CHECK `users_role_check`).
+- `requireAuth` consulta la BD en cada petición (`id, role, is_blocked`): usuario inexistente → 401, bloqueado → 403; en ambos casos limpia la cookie. Deja `authenticatedUserId` y `authenticatedUserRole`; `requireAdmin` usa ese rol sin otra consulta. Cookie de sesión solo a través de `utils/auth-cookie.js`.
+- Administración de usuarios (`/api/admin/users`): un admin no puede bloquearse, cambiarse el rol ni borrarse a sí mismo (403), y la tienda nunca puede quedarse sin un admin activo (409). Bloquear, cambiar el rol y borrar van en transacción con `FOR UPDATE` sobre el usuario afectado y todos los admins, y registran la acción en `admin_audit_log`.
 - NUNCA leas, edites, imprimas ni subas `.env` ni ningún secreto.
 
 ## Frontend

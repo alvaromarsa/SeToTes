@@ -130,6 +130,7 @@
             }
 
             <button
+              #submitButton
               class="checkout-submit"
               type="submit"
               [disabled]="isSubmitting || cart.items.length === 0 || (hasUnavailableItems$ | async)"

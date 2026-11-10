@@ -5,6 +5,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import { CATEGORY_INFO } from '@core/config/categories.config';
 import { CartService } from '@core/services/cart.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
+import { loginUrlTree } from '@core/utils/return-url';
 import { Product, ProductCategory, ProductService,} from '@core/services/product.service';
 
 @Component({
@@ -35,6 +37,8 @@ export class Catalog implements OnInit {
       },
       error: (error) => {
         console.error('No se pudieron cargar los productos', error);
+        this.errorMessage = getErrorMessage(error, 'No se pudieron cargar los productos. Recarga la página.');
+        this.cdr.markForCheck();
       },
     });
   }
@@ -46,13 +50,13 @@ export class Catalog implements OnInit {
       error: (error: HttpErrorResponse) => {
         console.error('Error al añadir al carrito', error.status, error);
 
+        // Sin sesión: tras iniciar sesión vuelve a esta categoría
         if (error.status === 401) {
-          void this.router.navigateByUrl('/login');
+          void this.router.navigateByUrl(loginUrlTree(this.router, this.router.url));
           return;
         }
 
-        this.errorMessage =
-          error.error?.message ?? 'No se pudo añadir el producto al carrito';
+        this.errorMessage = getErrorMessage(error, 'No se pudo añadir el producto al carrito.');
         this.cdr.markForCheck();
       },
     });

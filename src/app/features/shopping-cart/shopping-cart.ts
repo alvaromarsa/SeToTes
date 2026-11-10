@@ -11,6 +11,7 @@ import type { Observable } from 'rxjs';
 
 import type { CartItem } from '@core/models/cart.models';
 import { CartService } from '@core/services/cart.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 
 @Component({
   selector: 'app-shopping-cart',
@@ -85,7 +86,8 @@ export class ShoppingCart {
       },
       error: (error: HttpErrorResponse) => {
         console.error(fallbackMessage, error.status, error);
-        this.errorMessage = error.error?.message ?? fallbackMessage;
+        // 409: no hay stock suficiente o el producto ya no está disponible
+        this.errorMessage = getErrorMessage(error, fallbackMessage);
         this.isUpdating = false;
         this.cdr.markForCheck();
       },

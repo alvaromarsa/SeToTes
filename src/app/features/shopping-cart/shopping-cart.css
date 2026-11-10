@@ -235,6 +235,12 @@ img.cart-panel__thumb {
   font-weight: 700;
 }
 
+.cart-panel__max {
+  margin: 0.35rem 0 0;
+  color: #7a4b00;
+  font-size: 0.8rem;
+}
+
 .cart-panel__notice {
   margin: 0 0 0.75rem;
   color: #a12a20;

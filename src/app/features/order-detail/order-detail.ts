@@ -14,6 +14,7 @@ import {
   type OrderDetail,
 } from '@core/models/order.models';
 import { OrderService } from '@core/services/order.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 
 @Component({
   selector: 'app-order-detail',
@@ -45,10 +46,7 @@ export class OrderDetailPage implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         console.error('No se pudo cargar el pedido', error.status, error);
-        this.errorMessage =
-          error.status === 404
-            ? 'No se encontró el pedido.'
-            : 'No se pudo cargar el pedido.';
+        this.errorMessage = getErrorMessage(error, 'No se pudo cargar el pedido.');
         this.isLoading = false;
         this.cdr.markForCheck();
       },

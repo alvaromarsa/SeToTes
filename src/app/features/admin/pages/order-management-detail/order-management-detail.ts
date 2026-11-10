@@ -15,6 +15,7 @@ import {
   type OrderStatus,
 } from '@core/models/order.models';
 import { AdminOrderService } from '@core/services/admin-order.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 
 @Component({
   selector: 'app-order-management-detail',
@@ -73,8 +74,8 @@ export class OrderManagementDetail implements OnInit {
       error: (error: HttpErrorResponse) => {
         console.error('No se pudo cambiar el estado', error.status, error);
         this.isUpdating = false;
-        this.actionError =
-          error.error?.message ?? 'No se pudo cambiar el estado.';
+        // 409: transición no permitida (el backend explica cuál)
+        this.actionError = getErrorMessage(error, 'No se pudo cambiar el estado.');
         this.cdr.markForCheck();
         this.loadOrder();
       },
@@ -90,10 +91,7 @@ export class OrderManagementDetail implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         console.error('No se pudo cargar el pedido', error.status, error);
-        this.loadError =
-          error.status === 404
-            ? 'No se encontró el pedido.'
-            : 'No se pudo cargar el pedido.';
+        this.loadError = getErrorMessage(error, 'No se pudo cargar el pedido.');
         this.isLoading = false;
         this.cdr.markForCheck();
       },

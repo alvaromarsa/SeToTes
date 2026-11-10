@@ -17,6 +17,7 @@ import { CATEGORY_INFO } from '@core/config/categories.config';
 import type { AdminProduct } from '@core/models/admin-product.models';
 import type { ProductImage } from '@core/models/product-image.models';
 import { ProductService, PRODUCT_CATEGORIES, ProductCategory } from '@core/services/product.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 import { ProductImageManager } from '@features/admin/components/product-image-manager/product-image-manager';
 import { VisibilitySwitch } from '@features/admin/components/visibility-switch/visibility-switch';
 import { FormUtils } from '@shared/utils/form-utils';
@@ -71,7 +72,7 @@ export class ProductManagement implements OnInit {
       },
       error: (error: unknown) => {
         console.error('No se pudieron cargar los productos:', error);
-        this.errorMessage = 'No se pudieron cargar los productos.';
+        this.errorMessage = getErrorMessage(error, 'No se pudieron cargar los productos.');
         this.isLoading = false;
         this.cdr.markForCheck();
       },
@@ -142,7 +143,7 @@ export class ProductManagement implements OnInit {
         // El 409 (publicar sin imágenes) llega con un mensaje claro del servidor
         this.visibilityErrors = {
           ...this.visibilityErrors,
-          [product.id]: error.error?.message ?? 'No se pudo cambiar la visibilidad del producto.',
+          [product.id]: getErrorMessage(error, 'No se pudo cambiar la visibilidad del producto.'),
         };
         this.savingVisibilityId = null;
         this.cdr.markForCheck();
@@ -244,8 +245,7 @@ export class ProductManagement implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         console.error('No se pudo guardar el producto:', error);
-        this.saveErrorMessage =
-          error.error?.message ?? 'No se pudo guardar el producto.';
+        this.saveErrorMessage = getErrorMessage(error, 'No se pudo guardar el producto.');
         this.isSaving = false;
         this.cdr.markForCheck();
       },

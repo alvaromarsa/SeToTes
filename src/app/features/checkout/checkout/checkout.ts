@@ -4,8 +4,11 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  ElementRef,
   inject,
+  Injector,
   OnInit,
+  viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -15,7 +18,10 @@ import type { OrderResponse } from '@core/models/order.models';
 import { AuthService } from '@core/services/auth.service';
 import { CartService } from '@core/services/cart.service';
 import { OrderService } from '@core/services/order.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
+import { loginUrlTree } from '@core/utils/return-url';
 import { FormUtils } from '@shared/utils/form-utils';
+import { focusAfterRender } from '@shared/utils/focus-after-render';
 
 @Component({
   selector: 'app-checkout',
@@ -32,6 +38,10 @@ export class Checkout implements OnInit {
   private readonly orderService = inject(OrderService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly injector = inject(Injector);
+
+  // Opcional: no existe mientras el carrito se carga ni tras confirmar el pedido
+  private readonly submitButton = viewChild<ElementRef<HTMLButtonElement>>('submitButton');
 
   readonly formUtils = FormUtils;
   readonly cart$ = this.cartService.cart$;
@@ -82,14 +92,15 @@ export class Checkout implements OnInit {
         console.error('Error al crear el pedido', error.status, error);
 
         if (error.status === 401) {
-          void this.router.navigateByUrl('/login');
+          void this.router.navigateByUrl(loginUrlTree(this.router, '/checkout'));
           return;
         }
 
-        this.errorMessage =
-          error.error?.message ?? 'No se pudo crear el pedido';
+        // 409: stock insuficiente o producto ya no disponible (el backend nombra el producto)
+        this.errorMessage = getErrorMessage(error, 'No se pudo crear el pedido. Inténtalo de nuevo.');
         this.isSubmitting = false;
         this.cdr.markForCheck();
+        focusAfterRender(this.injector, () => this.submitButton()?.nativeElement);
       },
     });
   }

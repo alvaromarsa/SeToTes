@@ -195,3 +195,33 @@
     min-height: 64px;
   }
 }
+
+/* Aviso bajo la cabecera (por ejemplo, si falla cerrar sesión) */
+.navbar__alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: #fff0ee;
+  color: #a12a20;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.navbar__alert p {
+  margin: 0;
+}
+
+.navbar__alert-close {
+  min-width: 44px;
+  min-height: 44px;
+  color: inherit;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.navbar__alert-close:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: -3px;
+}

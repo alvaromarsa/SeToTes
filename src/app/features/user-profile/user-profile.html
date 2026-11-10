@@ -8,6 +8,9 @@
       <div class="profile-card__avatar">ML</div>
     </div>
 
+    <!-- Siempre presente (aunque vacío) para que los lectores de pantalla anuncien la confirmación -->
+    <p class="form-success" role="status">{{ successMessage }}</p>
+
     <form class="profile-form" [formGroup]="profileForm" (ngSubmit)="onSubmit()">
       <div class="field-row">
         <label class="field">
@@ -52,7 +55,13 @@
         <input type="text" formControlName="city" />
       </label>
 
-      <button type="submit" class="primary-button">Guardar cambios</button>
+      @if (errorMessage) {
+        <p class="form-alert" role="alert">{{ errorMessage }}</p>
+      }
+
+      <button #submitButton type="submit" class="primary-button" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Guardando…' : 'Guardar cambios' }}
+      </button>
     </form>
   </div>
 </section>

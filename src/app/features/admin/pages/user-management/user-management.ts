@@ -39,6 +39,7 @@ import {
 } from '@core/models/admin-user.models';
 import { AdminUserService } from '@core/services/admin-user.service';
 import { AuthService } from '@core/services/auth.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 import { ConfirmDialog } from '@shared/components/confirm-dialog/confirm-dialog';
 
 type UserActionType = 'block' | 'unblock' | 'make-admin' | 'make-customer' | 'delete';
@@ -53,7 +54,7 @@ type LoadResult = { ok: true; page: AdminUserPage } | { ok: false };
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
-const GENERIC_ACTION_ERROR = 'No se pudo completar la acción. Inténtalo de nuevo en unos minutos.';
+const ACTION_ERROR_FALLBACK = 'No se pudo completar la acción. Inténtalo de nuevo.';
 
 @Component({
   selector: 'app-user-management',
@@ -248,7 +249,8 @@ export class UserManagement implements OnInit {
       },
       error: (error: HttpErrorResponse) => {
         console.error('No se pudo completar la acción sobre el usuario:', error);
-        this.actionError = this.errorMessage(error);
+        // 409: por ejemplo, la tienda se quedaría sin ningún administrador activo
+        this.actionError = getErrorMessage(error, ACTION_ERROR_FALLBACK);
         this.finishAction(user);
         this.restoreFocus(action.origin);
       },
@@ -279,15 +281,6 @@ export class UserManagement implements OnInit {
       'make-customer': `Ahora ${name} tiene el rol de cliente.`,
       delete: `Se ha eliminado la cuenta de ${name}.`,
     }[type];
-  }
-
-  // 403/404/409 traen un mensaje pensado para el usuario (por ejemplo, "no quedaría ningún administrador activo")
-  private errorMessage(error: HttpErrorResponse): string {
-    const serverMessage: unknown = error.error?.message;
-
-    return [403, 404, 409].includes(error.status) && typeof serverMessage === 'string'
-      ? serverMessage
-      : GENERIC_ACTION_ERROR;
   }
 
   private finishAction(user: AdminUser): void {

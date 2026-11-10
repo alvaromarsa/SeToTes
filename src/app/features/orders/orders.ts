@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 
 import { ORDER_STATUS_LABELS, type OrderSummary,} from '@core/models/order.models';
 import { OrderService } from '@core/services/order.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 
 @Component({
   selector: 'app-orders',
@@ -32,7 +33,7 @@ export class Orders implements OnInit {
       },
       error: (error: unknown) => {
         console.error('No se pudieron cargar los pedidos', error);
-        this.errorMessage = 'No se pudieron cargar los pedidos.';
+        this.errorMessage = getErrorMessage(error, 'No se pudieron cargar los pedidos.');
         this.isLoading = false;
         this.cdr.markForCheck();
       },

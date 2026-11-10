@@ -54,7 +54,13 @@
         <p class="form-error">{{ formUtils.getFormError(registerForm, 'passwordMismatch') }}</p>
       }
 
-      <button type="submit" class="primary-button">Registrarme</button>
+      @if (formMessage) {
+        <p class="form-alert" role="alert">{{ formMessage }}</p>
+      }
+
+      <button #submitButton type="submit" class="primary-button" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Creando cuenta…' : 'Registrarme' }}
+      </button>
     </form>
   </div>
 </section>

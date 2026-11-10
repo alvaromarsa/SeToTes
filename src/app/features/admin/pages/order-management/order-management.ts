@@ -10,6 +10,7 @@ import {
   type OrderStatus,
 } from '@core/models/order.models';
 import { AdminOrderService } from '@core/services/admin-order.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 
 @Component({
   selector: 'app-order-management',
@@ -59,7 +60,7 @@ export class OrderManagement implements OnInit {
         },
         error: (error: unknown) => {
           console.error('No se pudieron cargar los pedidos', error);
-          this.errorMessage = 'No se pudieron cargar los pedidos.';
+          this.errorMessage = getErrorMessage(error, 'No se pudieron cargar los pedidos.');
           this.isLoading = false;
           this.cdr.markForCheck();
         },

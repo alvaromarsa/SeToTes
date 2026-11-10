@@ -20,6 +20,8 @@ import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
 
 import { CATEGORY_INFO, categoryPath } from '@core/config/categories.config';
 import { CartService } from '@core/services/cart.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
+import { loginUrlTree } from '@core/utils/return-url';
 import { PRODUCT_CATEGORIES, Product, ProductService } from '@core/services/product.service';
 
 type LoadResult =
@@ -187,13 +189,14 @@ export class ProductDetail implements OnInit, OnDestroy {
       error: (error: HttpErrorResponse) => {
         this.isAdding = false;
 
+        // Sin sesión: tras iniciar sesión vuelve a este producto
         if (error.status === 401) {
-          void this.router.navigateByUrl('/login');
+          void this.router.navigateByUrl(loginUrlTree(this.router, this.router.url));
           return;
         }
 
         console.error('Error al añadir al carrito', error.status, error);
-        this.addErrorMessage = error.error?.message ?? 'No se pudo añadir el producto al carrito.';
+        this.addErrorMessage = getErrorMessage(error, 'No se pudo añadir el producto al carrito.');
         this.cdr.markForCheck();
       },
     });

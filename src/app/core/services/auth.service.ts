@@ -26,10 +26,13 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
+  // El backend deja la sesión iniciada al registrarse (la cookie la envía credentialsInterceptor)
   register(data: RegisterRequest): Observable<RegisterResponse> {
     return this.http.post<RegisterResponse>(
       `${this.apiUrl}/register`,
       data
+    ).pipe(
+      tap((response) => this.currentUserSubject.next(response.user))
     );
   }
 

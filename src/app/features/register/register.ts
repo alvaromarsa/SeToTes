@@ -1,8 +1,19 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  Injector,
+  viewChild,
+} from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
-import type { RegisterResponse } from '@core/models/auth.models';
+import { SessionNoticeService } from '@core/services/session-notice.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 import { FormUtils } from '@shared/utils/form-utils';
+import { focusAfterRender } from '@shared/utils/focus-after-render';
 import { HttpErrorResponse } from '@angular/common/http';
 
 const passwordsMatchValidator: ValidatorFn = (
@@ -26,6 +37,12 @@ export class Register {
   readonly formUtils = FormUtils;
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly sessionNoticeService = inject(SessionNoticeService);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly injector = inject(Injector);
+
+  private readonly submitButton = viewChild.required<ElementRef<HTMLButtonElement>>('submitButton');
 
   readonly registerForm = this.fb.nonNullable.group(
     {
@@ -41,9 +58,17 @@ export class Register {
   );
 
   submitted = false;
+  isSubmitting = false;
+  // Errores del servidor: email ya registrado (409), datos no válidos (400), sin conexión, 5xx
+  formMessage = '';
 
   onSubmit(): void {
+    if (this.isSubmitting) {
+      return;
+    }
+
     this.submitted = true;
+    this.formMessage = '';
 
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -59,15 +84,23 @@ export class Register {
       password: formValue.password,
     };
 
+    this.isSubmitting = true;
+
+    // El backend deja la sesión iniciada: se entra directamente al perfil
     this.authService.register(payload).subscribe({
-      next: (response: RegisterResponse) => {
-        console.log(response.message);
+      next: () => {
+        this.sessionNoticeService.show(
+          '¡Cuenta creada! Completa tu dirección para agilizar tus compras.',
+          'success',
+        );
+        void this.router.navigateByUrl('/user-profile');
       },
       error: (error: HttpErrorResponse) => {
-        console.error(
-          'No se pudo registrar el usuario:',
-          error.error?.message ?? error.message
-        );
+        console.error('No se pudo registrar el usuario:', error.status, error);
+        this.formMessage = getErrorMessage(error, 'No se pudo crear la cuenta. Inténtalo de nuevo.');
+        this.isSubmitting = false;
+        this.cdr.markForCheck();
+        focusAfterRender(this.injector, () => this.submitButton().nativeElement);
       },
     });
   }

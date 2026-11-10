@@ -16,6 +16,7 @@ import { filter } from 'rxjs';
 
 import { ShoppingCart } from '@features/shopping-cart/shopping-cart';
 import { AuthService } from '@core/services/auth.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 import type { AuthUser } from '@core/models/auth.models';
 
 @Component({
@@ -48,6 +49,7 @@ export class Navbar implements OnInit {
 
   currentUser: AuthUser | null = null;
   isUserMenuOpen = false;
+  logoutError = '';
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe((user) => {
@@ -136,14 +138,22 @@ export class Navbar implements OnInit {
 
   logout(): void {
     this.closeUserMenu();
+    this.logoutError = '';
+
     this.authService.logout().subscribe({
       next: () => {
         void this.router.navigateByUrl('/login');
       },
-      error: () => {
-        console.error('No se pudo cerrar la sesión');
+      error: (error: unknown) => {
+        console.error('No se pudo cerrar la sesión', error);
+        this.logoutError = getErrorMessage(error, 'No se pudo cerrar la sesión. Inténtalo de nuevo.');
+        this.cdr.markForCheck();
       },
     });
+  }
+
+  dismissLogoutError(): void {
+    this.logoutError = '';
   }
 
   private openUserMenu(focusTarget: 'first' | 'last'): void {

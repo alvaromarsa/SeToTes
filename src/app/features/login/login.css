@@ -128,3 +128,13 @@
   font-weight: 600;
   line-height: 1.45;
 }
+
+.form-info {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #eef4ff;
+  color: #1e3a8a;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}

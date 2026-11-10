@@ -21,6 +21,7 @@ import {
 } from '@core/config/product-images.config';
 import type { ProductImage } from '@core/models/product-image.models';
 import { ProductImageService } from '@core/services/product-image.service';
+import { getErrorMessage } from '@core/utils/http-error-message';
 
 interface PendingImage {
   file: File;
@@ -165,7 +166,7 @@ export class ProductImageManager implements OnDestroy {
       },
       error: (error: HttpErrorResponse) => {
         console.error('No se pudieron subir las imágenes:', error);
-        this.serverError = error.error?.message ?? 'No se pudieron subir las imágenes.';
+        this.serverError = getErrorMessage(error, 'No se pudieron subir las imágenes.');
         this.isUploading = false;
         this.cdr.markForCheck();
       },
@@ -202,7 +203,7 @@ export class ProductImageManager implements OnDestroy {
       },
       error: (error: HttpErrorResponse) => {
         console.error('No se pudo cambiar el orden de las imágenes:', error);
-        this.serverError = error.error?.message ?? 'No se pudo guardar el orden de las imágenes.';
+        this.serverError = getErrorMessage(error, 'No se pudo guardar el orden de las imágenes.');
         this.isReordering = false;
         this.cdr.markForCheck();
       },
@@ -238,7 +239,8 @@ export class ProductImageManager implements OnDestroy {
       },
       error: (error: HttpErrorResponse) => {
         console.error('No se pudo eliminar la imagen:', error);
-        this.serverError = error.error?.message ?? 'No se pudo eliminar la imagen.';
+        // 409: es la última imagen de un producto visible
+        this.serverError = getErrorMessage(error, 'No se pudo eliminar la imagen.');
         this.deletingImageId = null;
         this.cdr.markForCheck();
       },

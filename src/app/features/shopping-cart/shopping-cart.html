@@ -71,6 +71,7 @@
                     type="button"
                     aria-label="Añadir una unidad"
                     [disabled]="isUpdating || item.quantity >= item.stock"
+                    [attr.aria-describedby]="item.quantity >= item.stock ? 'cart-max-' + item.productId : null"
                     (click)="increase(item)"
                   >
                     +
@@ -85,6 +86,13 @@
                   Quitar
                 </button>
               </div>
+
+              <!-- Explica por qué el botón + está desactivado -->
+              @if (item.isAvailable && item.quantity >= item.stock) {
+                <p class="cart-panel__max" [id]="'cart-max-' + item.productId">
+                  Máximo disponible: {{ item.stock }} {{ item.stock === 1 ? 'ud.' : 'uds.' }}
+                </p>
+              }
 
               <strong>{{ item.lineTotal | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
             </div>

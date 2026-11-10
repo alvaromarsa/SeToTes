@@ -5,6 +5,10 @@
       <h1>Inicia sesión</h1>
     </div>
 
+    @if (infoMessage) {
+      <p class="form-info" role="status">{{ infoMessage }}</p>
+    }
+
     <form class="auth-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <label class="field">
         <span>Email</span>
@@ -31,8 +35,13 @@
         <p class="form-alert" role="alert">{{ formMessage }}</p>
       }
 
-      <button type="submit" class="primary-button" [disabled]="loginForm.invalid && submitted">
-        Entrar
+      <button
+        #submitButton
+        type="submit"
+        class="primary-button"
+        [disabled]="isSubmitting || (loginForm.invalid && submitted)"
+      >
+        {{ isSubmitting ? 'Entrando…' : 'Entrar' }}
       </button>
 
       <p class="auth-switch">

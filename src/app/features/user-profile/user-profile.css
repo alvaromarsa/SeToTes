@@ -117,3 +117,34 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Mismos avisos que en login.css y register.css */
+.form-alert,
+.form-success {
+  margin: 0;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.form-alert {
+  padding: 0.75rem 0.9rem;
+  background: #fff0ee;
+  color: #a12a20;
+}
+
+.form-success {
+  color: #24613a;
+  background: #edf7ef;
+}
+
+.form-success:not(:empty) {
+  margin-bottom: 1rem;
+  padding: 0.75rem 0.9rem;
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}

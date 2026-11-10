@@ -1,10 +1,10 @@
 const express = require('express');
 const argon2 = require('argon2');
-const jwt = require('jsonwebtoken');
 
 const pool = require('../db');
 const { ACCOUNT_BLOCKED_CODE, BLOCKED_ACCOUNT_MESSAGE, requireAuth } = require('../middleware/auth');
-const { clearAuthCookie, setAuthCookie } = require('../utils/auth-cookie');
+const { clearAuthCookie } = require('../utils/auth-cookie');
+const { formatSessionUser, startSession } = require('../utils/session');
 
 const router = express.Router();
 
@@ -37,9 +37,13 @@ router.post('/register', async (request, response) => {
       [fullName.trim(), phone.trim(), normalizedEmail, passwordHash]
     );
 
+    // El registro deja la sesión iniciada, igual que el login
+    const user = result.rows[0];
+    startSession(response, user.id);
+
     return response.status(201).json({
       message: 'Usuario registrado correctamente',
-      user: result.rows[0],
+      user: formatSessionUser(user),
     });
   } catch (error) {
     if (error.code === '23505') {
@@ -94,27 +98,11 @@ router.post('/login', async (request, response) => {
       });
     }
 
-    const token = jwt.sign(
-      { sub: String(user.id) },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: '1h',
-        algorithm: 'HS256',
-      }
-    );
-
-    setAuthCookie(response, token);
+    startSession(response, user.id);
 
     return response.json({
       message: 'Inicio de sesión correcto',
-      user: {
-        id: user.id,
-        full_name: user.full_name,
-        phone: user.phone,
-        email: user.email,
-        created_at: user.created_at,
-        role: user.role,
-      },
+      user: formatSessionUser(user),
     });
   } catch (error) {
     console.error('Error al iniciar sesión:', error.message);

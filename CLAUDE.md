@@ -21,7 +21,7 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Variables de entorno: se cargan y validan en `config/env.js`; toda variable nueva va también en `backend/.env.example`. `CORS_ORIGIN` = orígenes separados por comas (por defecto `http://localhost:4200` en desarrollo, obligatoria en producción, nunca `*` porque se usan credenciales).
 - Los productos tienen is_visible; los nuevos nacen ocultos; publicar exige >= 1 imagen; las rutas públicas solo muestran visibles y la administración usa /api/admin/products.
 - Usuarios (migración 003): `users.is_blocked` y `blocked_at`, y tabla `admin_audit_log` (sin FK, sin datos personales en `details`). Roles: `customer` | `admin` (CHECK `users_role_check`).
-- `requireAuth` consulta la BD en cada petición (`id, role, is_blocked`): usuario inexistente → 401, bloqueado → 403 con `code: 'ACCOUNT_BLOCKED'` (también en el login, tras verificar la contraseña); en ambos casos limpia la cookie. Deja `authenticatedUserId` y `authenticatedUserRole`; `requireAdmin` usa ese rol sin otra consulta. Cookie de sesión solo a través de `utils/auth-cookie.js`.
+- `requireAuth` consulta la BD en cada petición (`id, role, is_blocked`): usuario inexistente → 401, bloqueado → 403 con `code: 'ACCOUNT_BLOCKED'` (también en el login, tras verificar la contraseña); en ambos casos limpia la cookie. Deja `authenticatedUserId` y `authenticatedUserRole`; `requireAdmin` usa ese rol sin otra consulta. Cookie de sesión solo a través de `utils/auth-cookie.js`; login y registro inician sesión con `startSession` (`utils/session.js`).
 - Administración de usuarios (`/api/admin/users`): un admin no puede bloquearse, cambiarse el rol ni borrarse a sí mismo (403), y la tienda nunca puede quedarse sin un admin activo (409). Bloquear, cambiar el rol y borrar van en transacción con `FOR UPDATE` sobre el usuario afectado y todos los admins, y registran la acción en `admin_audit_log`.
 - NUNCA leas, edites, imprimas ni subas `.env` ni ningún secreto.
 
@@ -33,6 +33,11 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Confirmaciones con `shared/components/confirm-dialog` (`<dialog>` nativo); nunca `window.confirm`/`alert`.
 - `auth-error.interceptor` (solo peticiones a `API_BASE_URL`): 401 → limpia la sesión local y lleva a /login; 403 con `code === 'ACCOUNT_BLOCKED'` → limpia la sesión local, guarda el aviso en `SessionNoticeService` y lleva a /login (si no está ya allí). `clearSession()` nunca llama a /logout. El login muestra los avisos en su zona genérica `role="alert"`.
 - Gestión de usuarios: `/adminpanel/users` (`features/admin/pages/user-management`), con `AdminUserService` y `core/models/admin-user.models.ts`.
+- Todo error visible para el usuario pasa por getErrorMessage (`core/utils/http-error-message.ts`); nunca solo a consola; 5xx siempre genérico.
+- Tras un error, el foco vuelve al botón que lanzó la petición (`shared/utils/focus-after-render.ts`); en los éxitos, no.
+- Volver a donde estaba: los guards y los 401 llevan a `/login?returnUrl=...` con `loginUrlTree` (`core/utils/return-url.ts`); el login solo acepta rutas que pasan `isSafeReturnUrl` (evita redirecciones abiertas).
+- `SessionNoticeService`: avisos entre pantallas con tipo (`error` en el login, `success` en el perfil); cada pantalla borra los de su tipo al salir.
+- Pendiente: el error de carga del carrito al iniciar sesión (`CartService`) sigue yendo solo a consola.
 - Textos de interfaz en español; identificadores de código en inglés.
 
 ## Forma de trabajar

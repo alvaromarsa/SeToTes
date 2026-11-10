@@ -85,3 +85,10 @@
     <app-shopping-cart></app-shopping-cart>
   </div>
 </header>
+
+@if (logoutError) {
+  <div class="navbar__alert" role="alert">
+    <p>{{ logoutError }}</p>
+    <button class="navbar__alert-close" type="button" aria-label="Cerrar aviso" (click)="dismissLogoutError()">×</button>
+  </div>
+}

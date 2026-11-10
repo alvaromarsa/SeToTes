@@ -24,4 +24,4 @@ function clearAuthCookie(response) {
   response.clearCookie(AUTH_COOKIE_NAME, authCookieOptions());
 }
 
-module.exports = { AUTH_COOKIE_NAME, setAuthCookie, clearAuthCookie };
+module.exports = { AUTH_COOKIE_NAME, AUTH_COOKIE_MAX_AGE_MS, setAuthCookie, clearAuthCookie };

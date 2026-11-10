@@ -3,8 +3,9 @@ import { CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 
 import { AuthService } from '../services/auth.service';
+import { loginUrlTree } from '../utils/return-url';
 
-export const adminGuard: CanActivateFn = () => {
+export const adminGuard: CanActivateFn = (_route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -14,6 +15,6 @@ export const adminGuard: CanActivateFn = () => {
         ? true
         : router.createUrlTree(['/bolsas'])
     ),
-    catchError(() => of(router.createUrlTree(['/login'])))
+    catchError(() => of(loginUrlTree(router, state.url)))
   );
 };

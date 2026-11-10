@@ -1,0 +1,64 @@
+<app-legal-page title="Política de cookies">
+  <h2>Qué es una cookie</h2>
+  <p>
+    Una cookie es un pequeño archivo que una web guarda en tu navegador para recordar información
+    entre una página y la siguiente.
+  </p>
+
+  <h2>Qué cookies usa {{ legal.storeName }}</h2>
+  <p>
+    Esta tienda usa <strong>una única cookie</strong>, propia y técnica, que solo se crea cuando
+    inicias sesión o te registras. <strong>No usamos cookies de analítica, de publicidad ni de
+    redes sociales</strong>, ni cookies de terceros, ni guardamos información en otros
+    almacenamientos del navegador.
+  </p>
+
+  <div class="legal-page__table-wrap">
+    <table>
+      <caption class="sr-only">Cookies que usa la tienda</caption>
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Finalidad</th>
+          <th scope="col">Duración</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>access_token</code></td>
+          <td>Propia, técnica</td>
+          <td>Mantener tu sesión iniciada para que puedas usar tu carrito, tu perfil y tus pedidos.</td>
+          <td>1 hora desde que inicias sesión. Al cerrar sesión se borra.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Por qué no te pedimos permiso</h2>
+  <p>
+    Las cookies estrictamente necesarias para prestar un servicio que tú pides, como mantener tu
+    sesión iniciada, no necesitan tu consentimiento (artículo 22.2 de la LSSI). Por eso no verás un
+    aviso de cookies. Si en el futuro añadimos cualquier otra cookie, te pediremos permiso antes de
+    usarla y actualizaremos esta página.
+  </p>
+
+  <h2>Cómo está protegida</h2>
+  <ul>
+    <li>Es <strong>httpOnly</strong>: el código de la página no puede leerla, lo que la protege frente a scripts maliciosos.</li>
+    <li>Solo se envía a esta tienda y nunca a otras webs.</li>
+    <li>En la tienda publicada, solo viaja por conexiones seguras (HTTPS).</li>
+    <li>Pasada una hora caduca y tendrás que volver a iniciar sesión.</li>
+  </ul>
+
+  <h2>Cómo eliminarla</h2>
+  <p>
+    Se borra al <strong>cerrar sesión</strong>. También puedes eliminarla desde la configuración de
+    tu navegador; en ese caso, la sesión se cerrará.
+  </p>
+
+  <p>
+    Para saber cómo tratamos tus datos personales, consulta la
+    <a routerLink="/privacidad">política de privacidad</a>.
+  </p>
+</app-legal-page>

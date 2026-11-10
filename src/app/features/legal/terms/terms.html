@@ -1,0 +1,100 @@
+<app-legal-page title="Condiciones de compra">
+  <p>
+    Estas condiciones regulan las compras en {{ legal.storeName }}, tienda gestionada por
+    {{ legal.owner.name }} (NIF {{ legal.owner.nif }}). Puedes consultar todos sus datos en el
+    <a routerLink="/aviso-legal">aviso legal</a>. Al confirmar un pedido aceptas estas condiciones.
+  </p>
+
+  <h2>1. Cómo hacer un pedido</h2>
+  <ul>
+    <li>Necesitas una cuenta: regístrate o inicia sesión.</li>
+    <li>Añade los productos al carrito y revisa las cantidades.</li>
+    <li>En «Tramitar pedido», indica los datos de envío y confirma.</li>
+    <li>
+      El pedido queda registrado como <strong>pendiente de pago</strong> y puedes consultarlo en
+      «Mis pedidos». [RELLENAR: cómo y cuándo se confirma el pedido al cliente, por ejemplo por
+      email, cuando exista ese servicio.]
+    </li>
+  </ul>
+
+  <h2>2. Precios y gastos de envío</h2>
+  <ul>
+    <li>Todos los precios se muestran en euros e <strong>incluyen el IVA</strong>.</li>
+    <li>
+      Los gastos de envío son de <strong>{{ legal.shipping.costEur | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
+      por pedido y se muestran antes de confirmarlo.
+    </li>
+    <li>El precio que pagas es el que aparece al confirmar el pedido, aunque después cambie.</li>
+  </ul>
+
+  <h2>3. Pago</h2>
+  <p>[RELLENAR: medios de pago aceptados y momento del cobro, cuando se integre la pasarela de pago.]</p>
+
+  <h2>4. Envío y plazos de entrega</h2>
+  <ul>
+    <li><strong>Zonas de envío:</strong> {{ legal.shipping.shippingArea }}.</li>
+    <li><strong>Plazo de entrega:</strong> {{ legal.shipping.deliveryTime }}.</li>
+    <li><strong>Transportista:</strong> {{ legal.shipping.carrier }}.</li>
+    <li>
+      Si no podemos entregar el pedido en el plazo indicado, te avisaremos. Si el retraso es
+      importante, podrás cancelarlo y te devolveremos lo pagado.
+    </li>
+  </ul>
+
+  <h2>5. Derecho de desistimiento (14 días)</h2>
+  <p>
+    Como consumidor, puedes desistir de la compra <strong>sin dar explicaciones</strong> en un plazo
+    de <strong>14 días naturales</strong> desde que recibes el pedido.
+  </p>
+  <ul>
+    <li>Para ejercerlo, escríbenos a {{ legal.owner.email }} indicando tu número de pedido.</li>
+    <li>Envía los productos a: {{ legal.shipping.returnsAddress }}, en los 14 días siguientes a comunicarnos tu decisión.</li>
+    <li>[RELLENAR: quién paga el envío de la devolución; si es el cliente, debe indicarse aquí.]</li>
+    <li>
+      Te devolveremos el importe pagado, incluidos los gastos de envío ordinarios, en un máximo de
+      14 días desde que nos comuniques el desistimiento. Podemos esperar a recibir los productos
+      antes de hacer el reembolso.
+    </li>
+    <li>Los productos deben devolverse en buen estado; respondes de su deterioro si se debe a un uso distinto del necesario para probarlos.</li>
+  </ul>
+
+  <h3>Productos personalizados o hechos a medida</h3>
+  <p>
+    La ley permite excluir del desistimiento los productos confeccionados según las especificaciones
+    del cliente o claramente personalizados.
+  </p>
+  <p>{{ legal.customProductsNote }}</p>
+
+  <h2>6. Garantía legal</h2>
+  <p>
+    Todos los productos tienen una garantía legal de <strong>3 años</strong> desde la entrega frente a
+    cualquier falta de conformidad (defectos o diferencias con lo anunciado). Si un producto llega
+    defectuoso, escríbenos a {{ legal.owner.email }} y te ofreceremos repararlo, sustituirlo o, si no
+    es posible, rebajar el precio o devolverte el dinero.
+  </p>
+  <p>
+    Los productos hechos a mano pueden tener pequeñas variaciones de color o acabado respecto a las
+    fotos; eso no se considera un defecto.
+  </p>
+
+  <h2>7. Reclamaciones</h2>
+  <ul>
+    <li>Escríbenos a {{ legal.owner.email }} o llama al {{ legal.owner.phone }}: intentaremos resolverlo cuanto antes.</li>
+    <li>[RELLENAR: disponibilidad de hojas de reclamaciones oficiales de tu comunidad autónoma y cómo solicitarlas.]</li>
+    <li>[RELLENAR: si la tienda está adherida a un sistema de arbitraje de consumo, indicarlo aquí.]</li>
+    <li>También puedes acudir a los servicios de consumo de tu comunidad autónoma o ayuntamiento.</li>
+  </ul>
+
+  <h2>8. Legislación aplicable</h2>
+  <p>
+    Estas condiciones se rigen por la legislación española, en particular por la Ley General para
+    la Defensa de los Consumidores y Usuarios. Para cualquier conflicto, serán competentes los
+    juzgados del domicilio del consumidor.
+  </p>
+
+  <p>
+    Los datos que nos facilitas al comprar se tratan según la
+    <a routerLink="/privacidad">política de privacidad</a>. Tienes un resumen práctico en
+    <a routerLink="/envios-devoluciones">envíos y devoluciones</a>.
+  </p>
+</app-legal-page>

@@ -1,0 +1,13 @@
+<footer class="footer">
+  <nav class="footer__nav" aria-label="Información legal">
+    <ul class="footer__links">
+      @for (link of legalLinks; track link.path) {
+        <li>
+          <a class="footer__link" [routerLink]="link.path">{{ link.label }}</a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <p class="footer__copy">© {{ year }} {{ storeName }}</p>
+</footer>

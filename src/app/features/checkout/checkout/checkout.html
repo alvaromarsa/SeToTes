@@ -122,6 +122,33 @@
               <p class="checkout-error" role="alert">{{ errorMessage }}</p>
             }
 
+            <div class="consent">
+              <input
+                id="accept-terms"
+                type="checkbox"
+                formControlName="acceptTerms"
+                [attr.aria-invalid]="formUtils.isValidField(checkoutForm, 'acceptTerms')"
+                [attr.aria-describedby]="formUtils.isValidField(checkoutForm, 'acceptTerms') ? 'accept-terms-error' : null"
+              />
+              <label for="accept-terms">
+                Acepto las
+                <a routerLink="/condiciones" target="_blank" rel="noopener">
+                  condiciones de compra<span class="sr-only"> (se abre en una pestaña nueva)</span>
+                </a>
+                y la
+                <a routerLink="/privacidad" target="_blank" rel="noopener">
+                  política de privacidad<span class="sr-only"> (se abre en una pestaña nueva)</span>
+                </a>
+              </label>
+              @if (formUtils.isValidField(checkoutForm, 'acceptTerms')) {
+                <p class="consent__error" id="accept-terms-error" role="alert">
+                  Debes aceptar las condiciones de compra y la política de privacidad para hacer el pedido.
+                </p>
+              } @else if (checkoutForm.controls.acceptTerms.invalid) {
+                <p class="consent__hint" id="accept-terms-hint">Marca la casilla para confirmar el pedido.</p>
+              }
+            </div>
+
             @if (hasUnavailableItems$ | async) {
               <p class="checkout-error" id="checkout-unavailable-notice">
                 Hay productos en tu carrito que ya no están disponibles. Quítalos desde el carrito para
@@ -133,8 +160,10 @@
               #submitButton
               class="checkout-submit"
               type="submit"
-              [disabled]="isSubmitting || cart.items.length === 0 || (hasUnavailableItems$ | async)"
-              [attr.aria-describedby]="(hasUnavailableItems$ | async) ? 'checkout-unavailable-notice' : null"
+              [disabled]="
+                isSubmitting || cart.items.length === 0 || checkoutForm.controls.acceptTerms.invalid || (hasUnavailableItems$ | async)
+              "
+              [attr.aria-describedby]="submitDescribedBy((hasUnavailableItems$ | async) === true)"
             >
               {{ isSubmitting ? 'Creando pedido…' : 'Realizar pedido' }}
             </button>

@@ -54,6 +54,27 @@
         <p class="form-error">{{ formUtils.getFormError(registerForm, 'passwordMismatch') }}</p>
       }
 
+      <div class="consent">
+        <input
+          id="accept-privacy"
+          type="checkbox"
+          formControlName="acceptPrivacy"
+          [attr.aria-invalid]="formUtils.isValidField(registerForm, 'acceptPrivacy')"
+          [attr.aria-describedby]="formUtils.isValidField(registerForm, 'acceptPrivacy') ? 'accept-privacy-error' : null"
+        />
+        <label for="accept-privacy">
+          He leído la
+          <a routerLink="/privacidad" target="_blank" rel="noopener">
+            política de privacidad<span class="sr-only"> (se abre en una pestaña nueva)</span>
+          </a>
+        </label>
+        @if (formUtils.isValidField(registerForm, 'acceptPrivacy')) {
+          <p class="consent__error" id="accept-privacy-error" role="alert">
+            Debes confirmar que has leído la política de privacidad.
+          </p>
+        }
+      </div>
+
       @if (formMessage) {
         <p class="form-alert" role="alert">{{ formMessage }}</p>
       }

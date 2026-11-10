@@ -1,0 +1,129 @@
+<app-legal-page title="Política de privacidad">
+  <p>
+    Esta política explica qué datos personales tratamos cuando usas {{ legal.storeName }}, para qué
+    y qué derechos tienes, conforme al Reglamento General de Protección de Datos (RGPD) y a la Ley
+    Orgánica 3/2018 de protección de datos (LOPDGDD).
+  </p>
+
+  <h2>Responsable del tratamiento</h2>
+  <dl>
+    <div>
+      <dt>Responsable</dt>
+      <dd>{{ legal.owner.name }}</dd>
+    </div>
+    <div>
+      <dt>NIF</dt>
+      <dd>{{ legal.owner.nif }}</dd>
+    </div>
+    <div>
+      <dt>Domicilio</dt>
+      <dd>{{ legal.owner.address }}</dd>
+    </div>
+    <div>
+      <dt>Contacto para protección de datos</dt>
+      <dd>{{ legal.privacy.contactEmail }}</dd>
+    </div>
+  </dl>
+
+  <h2>Qué datos tratamos</h2>
+  <ul>
+    <li><strong>Al registrarte:</strong> nombre y apellidos, email, teléfono y contraseña (se guarda transformada de forma irreversible con un algoritmo seguro; nadie puede leerla, ni siquiera nosotros).</li>
+    <li><strong>En tu perfil, si los añades:</strong> dirección, ciudad y código postal.</li>
+    <li>
+      <strong>Al hacer un pedido:</strong> los datos de envío (nombre, teléfono, dirección, ciudad y
+      código postal), los productos, cantidades e importes, y la fecha del pedido.
+    </li>
+    <li><strong>Tu carrito:</strong> los productos que añades y sus cantidades, mientras tienes cuenta.</li>
+  </ul>
+  <p>No tratamos datos de categorías especiales (salud, ideología, etc.) ni datos de menores de 14 años.</p>
+
+  <h2>Para qué los usamos y con qué base legal</h2>
+  <div class="legal-page__table-wrap">
+    <table>
+      <caption class="sr-only">Finalidades y bases legales del tratamiento</caption>
+      <thead>
+        <tr>
+          <th scope="col">Finalidad</th>
+          <th scope="col">Base legal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Crear y gestionar tu cuenta y tu carrito</td>
+          <td>Ejecución del contrato que aceptas al registrarte (art. 6.1.b RGPD)</td>
+        </tr>
+        <tr>
+          <td>Gestionar tus pedidos: preparación, envío, cobro, devoluciones y atención al cliente</td>
+          <td>Ejecución del contrato de compraventa (art. 6.1.b RGPD)</td>
+        </tr>
+        <tr>
+          <td>Emitir facturas y cumplir obligaciones fiscales y contables</td>
+          <td>Obligación legal (art. 6.1.c RGPD)</td>
+        </tr>
+        <tr>
+          <td>Mantener la seguridad de la tienda y evitar usos fraudulentos (por ejemplo, bloquear cuentas)</td>
+          <td>Interés legítimo en proteger la tienda y a sus clientes (art. 6.1.f RGPD)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>No enviamos publicidad ni tomamos decisiones automatizadas sobre ti.</p>
+
+  <h2>Cuánto tiempo los conservamos</h2>
+  <ul>
+    <li><strong>Datos de la cuenta:</strong> mientras la mantengas activa. Si pides darla de baja, se eliminan salvo lo que debamos guardar por ley.</li>
+    <li>
+      <strong>Datos de los pedidos y facturas:</strong> el tiempo que exige la normativa fiscal y
+      mercantil. [RELLENAR: plazo concreto, revisado por un profesional; como orientación, la
+      normativa mercantil exige conservar la documentación contable durante seis años].
+    </li>
+    <li>Pasados esos plazos, los datos se eliminan o se anonimizan.</li>
+  </ul>
+
+  <h2>A quién se comunican</h2>
+  <p>
+    No vendemos ni cedemos tus datos. Solo acceden a ellos, cuando es necesario para prestarte el
+    servicio, proveedores que actúan como <strong>encargados del tratamiento</strong>, con contrato y
+    bajo nuestras instrucciones:
+  </p>
+  <ul>
+    <li><strong>Alojamiento del servidor:</strong> {{ legal.privacy.hostingProvider }}.</li>
+    <li><strong>Transporte de los pedidos:</strong> {{ legal.shipping.carrier }} (recibe tus datos de envío).</li>
+    <li><strong>Pasarela de pago, cuando exista:</strong> {{ legal.privacy.paymentProvider }}.</li>
+    <li><strong>Servicio de email, cuando exista:</strong> {{ legal.privacy.emailProvider }}.</li>
+  </ul>
+  <p>
+    También podemos comunicarlos a las administraciones públicas cuando la ley lo exija (por
+    ejemplo, la Agencia Tributaria). [RELLENAR: indicar si algún proveedor trata datos fuera del
+    Espacio Económico Europeo y con qué garantías.]
+  </p>
+
+  <h2>Tus derechos</h2>
+  <p>Puedes ejercer en cualquier momento los siguientes derechos:</p>
+  <ul>
+    <li><strong>Acceso:</strong> saber qué datos tuyos tratamos.</li>
+    <li><strong>Rectificación:</strong> corregir datos inexactos. Muchos puedes cambiarlos tú en tu perfil.</li>
+    <li><strong>Supresión:</strong> pedir que borremos tus datos, salvo los que debamos conservar por ley.</li>
+    <li><strong>Oposición</strong> y <strong>limitación del tratamiento</strong> en los casos previstos en el RGPD.</li>
+    <li><strong>Portabilidad:</strong> recibir tus datos en un formato estructurado.</li>
+  </ul>
+  <p>
+    Para ejercerlos, escribe a {{ legal.privacy.contactEmail }} indicando qué derecho quieres
+    ejercer. Si fuera necesario para confirmar tu identidad, te pediremos algún dato adicional.
+    Responderemos en el plazo máximo de un mes.
+  </p>
+  <p>
+    Si consideras que no hemos atendido bien tu solicitud, puedes presentar una reclamación ante la
+    Agencia Española de Protección de Datos (www.aepd.es).
+  </p>
+
+  <h2>Seguridad</h2>
+  <p>
+    Las contraseñas se guardan transformadas con un algoritmo de hash seguro (argon2), nunca en texto legible, y la sesión se mantiene con una
+    cookie técnica que JavaScript no puede leer (más detalles en la
+    <a routerLink="/cookies">política de cookies</a>).
+  </p>
+
+  <h2>Cambios en esta política</h2>
+  <p>Si cambiamos esta política, publicaremos la nueva versión en esta página con su fecha de actualización.</p>
+</app-legal-page>

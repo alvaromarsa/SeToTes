@@ -1,5 +1,8 @@
+/* Navbar, contenido y pie en columna: main crece y el pie queda abajo aunque la página
+   sea corta, sin position: fixed (nunca tapa contenido) */
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: #B8FF8C;
 }
@@ -10,6 +13,7 @@ body {
 }
 
 main {
+  flex: 1;
   background: #B8FF8C;
 }
 

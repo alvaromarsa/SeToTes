@@ -64,5 +64,31 @@ export const routes: Routes = [
     loadChildren: () =>
       import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
   },
+  // Páginas legales (datos del titular en core/config/legal.config.ts)
+  {
+    path: 'aviso-legal',
+    loadComponent: () =>
+      import('./features/legal/legal-notice/legal-notice').then((m) => m.LegalNotice),
+  },
+  {
+    path: 'privacidad',
+    loadComponent: () =>
+      import('./features/legal/privacy/privacy').then((m) => m.Privacy),
+  },
+  {
+    path: 'cookies',
+    loadComponent: () =>
+      import('./features/legal/cookies/cookies').then((m) => m.Cookies),
+  },
+  {
+    path: 'condiciones',
+    loadComponent: () =>
+      import('./features/legal/terms/terms').then((m) => m.Terms),
+  },
+  {
+    path: 'envios-devoluciones',
+    loadComponent: () =>
+      import('./features/legal/shipping-returns/shipping-returns').then((m) => m.ShippingReturns),
+  },
   { path: '**', redirectTo: 'home' },
 ];

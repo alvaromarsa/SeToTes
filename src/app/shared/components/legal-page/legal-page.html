@@ -1,0 +1,10 @@
+<article class="legal-page" aria-labelledby="legal-page-title">
+  <header class="legal-page__header">
+    <h1 id="legal-page-title">{{ title() }}</h1>
+    <p class="legal-page__updated">Última actualización: {{ lastUpdated }}</p>
+  </header>
+
+  <div class="legal-page__content">
+    <ng-content />
+  </div>
+</article>

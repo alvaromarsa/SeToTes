@@ -40,6 +40,14 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Pendiente: el error de carga del carrito al iniciar sesión (`CartService`) sigue yendo solo a consola.
 - Textos de interfaz en español; identificadores de código en inglés.
 
+## Legal (España, UE)
+- Datos del titular y de la tienda solo en `core/config/legal.config.ts` (marcadores `[RELLENAR: ...]`). Páginas en `features/legal/` (/aviso-legal, /privacidad, /cookies, /condiciones, /envios-devoluciones) con la maquetación común `shared/components/legal-page` (ViewEncapsulation.None: todo selector de su CSS debe empezar por `.legal-page`). Pie de página en `shared/components/footer`.
+- IMPORTANTE: los textos legales son una plantilla y deben ser revisados por un profesional antes de abrir la tienda. No son asesoría legal.
+- No verificado: que la plataforma europea de resolución de litigios en línea (ODR) cerró el 20/07/2025 (por eso no se enlaza). Debe confirmarlo quien revise los textos.
+- Cookies: solo la técnica `access_token` (httpOnly, 1 h); por eso no hay banner. Cualquier cookie no técnica, analítica o almacenamiento del navegador (localStorage, etc.) obliga a revisar la política de cookies y a pedir consentimiento.
+- Gastos de envío escritos en dos sitios: `SHIPPING_COST` (backend, el que cobra) y `LEGAL_CONFIG.shipping.costEur` (texto legal); deben coincidir.
+- Pendiente (prompt de pagos, al modificar POST /api/orders): guardar la aceptación en el backend — `terms_accepted_at` y `terms_version` en `orders`; `privacy_notice_version` en `users`. Hoy las casillas de registro y checkout solo se validan en el frontend.
+
 ## Forma de trabajar
 - Cambios pequeños, sin refactorizar código ajeno a la tarea. Respeta el estilo existente.
 - Antes de una tarea grande, propón un plan y espera mi confirmación.

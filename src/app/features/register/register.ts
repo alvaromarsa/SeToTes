@@ -8,7 +8,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { SessionNoticeService } from '@core/services/session-notice.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
@@ -28,7 +28,7 @@ const passwordsMatchValidator: ValidatorFn = (
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './register.html',
   styleUrl: './register.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,6 +51,8 @@ export class Register {
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
       phone: ['', [Validators.required, Validators.minLength(9)]],
+      // Solo en el frontend por ahora: la fecha y versión aceptadas se guardarán en el backend
+      acceptPrivacy: [false, [Validators.requiredTrue]],
     },
     {
       validators: passwordsMatchValidator,

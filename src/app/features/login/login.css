@@ -77,14 +77,6 @@
   margin: 0;
 }
 
-.checkbox-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  color: #374151;
-  font-size: 0.9rem;
-}
-
 .primary-button {
   border: none;
   border-radius: 14px;

@@ -1,0 +1,78 @@
+<app-legal-page title="Aviso legal">
+  <h2>Datos del titular</h2>
+  <p>
+    En cumplimiento de la Ley 34/2002, de servicios de la sociedad de la información y de comercio
+    electrónico (LSSI), se informa de los datos de quien gestiona esta tienda online:
+  </p>
+  <dl>
+    <div>
+      <dt>Titular</dt>
+      <dd>{{ legal.owner.name }}</dd>
+    </div>
+    <div>
+      <dt>NIF</dt>
+      <dd>{{ legal.owner.nif }}</dd>
+    </div>
+    <div>
+      <dt>Domicilio</dt>
+      <dd>{{ legal.owner.address }}</dd>
+    </div>
+    <div>
+      <dt>Email</dt>
+      <dd>{{ legal.owner.email }}</dd>
+    </div>
+    <div>
+      <dt>Teléfono</dt>
+      <dd>{{ legal.owner.phone }}</dd>
+    </div>
+    @if (legal.owner.registryData) {
+      <div>
+        <dt>Datos registrales</dt>
+        <dd>{{ legal.owner.registryData }}</dd>
+      </div>
+    }
+    <div>
+      <dt>Sitio web</dt>
+      <dd>{{ legal.domain }}</dd>
+    </div>
+  </dl>
+
+  <h2>Objeto</h2>
+  <p>
+    {{ legal.storeName }} es una tienda online de bolsas, neceseres, fundas y telas. Este aviso legal
+    regula el uso del sitio web. Las compras se rigen además por las
+    <a routerLink="/condiciones">condiciones de compra</a>.
+  </p>
+
+  <h2>Uso del sitio web</h2>
+  <p>
+    Al navegar por la tienda te comprometes a hacer un uso adecuado de ella, sin causar daños al
+    sitio ni a terceros y sin introducir información falsa.
+  </p>
+
+  <h2>Propiedad intelectual</h2>
+  <p>
+    Los textos, fotografías, diseños y logotipos de esta web pertenecen a {{ legal.owner.name }} o
+    se usan con permiso de sus titulares. No está permitido copiarlos ni reutilizarlos sin
+    autorización.
+  </p>
+
+  <h2>Responsabilidad</h2>
+  <p>
+    Trabajamos para que la información de la tienda sea correcta y esté actualizada, pero puede
+    contener errores puntuales. Si detectas alguno, escríbenos a {{ legal.owner.email }}.
+  </p>
+
+  <h2>Protección de datos y cookies</h2>
+  <p>
+    El tratamiento de tus datos personales se explica en la
+    <a routerLink="/privacidad">política de privacidad</a>, y el uso de cookies en la
+    <a routerLink="/cookies">política de cookies</a>.
+  </p>
+
+  <h2>Legislación aplicable</h2>
+  <p>
+    Este sitio web se rige por la legislación española. Si eres consumidor, podrás acudir a los
+    juzgados de tu domicilio.
+  </p>
+</app-legal-page>

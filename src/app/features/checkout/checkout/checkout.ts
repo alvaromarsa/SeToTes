@@ -53,6 +53,8 @@ export class Checkout implements OnInit {
     address: ['', [Validators.required]],
     city: ['', [Validators.required]],
     postalCode: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
+    // Solo en el frontend por ahora: la aceptación se guardará con el pedido (terms_accepted_at)
+    acceptTerms: [false, [Validators.requiredTrue]],
   });
 
   isSubmitting = false;
@@ -73,6 +75,20 @@ export class Checkout implements OnInit {
     });
   }
 
+  // Explica al lector de pantalla por qué el botón está desactivado
+  submitDescribedBy(hasUnavailableItems: boolean): string | null {
+    const ids: string[] = [];
+
+    if (this.checkoutForm.controls.acceptTerms.invalid) {
+      ids.push(this.checkoutForm.controls.acceptTerms.touched ? 'accept-terms-error' : 'accept-terms-hint');
+    }
+    if (hasUnavailableItems) {
+      ids.push('checkout-unavailable-notice');
+    }
+
+    return ids.length > 0 ? ids.join(' ') : null;
+  }
+
   onSubmit(): void {
     if (this.checkoutForm.invalid) {
       this.checkoutForm.markAllAsTouched();
@@ -82,7 +98,10 @@ export class Checkout implements OnInit {
     this.isSubmitting = true;
     this.errorMessage = '';
 
-    this.orderService.createOrder(this.checkoutForm.getRawValue()).subscribe({
+    // La casilla no se envía: el backend solo recibe los datos de envío
+    const { acceptTerms: _acceptTerms, ...shippingData } = this.checkoutForm.getRawValue();
+
+    this.orderService.createOrder(shippingData).subscribe({
       next: (order) => {
         this.order = order;
         this.isSubmitting = false;

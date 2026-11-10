@@ -3,7 +3,7 @@ const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 
 const pool = require('../db');
-const { BLOCKED_ACCOUNT_MESSAGE, requireAuth } = require('../middleware/auth');
+const { ACCOUNT_BLOCKED_CODE, BLOCKED_ACCOUNT_MESSAGE, requireAuth } = require('../middleware/auth');
 const { clearAuthCookie, setAuthCookie } = require('../utils/auth-cookie');
 
 const router = express.Router();
@@ -89,6 +89,7 @@ router.post('/login', async (request, response) => {
     // averiguar si una cuenta existe o está bloqueada
     if (user.is_blocked) {
       return response.status(403).json({
+        code: ACCOUNT_BLOCKED_CODE,
         message: BLOCKED_ACCOUNT_MESSAGE,
       });
     }

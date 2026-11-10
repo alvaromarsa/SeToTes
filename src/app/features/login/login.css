@@ -117,3 +117,14 @@
   font-weight: 700;
   text-decoration: underline;
 }
+
+.form-alert {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #fff0ee;
+  color: #a12a20;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}

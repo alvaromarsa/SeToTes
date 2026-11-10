@@ -21,6 +21,13 @@ export const ADMIN_ROUTES: Routes = [
       ),
   },
   {
+    path: 'users',
+    loadComponent: () =>
+      import('./pages/user-management/user-management').then(
+        (m) => m.UserManagement,
+      ),
+  },
+  {
     path: 'orders/:id',
     loadComponent: () =>
       import('./pages/order-management-detail/order-management-detail').then(

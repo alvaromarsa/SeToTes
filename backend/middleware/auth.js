@@ -4,6 +4,8 @@ const pool = require('../db');
 const { AUTH_COOKIE_NAME, clearAuthCookie } = require('../utils/auth-cookie');
 
 const BLOCKED_ACCOUNT_MESSAGE = 'Tu cuenta está bloqueada. Contacta con la tienda.';
+// Código estable para que el frontend reconozca este 403 sin depender del texto
+const ACCOUNT_BLOCKED_CODE = 'ACCOUNT_BLOCKED';
 
 // Además de verificar el JWT, consulta la base de datos en cada petición:
 // así un bloqueo, un cambio de rol o un borrado tienen efecto inmediato,
@@ -56,6 +58,7 @@ async function requireAuth(request, response, next) {
     if (user.is_blocked) {
       clearAuthCookie(response);
       return response.status(403).json({
+        code: ACCOUNT_BLOCKED_CODE,
         message: BLOCKED_ACCOUNT_MESSAGE,
       });
     }
@@ -82,4 +85,4 @@ function requireAdmin(request, response, next) {
   return next();
 }
 
-module.exports = { requireAuth, requireAdmin, BLOCKED_ACCOUNT_MESSAGE };
+module.exports = { requireAuth, requireAdmin, ACCOUNT_BLOCKED_CODE, BLOCKED_ACCOUNT_MESSAGE };

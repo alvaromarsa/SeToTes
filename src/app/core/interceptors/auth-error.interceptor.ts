@@ -8,23 +8,45 @@ import { catchError, throwError } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
 import { AuthService } from '../services/auth.service';
+import { SessionNoticeService } from '../services/session-notice.service';
 
+// Mismo código que ACCOUNT_BLOCKED_CODE en backend/middleware/auth.js
+const ACCOUNT_BLOCKED_CODE = 'ACCOUNT_BLOCKED';
+const ACCOUNT_BLOCKED_FALLBACK_MESSAGE = 'Tu cuenta está bloqueada. Contacta con la tienda.';
+
+// Gestiona las respuestas que invalidan la sesión: 401 (caducada) y 403 de cuenta bloqueada.
+// clearSession() solo limpia el estado local: el backend ya ha borrado la cookie.
 export const authErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const authService = inject(AuthService);
+  const sessionNoticeService = inject(SessionNoticeService);
   const router = inject(Router);
 
   return next(request).pipe(
     catchError((error: unknown) => {
+      if (!(error instanceof HttpErrorResponse) || !request.url.startsWith(API_BASE_URL)) {
+        return throwError(() => error);
+      }
+
       const isSessionExpired =
-        error instanceof HttpErrorResponse &&
         error.status === 401 &&
-        request.url.startsWith(API_BASE_URL) &&
         !request.url.endsWith('/api/auth/login') &&
         authService.hasSession();
+
+      // También en el login: el backend responde 403 tras comprobar la contraseña
+      const isAccountBlocked =
+        error.status === 403 && error.error?.code === ACCOUNT_BLOCKED_CODE;
 
       if (isSessionExpired) {
         authService.clearSession();
         void router.navigateByUrl('/login');
+      } else if (isAccountBlocked) {
+        authService.clearSession();
+        sessionNoticeService.show(error.error?.message ?? ACCOUNT_BLOCKED_FALLBACK_MESSAGE);
+
+        // Sin bucles: si ya está en el login, solo se muestra el aviso
+        if (!router.url.startsWith('/login')) {
+          void router.navigateByUrl('/login');
+        }
       }
 
       return throwError(() => error);

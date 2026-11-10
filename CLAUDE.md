@@ -21,7 +21,7 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Variables de entorno: se cargan y validan en `config/env.js`; toda variable nueva va también en `backend/.env.example`. `CORS_ORIGIN` = orígenes separados por comas (por defecto `http://localhost:4200` en desarrollo, obligatoria en producción, nunca `*` porque se usan credenciales).
 - Los productos tienen is_visible; los nuevos nacen ocultos; publicar exige >= 1 imagen; las rutas públicas solo muestran visibles y la administración usa /api/admin/products.
 - Usuarios (migración 003): `users.is_blocked` y `blocked_at`, y tabla `admin_audit_log` (sin FK, sin datos personales en `details`). Roles: `customer` | `admin` (CHECK `users_role_check`).
-- `requireAuth` consulta la BD en cada petición (`id, role, is_blocked`): usuario inexistente → 401, bloqueado → 403; en ambos casos limpia la cookie. Deja `authenticatedUserId` y `authenticatedUserRole`; `requireAdmin` usa ese rol sin otra consulta. Cookie de sesión solo a través de `utils/auth-cookie.js`.
+- `requireAuth` consulta la BD en cada petición (`id, role, is_blocked`): usuario inexistente → 401, bloqueado → 403 con `code: 'ACCOUNT_BLOCKED'` (también en el login, tras verificar la contraseña); en ambos casos limpia la cookie. Deja `authenticatedUserId` y `authenticatedUserRole`; `requireAdmin` usa ese rol sin otra consulta. Cookie de sesión solo a través de `utils/auth-cookie.js`.
 - Administración de usuarios (`/api/admin/users`): un admin no puede bloquearse, cambiarse el rol ni borrarse a sí mismo (403), y la tienda nunca puede quedarse sin un admin activo (409). Bloquear, cambiar el rol y borrar van en transacción con `FOR UPDATE` sobre el usuario afectado y todos los admins, y registran la acción en `admin_audit_log`.
 - NUNCA leas, edites, imprimas ni subas `.env` ni ningún secreto.
 
@@ -30,6 +30,9 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Alias de importación: `@core/*`, `@features/*`, `@shared/*`.
 - HTTP con HttpClient. Los interceptores añaden credenciales y gestionan la sesión caducada (401). URL base en `core/config/api.config.ts`: los servicios usan SIEMPRE `API_BASE_URL` (importada desde `@core/config/api.config`), nunca una URL escrita a mano.
 - Estado compartido: BehaviorSubject privado + `asObservable()` público. Componentes con OnPush y `markForCheck()` tras suscripciones. Formularios reactivos con `FormUtils`.
+- Confirmaciones con `shared/components/confirm-dialog` (`<dialog>` nativo); nunca `window.confirm`/`alert`.
+- `auth-error.interceptor` (solo peticiones a `API_BASE_URL`): 401 → limpia la sesión local y lleva a /login; 403 con `code === 'ACCOUNT_BLOCKED'` → limpia la sesión local, guarda el aviso en `SessionNoticeService` y lleva a /login (si no está ya allí). `clearSession()` nunca llama a /logout. El login muestra los avisos en su zona genérica `role="alert"`.
+- Gestión de usuarios: `/adminpanel/users` (`features/admin/pages/user-management`), con `AdminUserService` y `core/models/admin-user.models.ts`.
 - Textos de interfaz en español; identificadores de código en inglés.
 
 ## Forma de trabajar

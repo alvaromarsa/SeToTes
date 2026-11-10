@@ -1,0 +1,183 @@
+<main class="user-management">
+  <header class="user-management__header">
+    <a class="user-management__back" routerLink="/adminpanel">
+      <span aria-hidden="true">←</span> Volver al panel
+    </a>
+    <p class="user-management__eyebrow">Administración · Usuarios</p>
+    <h1>Gestionar usuarios</h1>
+    <p class="user-management__intro">
+      Busca clientes y administradores, bloquea cuentas y cambia sus permisos.
+    </p>
+  </header>
+
+  <section class="admin-surface" aria-labelledby="user-list-title">
+    <form class="user-filters" [formGroup]="filtersForm" role="search">
+      <div class="user-filters__field user-filters__field--search">
+        <label for="user-search">Buscar por nombre o email</label>
+        <input
+          id="user-search"
+          class="user-filters__input"
+          type="search"
+          formControlName="search"
+          placeholder="Ej.: ana@correo.com"
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="user-filters__field">
+        <label for="user-role">Rol</label>
+        <select id="user-role" class="user-filters__input" formControlName="role">
+          <option value="">Todos</option>
+          @for (role of roles; track role) {
+            <option [value]="role">{{ roleLabels[role] }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="user-filters__field">
+        <label for="user-status">Estado</label>
+        <select id="user-status" class="user-filters__input" formControlName="status">
+          <option value="">Todos</option>
+          @for (status of statuses; track status) {
+            <option [value]="status">{{ statusLabels[status] }}</option>
+          }
+        </select>
+      </div>
+    </form>
+
+    <!-- Siempre presentes (aunque vacíos) para que los lectores de pantalla anuncien los cambios -->
+    <p class="user-feedback user-feedback--success" role="status">{{ statusMessage }}</p>
+    @if (actionError) {
+      <p class="user-feedback user-feedback--error" role="alert">{{ actionError }}</p>
+    }
+
+    <div class="user-list__heading">
+      <h2 #listHeading id="user-list-title" tabindex="-1">Usuarios</h2>
+      @if (userPage && !isLoading && !loadError) {
+        <span class="user-list__count">
+          {{ userPage.total === 1 ? '1 usuario' : userPage.total + ' usuarios' }}
+        </span>
+      }
+    </div>
+
+    @if (isLoading) {
+      <div class="user-message" role="status">
+        <span class="user-message__spinner" aria-hidden="true"></span>
+        <p>Cargando usuarios…</p>
+      </div>
+    } @else if (loadError) {
+      <div class="user-message user-message--error" role="alert">
+        <p>No se pudieron cargar los usuarios.</p>
+        <button class="user-button" type="button" (click)="retry()">Reintentar</button>
+      </div>
+    } @else if (userPage && userPage.items.length === 0) {
+      <div class="user-message">
+        <p>No hay usuarios con esos filtros.</p>
+      </div>
+    } @else if (userPage) {
+      <ul class="user-list">
+        @for (user of userPage.items; track user.id) {
+          <li class="user-card" [class.user-card--blocked]="user.isBlocked">
+            <div class="user-card__top">
+              <h3>{{ user.fullName }}</h3>
+              <div class="user-card__badges">
+                <span class="user-badge" [class.user-badge--admin]="user.role === 'admin'">
+                  {{ roleLabels[user.role] }}
+                </span>
+                <span class="user-badge" [class.user-badge--blocked]="user.isBlocked" [class.user-badge--active]="!user.isBlocked">
+                  {{ user.isBlocked ? statusLabels.blocked : statusLabels.active }}
+                </span>
+                @if (isSelf(user)) {
+                  <span class="user-badge">Tú</span>
+                }
+              </div>
+            </div>
+
+            <dl class="user-card__details">
+              <div>
+                <dt>Email</dt>
+                <dd class="user-card__email">{{ user.email }}</dd>
+              </div>
+              <div>
+                <dt>Teléfono</dt>
+                <dd>{{ user.phone }}</dd>
+              </div>
+              <div>
+                <dt>Pedidos</dt>
+                <dd>{{ user.ordersCount }}</dd>
+              </div>
+              <div>
+                <dt>Alta</dt>
+                <dd>{{ user.createdAt | date: 'd MMM y' }}</dd>
+              </div>
+            </dl>
+
+            <div class="user-card__actions">
+              <button
+                class="user-button"
+                type="button"
+                [disabled]="isSelf(user) || isBusy(user)"
+                [attr.aria-label]="(user.isBlocked ? 'Desbloquear a ' : 'Bloquear a ') + user.fullName"
+                [attr.aria-describedby]="isSelf(user) ? 'self-note-' + user.id : null"
+                (click)="askAction(user.isBlocked ? 'unblock' : 'block', user, $event)"
+              >
+                {{ user.isBlocked ? 'Desbloquear' : 'Bloquear' }}
+              </button>
+
+              <button
+                class="user-button"
+                type="button"
+                [disabled]="isSelf(user) || isBusy(user)"
+                [attr.aria-label]="(user.role === 'admin' ? 'Hacer cliente a ' : 'Hacer administrador a ') + user.fullName"
+                [attr.aria-describedby]="isSelf(user) ? 'self-note-' + user.id : null"
+                (click)="askAction(user.role === 'admin' ? 'make-customer' : 'make-admin', user, $event)"
+              >
+                {{ user.role === 'admin' ? 'Hacer cliente' : 'Hacer administrador' }}
+              </button>
+
+              <button
+                class="user-button user-button--danger"
+                type="button"
+                [disabled]="isSelf(user) || isBusy(user) || user.ordersCount > 0"
+                [attr.aria-label]="'Eliminar a ' + user.fullName"
+                [attr.aria-describedby]="
+                  isSelf(user) ? 'self-note-' + user.id : (user.ordersCount > 0 ? 'orders-note-' + user.id : null)
+                "
+                (click)="askAction('delete', user, $event)"
+              >
+                Eliminar
+              </button>
+            </div>
+
+            @if (isSelf(user)) {
+              <p class="user-card__note" [id]="'self-note-' + user.id">No puedes modificar tu propia cuenta.</p>
+            } @else if (user.ordersCount > 0) {
+              <p class="user-card__note" [id]="'orders-note-' + user.id">
+                Tiene pedidos: bloquéalo en lugar de eliminarlo.
+              </p>
+            }
+          </li>
+        }
+      </ul>
+
+      <nav class="user-pagination" aria-label="Paginación de usuarios">
+        <button class="user-button" type="button" [disabled]="page <= 1" (click)="goToPage(page - 1)">
+          <span aria-hidden="true">←</span> Anterior
+        </button>
+        <p>Página {{ page }} de {{ totalPages }}</p>
+        <button class="user-button" type="button" [disabled]="page >= totalPages" (click)="goToPage(page + 1)">
+          Siguiente <span aria-hidden="true">→</span>
+        </button>
+      </nav>
+    }
+  </section>
+
+  <app-confirm-dialog
+    [title]="dialogTitle"
+    [message]="dialogMessage"
+    [confirmLabel]="dialogConfirmLabel"
+    [danger]="isDialogDanger"
+    (confirmed)="onDialogConfirmed()"
+    (cancelled)="onDialogCancelled()"
+  />
+</main>

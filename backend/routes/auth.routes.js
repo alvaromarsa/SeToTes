@@ -294,6 +294,41 @@ router.post('/forgot-password', forgotPasswordLimiter, (request, response) => {
   );
 });
 
+// Solo comprueba el enlace, sin modificar nada, para que la pantalla avise al abrirla.
+// El POST de reset vuelve a validarlo: el enlace puede gastarse o caducar entre medias.
+// Mismo límite de intentos que el reset: si no, serviría para probar tokens sin freno.
+router.get('/reset-password/validate', resetPasswordLimiter, async (request, response) => {
+  const { token } = request.query;
+
+  if (!isWellFormedResetToken(token)) {
+    return response.status(400).json({ message: INVALID_RESET_LINK_MESSAGE });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT 1
+       FROM password_reset_tokens t
+       JOIN users u ON u.id = t.user_id
+       WHERE t.token_hash = $1
+         AND t.used_at IS NULL
+         AND t.expires_at > now()
+         AND NOT u.is_blocked`,
+      [hashResetToken(token)]
+    );
+
+    if (result.rows.length === 0) {
+      return response.status(400).json({ message: INVALID_RESET_LINK_MESSAGE });
+    }
+
+    return response.json({ valid: true });
+  } catch (error) {
+    console.error('Error al comprobar el enlace de recuperación:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo comprobar el enlace',
+    });
+  }
+});
+
 router.post('/reset-password', resetPasswordLimiter, async (request, response) => {
   const { token, password } = request.body ?? {};
 

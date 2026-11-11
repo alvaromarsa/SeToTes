@@ -56,7 +56,10 @@ export class ResetPassword implements OnInit, OnDestroy {
 
   // El token solo vive en memoria: se quita de la URL nada más leerlo
   private token: string | null = null;
-  hasToken = false;
+  // missing: la URL no traía token; checking: preguntando al backend; valid: se muestra el
+  // formulario; invalid: usado, caducado o inexistente; error: no se pudo comprobar (conexión, 5xx)
+  linkState: 'missing' | 'checking' | 'valid' | 'invalid' | 'error' = 'checking';
+  linkErrorMessage = '';
   isSubmitting = false;
   formMessage = '';
 
@@ -65,17 +68,50 @@ export class ResetPassword implements OnInit, OnDestroy {
     this.meta.updateTag({ name: 'referrer', content: 'no-referrer' });
 
     this.token = this.route.snapshot.queryParamMap.get('token');
-    this.hasToken = !!this.token;
 
-    if (this.token) {
-      // Fuera del historial y de la barra de direcciones (como history.replaceState)
-      void this.router.navigate([], {
-        relativeTo: this.route,
-        queryParams: { token: null },
-        queryParamsHandling: 'merge',
-        replaceUrl: true,
-      });
+    if (!this.token) {
+      this.linkState = 'missing';
+      return;
     }
+
+    // Fuera del historial y de la barra de direcciones (como history.replaceState)
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { token: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+
+    this.checkLink();
+  }
+
+  // Avisa al abrir la página si el enlace ya no vale. El POST de reset lo vuelve a validar,
+  // porque el enlace puede gastarse o caducar mientras se escribe la contraseña.
+  checkLink(): void {
+    if (!this.token) {
+      return;
+    }
+
+    this.linkState = 'checking';
+    this.linkErrorMessage = '';
+
+    this.authService.validateResetToken(this.token).subscribe({
+      next: () => {
+        this.linkState = 'valid';
+        this.cdr.markForCheck();
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('No se pudo comprobar el enlace de recuperación:', error.status);
+        // 400: el enlace no vale. Otro error (sin conexión, 429, 5xx) no dice nada del enlace
+        if (error.status === 400) {
+          this.linkState = 'invalid';
+        } else {
+          this.linkState = 'error';
+          this.linkErrorMessage = getErrorMessage(error, 'No se pudo comprobar el enlace. Inténtalo de nuevo.');
+        }
+        this.cdr.markForCheck();
+      },
+    });
   }
 
   ngOnDestroy(): void {

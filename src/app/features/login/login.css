@@ -88,6 +88,25 @@
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
+/* Enlace con aspecto de botón (p. ej. «Pedir un enlace nuevo» en reset-password) */
+a.primary-button {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+/* Botón o enlace suelto en la tarjeta (fuera del formulario) */
+.auth-card > .primary-button {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+a.primary-button:focus-visible,
+button.primary-button:focus-visible {
+  outline: 3px solid #111827;
+  outline-offset: 3px;
+}
+
 .primary-button:hover {
   transform: translateY(-1px);
 }

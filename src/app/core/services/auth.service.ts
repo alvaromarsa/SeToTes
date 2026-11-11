@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import {BehaviorSubject, tap, Observable } from 'rxjs';
 
@@ -80,6 +80,13 @@ export class AuthService {
   // Siempre responde lo mismo, exista o no la cuenta
   forgotPassword(email: string): Observable<MessageResponse> {
     return this.http.post<MessageResponse>(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  // Solo comprueba el enlace (200 si vale, 400 si no); no gasta el token
+  validateResetToken(token: string): Observable<{ valid: true }> {
+    return this.http.get<{ valid: true }>(`${this.apiUrl}/reset-password/validate`, {
+      params: new HttpParams().set('token', token),
+    });
   }
 
   // No inicia sesión: el backend invalida las sesiones anteriores y el usuario entra con la nueva

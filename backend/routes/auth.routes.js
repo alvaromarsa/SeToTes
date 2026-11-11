@@ -7,6 +7,7 @@ const {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_RESET_TOKEN_TTL_MINUTES,
+  PRIVACY_NOTICE_VERSION,
 } = require('../config/constants');
 const { ACCOUNT_BLOCKED_CODE, BLOCKED_ACCOUNT_MESSAGE, requireAuth } = require('../middleware/auth');
 const {
@@ -31,7 +32,14 @@ const INVALID_RESET_LINK_MESSAGE = 'El enlace no es válido o ha caducado. Pide 
 const router = express.Router();
 
 router.post('/register', registerLimiter, async (request, response) => {
-  const { fullName, phone, email, password } = request.body ?? {};
+  const { fullName, phone, email, password, acceptPrivacy } = request.body ?? {};
+
+  // Se guarda qué versión de la política de privacidad leyó y cuándo
+  if (acceptPrivacy !== true) {
+    return response.status(400).json({
+      message: 'Debes confirmar que has leído la política de privacidad',
+    });
+  }
 
   if (
     typeof fullName !== 'string' ||
@@ -54,10 +62,10 @@ router.post('/register', registerLimiter, async (request, response) => {
     const passwordHash = await argon2.hash(password);
 
     const result = await pool.query(
-      `INSERT INTO users (full_name, phone, email, password_hash)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO users (full_name, phone, email, password_hash, privacy_accepted_at, privacy_notice_version)
+       VALUES ($1, $2, $3, $4, now(), $5)
        RETURNING id, full_name, phone, email, created_at, role`,
-      [fullName.trim(), phone.trim(), normalizedEmail, passwordHash]
+      [fullName.trim(), phone.trim(), normalizedEmail, passwordHash, PRIVACY_NOTICE_VERSION]
     );
 
     // El registro deja la sesión iniciada, igual que el login

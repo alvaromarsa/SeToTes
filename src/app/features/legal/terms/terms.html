@@ -11,9 +11,12 @@
     <li>Añade los productos al carrito y revisa las cantidades.</li>
     <li>En «Tramitar pedido», indica los datos de envío y confirma.</li>
     <li>
-      El pedido queda registrado como <strong>pendiente de pago</strong> y puedes consultarlo en
-      «Mis pedidos». [RELLENAR: cómo y cuándo se confirma el pedido al cliente, por ejemplo por
-      email, cuando exista ese servicio.]
+      Al confirmar, te llevamos a la página de pago de Stripe. Hasta que pagas, el pedido figura como
+      <strong>pendiente de pago</strong> en «Mis pedidos», desde donde también puedes pagarlo.
+    </li>
+    <li>
+      Cuando el pago se confirma, el pedido pasa a <strong>pagado</strong> y te enviamos un email con el
+      resumen.
     </li>
   </ul>
 
@@ -28,7 +31,24 @@
   </ul>
 
   <h2>3. Pago</h2>
-  <p>[RELLENAR: medios de pago aceptados y momento del cobro, cuando se integre la pasarela de pago.]</p>
+  <ul>
+    <li>
+      El pago se hace con <strong>tarjeta</strong> en la página segura de <strong>Stripe</strong>, nuestra
+      pasarela de pago. Al confirmar el pedido te llevamos a esa página.
+    </li>
+    <li>
+      Los datos de tu tarjeta los introduces directamente en Stripe: <strong>la tienda nunca los recibe
+      ni los guarda</strong>.
+    </li>
+    <li>
+      El cargo se hace en el momento del pago. El pedido queda <strong>confirmado</strong> cuando Stripe
+      nos confirma el cobro; entonces te enviamos un email.
+    </li>
+    <li>
+      Si no completas el pago, el pedido se cancela automáticamente pasado un tiempo y los productos
+      vuelven a estar disponibles para otros clientes.
+    </li>
+  </ul>
 
   <h2>4. Envío y plazos de entrega</h2>
   <ul>

@@ -21,7 +21,8 @@ export const LEGAL_CONFIG = {
     // Email o dirección para ejercer los derechos de protección de datos
     contactEmail: '[RELLENAR: email para ejercer los derechos de protección de datos]',
     // Encargados del tratamiento: se muestran como "cuando existan"
-    paymentProvider: '[RELLENAR: pasarela de pago, cuando exista]',
+    // Pasarela de pago (Stripe Checkout). La entidad concreta depende del contrato con Stripe
+    paymentProvider: 'Stripe [REVISAR: entidad de Stripe con la que se contrata y su domicilio]',
     emailProvider: '[RELLENAR: servicio de email, cuando exista]',
     hostingProvider: '[RELLENAR: proveedor de alojamiento del servidor]',
   },

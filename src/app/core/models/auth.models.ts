@@ -3,6 +3,8 @@ export interface RegisterRequest {
   phone: string;
   email: string;
   password: string;
+  // El backend lo exige y guarda la fecha y la versión de la política leída
+  acceptPrivacy: true;
 }
 
 export interface LoginRequest {

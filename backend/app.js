@@ -12,6 +12,14 @@ app.use(cors({
   origin: corsOrigins,
   credentials: true,
 }));
+
+// Webhook de Stripe ANTES de express.json(): Stripe firma el cuerpo exacto que envía, y la
+// firma solo se puede verificar sobre esos mismos bytes. express.json() lo convertiría en un
+// objeto y ya no se podría comprobar. Esta ruta usa express.raw() (cuerpo como Buffer); como
+// el cuerpo queda leído, express.json() la ignora. Las peticiones de Stripe no traen
+// cabecera Origin, así que el CORS de arriba no les afecta.
+app.use('/api/payments', require('./routes/payments.routes'));
+
 app.use(express.json());
 app.use(cookieParser());
 

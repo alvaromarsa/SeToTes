@@ -16,6 +16,28 @@
       </span>
     </header>
 
+    <!-- Siempre presente (aunque vacía) para que los lectores de pantalla anuncien los cambios -->
+    <div role="status">
+      @if (paymentNotice && paymentNotice.kind !== 'processing') {
+        <p class="payment-notice payment-notice--{{ paymentNotice.kind }}">{{ paymentNotice.text }}</p>
+      }
+    </div>
+    @if (paymentNotice?.kind === 'processing') {
+      <p class="payment-notice payment-notice--processing" role="alert">{{ paymentNotice?.text }}</p>
+    }
+
+    @if (order.status === 'pending' && paymentNotice?.kind !== 'confirming') {
+      <div class="order-detail-pay">
+        <p>Este pedido está pendiente de pago. El pago se hace en la página segura de Stripe.</p>
+        <button #payButton class="order-detail-pay__button" type="button" [disabled]="isStartingPayment" (click)="payNow()">
+          {{ isStartingPayment ? 'Redirigiendo al pago…' : 'Pagar ahora' }}
+        </button>
+        @if (payErrorMessage) {
+          <p class="order-detail-error" role="alert">{{ payErrorMessage }}</p>
+        }
+      </div>
+    }
+
     <ul class="order-detail-items">
       @for (item of order.items; track item.productId) {
         <li>

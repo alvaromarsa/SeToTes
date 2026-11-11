@@ -1,19 +1,24 @@
 <section class="checkout-shell">
   @if (cart$ | async; as cart) {
-    @if (order) {
+    @if (createdOrderId !== null) {
+      <!-- Pedido creado: solo falta pagar en Stripe (la confirmación llega tras el pago) -->
       <div class="checkout-card checkout-confirmation">
-        <p class="checkout-eyebrow">Pedido recibido</p>
-        <h1>Gracias por tu compra</h1>
-        <p>
-          Tu pedido <strong>#{{ order.id }}</strong> se ha registrado y está
-          pendiente de pago.
-        </p>
-        <p>
-          Total:
-          <strong>{{ order.total | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
-        </p>
-        <a class="checkout-submit" routerLink="/bolsas">Seguir comprando</a>
-        <a class="checkout-submit" [routerLink]="['/orders', order.id]">Ver mi pedido</a>
+        <p class="checkout-eyebrow">Pago</p>
+        @if (isRedirecting) {
+          <h1>Redirigiendo al pago…</h1>
+          <p role="status">Te llevamos a la página de pago segura de Stripe.</p>
+        } @else {
+          <h1>No se pudo abrir el pago</h1>
+          <p class="checkout-error" role="alert">{{ paymentErrorMessage }}</p>
+          <p>
+            Tu pedido <strong>#{{ createdOrderId }}</strong> está guardado y pendiente de pago. Puedes
+            intentarlo de nuevo ahora o más tarde desde el pedido.
+          </p>
+          <button #retryPaymentButton class="checkout-submit" type="button" (click)="startPayment()">
+            Intentar de nuevo
+          </button>
+          <a class="checkout-submit" [routerLink]="['/orders', createdOrderId]">Ver mi pedido</a>
+        }
       </div>
     } @else {
       <div class="checkout-grid">

@@ -76,6 +76,7 @@ export class Register {
       phone: formValue.phone,
       email: formValue.email,
       password: formValue.password,
+      acceptPrivacy: true as const,
     };
 
     this.isSubmitting = true;

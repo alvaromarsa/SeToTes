@@ -5,8 +5,9 @@ const CELL = 'padding:6px 0;border-bottom:1px solid #f0e9e4;font-size:14px;';
 
 // order: { id, subtotal, shippingCost, total, items: [{ name, quantity, unitPrice, lineTotal }],
 //          shipping: { fullName, phone, address, city, postalCode } }
-function orderCreatedEmail({ order, orderUrl }) {
-  const title = `Hemos recibido tu pedido n.º ${order.id}`;
+// Se envía al confirmarse el pago (webhook de Stripe), no al crear el pedido
+function orderPaidEmail({ order, orderUrl }) {
+  const title = `Pedido n.º ${order.id} pagado y confirmado`;
   const { shipping } = order;
 
   const itemRows = order.items
@@ -39,7 +40,7 @@ function orderCreatedEmail({ order, orderUrl }) {
     title,
     bodyHtml: [
       paragraph(`Hola, ${escapeHtml(shipping.fullName)}:`),
-      paragraph('Gracias por tu compra. Este es el resumen de tu pedido; está pendiente de pago.'),
+      paragraph('Gracias por tu compra. Hemos recibido tu pago y tu pedido está confirmado. Te avisaremos cuando salga hacia tu dirección.'),
       totalsHtml,
       addressHtml,
       button(escapeHtml(orderUrl), 'Ver mi pedido'),
@@ -47,7 +48,7 @@ function orderCreatedEmail({ order, orderUrl }) {
     bodyText: [
       `Hola, ${shipping.fullName}:`,
       '',
-      'Gracias por tu compra. Este es el resumen de tu pedido; está pendiente de pago.',
+      'Gracias por tu compra. Hemos recibido tu pago y tu pedido está confirmado. Te avisaremos cuando salga hacia tu dirección.',
       '',
       ...order.items.map((item) => `- ${item.name} × ${item.quantity}: ${formatMoney(item.lineTotal)}`),
       '',
@@ -68,4 +69,4 @@ function orderCreatedEmail({ order, orderUrl }) {
   return { subject: title, text, html };
 }
 
-module.exports = { orderCreatedEmail };
+module.exports = { orderPaidEmail };

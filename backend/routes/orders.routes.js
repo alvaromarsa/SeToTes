@@ -1,9 +1,9 @@
 const express = require('express');
 
 const pool = require('../db');
-const { SHIPPING_COST } = require('../config/constants');
+const { SHIPPING_COST, TERMS_VERSION } = require('../config/constants');
 const { requireAuth } = require('../middleware/auth');
-const { notifyOrderCreated } = require('../services/email/order-notifications');
+const { createCheckoutSession, isStripeError, retrieveCheckoutSession } = require('../services/payments/stripe');
 const { OrderError, formatOrder } = require('../utils/orders');
 
 const router = express.Router();
@@ -11,7 +11,14 @@ const router = express.Router();
 router.use(requireAuth);
 
 router.post('/', async (request, response) => {
-  const { fullName, phone, address, city, postalCode } = request.body ?? {};
+  const { fullName, phone, address, city, postalCode, acceptTerms } = request.body ?? {};
+
+  // La aceptación se guarda con el pedido: el backend no se fía de la casilla del navegador
+  if (acceptTerms !== true) {
+    return response.status(400).json({
+      message: 'Debes aceptar las condiciones de compra y la política de privacidad',
+    });
+  }
 
   if (
     typeof fullName !== 'string' ||
@@ -81,10 +88,11 @@ router.post('/', async (request, response) => {
       `INSERT INTO orders (
          user_id, subtotal, shipping_cost, total,
          shipping_name, shipping_phone, shipping_address,
-         shipping_city, shipping_postal_code
+         shipping_city, shipping_postal_code,
+         terms_accepted_at, terms_version
        )
        VALUES ($1, $2::numeric, $3::numeric, $2::numeric + $3::numeric,
-               $4, $5, $6, $7, $8)
+               $4, $5, $6, $7, $8, now(), $9)
        RETURNING id, status, subtotal, shipping_cost, total, created_at`,
       [
         userId,
@@ -95,6 +103,7 @@ router.post('/', async (request, response) => {
         address.trim(),
         city.trim(),
         postalCode.trim(),
+        TERMS_VERSION,
       ]
     );
     const order = orderResult.rows[0];
@@ -120,9 +129,8 @@ router.post('/', async (request, response) => {
 
     await client.query('COMMIT');
 
-    // Tras el COMMIT y sin esperar: si el email falla, el pedido sigue siendo válido
-    notifyOrderCreated(order.id);
-
+    // Queda 'pending' (stock reservado) hasta que el webhook de Stripe confirme el pago.
+    // El email de confirmación se envía entonces, no ahora.
     return response.status(201).json(formatOrder(order));
   } catch (error) {
     await client.query('ROLLBACK');
@@ -225,6 +233,109 @@ router.get('/:id', async (request, response) => {
     return response.status(500).json({
       message: 'No se pudo cargar el pedido',
     });
+  }
+});
+
+// Crea (o reutiliza) la sesión de Stripe Checkout para pagar un pedido pendiente.
+// Los importes salen del snapshot del pedido en la BD, nunca del navegador.
+router.post('/:id/checkout-session', async (request, response) => {
+  const orderId = Number(request.params.id);
+
+  if (!Number.isInteger(orderId) || orderId <= 0) {
+    return response.status(400).json({
+      message: 'El pedido no es válido',
+    });
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // FOR UPDATE: dos clics seguidos se serializan y el segundo reutiliza la sesión del primero.
+    // Importes en céntimos enteros calculados en SQL (numeric exacto, sin coma flotante).
+    const orderResult = await client.query(
+      `SELECT o.id, o.status, o.stripe_checkout_session_id,
+              (o.shipping_cost * 100)::integer AS shipping_cents,
+              u.email
+       FROM orders o
+       JOIN users u ON u.id = o.user_id
+       WHERE o.id = $1 AND o.user_id = $2
+       FOR UPDATE OF o`,
+      [orderId, request.authenticatedUserId]
+    );
+
+    // Pedido de otro usuario: 404, como si no existiera
+    if (orderResult.rows.length === 0) {
+      throw new OrderError(404, 'No se encontró el pedido');
+    }
+
+    const order = orderResult.rows[0];
+
+    if (order.status !== 'pending') {
+      throw new OrderError(409, 'Este pedido ya no está pendiente de pago');
+    }
+
+    if (order.stripe_checkout_session_id) {
+      const existing = await retrieveCheckoutSession(order.stripe_checkout_session_id);
+
+      if (existing.status === 'open') {
+        await client.query('COMMIT');
+        return response.json({ url: existing.url });
+      }
+
+      // complete: el pago ya se ha hecho y el webhook lo confirmará en breve
+      if (existing.status === 'complete') {
+        throw new OrderError(409, 'El pago de este pedido ya se está procesando');
+      }
+      // expired: se crea una sesión nueva
+    }
+
+    const itemsResult = await client.query(
+      `SELECT product_name, quantity, (unit_price * 100)::integer AS unit_amount_cents
+       FROM order_items
+       WHERE order_id = $1
+       ORDER BY id`,
+      [orderId]
+    );
+
+    const session = await createCheckoutSession({
+      orderId,
+      customerEmail: order.email,
+      items: itemsResult.rows,
+      shippingCents: order.shipping_cents,
+    });
+
+    // Al sustituir la sesión, un evento "expired" de la anterior ya no encuentra el pedido
+    await client.query(
+      'UPDATE orders SET stripe_checkout_session_id = $1 WHERE id = $2',
+      [session.id, orderId]
+    );
+
+    await client.query('COMMIT');
+
+    return response.json({ url: session.url });
+  } catch (error) {
+    await client.query('ROLLBACK');
+
+    if (error instanceof OrderError) {
+      return response.status(error.status).json({ message: error.message });
+    }
+
+    if (isStripeError(error)) {
+      // Detalle solo en el log (el SDK no incluye las claves en sus errores)
+      console.error(`Error de Stripe al crear la sesión del pedido #${orderId}:`, error.type, error.code ?? '', error.message);
+      return response.status(502).json({
+        message: 'No se pudo conectar con la pasarela de pago. Inténtalo de nuevo en unos minutos.',
+      });
+    }
+
+    console.error('Error al crear la sesión de pago:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo iniciar el pago',
+    });
+  } finally {
+    client.release();
   }
 });
 

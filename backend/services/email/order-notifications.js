@@ -2,10 +2,10 @@ const pool = require('../../db');
 const { frontendUrl } = require('../../config/env');
 const { runInBackground } = require('../../utils/background');
 const { sendEmail } = require('./index');
-const { orderCreatedEmail } = require('./templates/order-created');
+const { orderPaidEmail } = require('./templates/order-paid');
 const { NOTIFIED_ORDER_STATUSES, orderStatusEmail } = require('./templates/order-status');
 
-// Emails de pedidos. Se llaman DESPUÉS del COMMIT y no se esperan: hacen sus propias
+// Emails de pedidos (pagado; enviado y entregado). Se llaman DESPUÉS del COMMIT y no se esperan: hacen sus propias
 // consultas en segundo plano (sin alargar la transacción ni sus bloqueos) y, si algo falla,
 // el pedido sigue siendo válido y solo queda el error en el log.
 
@@ -28,7 +28,8 @@ async function loadOrderForEmail(orderId) {
   return orderResult.rows[0] ?? null;
 }
 
-function notifyOrderCreated(orderId) {
+// Lo llama el webhook de Stripe tras el COMMIT que marca el pedido como pagado
+function notifyOrderPaid(orderId) {
   runInBackground(async () => {
     const row = await loadOrderForEmail(orderId);
     if (!row) {
@@ -43,7 +44,7 @@ function notifyOrderCreated(orderId) {
       [orderId]
     );
 
-    const email = orderCreatedEmail({
+    const email = orderPaidEmail({
       orderUrl: orderUrl(row.id),
       order: {
         id: row.id,
@@ -67,7 +68,7 @@ function notifyOrderCreated(orderId) {
     });
 
     await sendEmail({ to: row.email, ...email });
-  }, `email de pedido ${orderId} creado`);
+  }, `email de pedido ${orderId} pagado`);
 }
 
 // Solo shipped y delivered avisan al cliente
@@ -93,4 +94,4 @@ function notifyOrderStatusChanged(orderId, status) {
   }, `email de pedido ${orderId} en estado ${status}`);
 }
 
-module.exports = { notifyOrderCreated, notifyOrderStatusChanged };
+module.exports = { notifyOrderPaid, notifyOrderStatusChanged };

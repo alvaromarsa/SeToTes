@@ -86,3 +86,65 @@
 .order-detail-error {
   color: #b3261e;
 }
+
+/* Avisos del pago (tras volver de Stripe) */
+.payment-notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.payment-notice--confirming {
+  background: #eef4ff;
+  color: #1e3a8a;
+}
+
+.payment-notice--success {
+  background: #edf7ef;
+  color: #24613a;
+}
+
+.payment-notice--processing,
+.payment-notice--cancelled {
+  background: #fff7e6;
+  color: #7a4b00;
+}
+
+.order-detail-pay {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 1.25rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.order-detail-pay p {
+  margin: 0;
+}
+
+.order-detail-pay__button {
+  justify-self: start;
+  min-height: 48px;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: 12px;
+  background: #111827;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.order-detail-pay__button:focus-visible {
+  outline: 3px solid #111827;
+  outline-offset: 3px;
+}
+
+.order-detail-pay__button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}

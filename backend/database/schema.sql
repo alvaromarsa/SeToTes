@@ -111,6 +111,11 @@ CREATE TABLE public.orders (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     subtotal numeric(10,2) DEFAULT 0 NOT NULL,
     shipping_cost numeric(10,2) DEFAULT 0 NOT NULL,
+    stripe_checkout_session_id text,
+    stripe_payment_intent_id text,
+    paid_at timestamp with time zone,
+    terms_accepted_at timestamp with time zone,
+    terms_version text,
     CONSTRAINT orders_shipping_cost_check CHECK ((shipping_cost >= (0)::numeric)),
     CONSTRAINT orders_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'shipped'::text, 'delivered'::text, 'cancelled'::text]))),
     CONSTRAINT orders_subtotal_check CHECK ((subtotal >= (0)::numeric)),
@@ -220,6 +225,17 @@ ALTER TABLE public.products ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
 
 
 --
+-- Name: stripe_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.stripe_events (
+    event_id text NOT NULL,
+    type text NOT NULL,
+    processed_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
 -- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -237,6 +253,8 @@ CREATE TABLE public.users (
     is_blocked boolean DEFAULT false NOT NULL,
     blocked_at timestamp with time zone,
     password_changed_at timestamp with time zone,
+    privacy_accepted_at timestamp with time zone,
+    privacy_notice_version text,
     CONSTRAINT users_role_check CHECK ((role = ANY (ARRAY['customer'::text, 'admin'::text])))
 );
 
@@ -288,6 +306,14 @@ ALTER TABLE ONLY public.orders
 
 
 --
+-- Name: orders orders_stripe_checkout_session_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_stripe_checkout_session_id_key UNIQUE (stripe_checkout_session_id);
+
+
+--
 -- Name: password_reset_tokens password_reset_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -325,6 +351,14 @@ ALTER TABLE ONLY public.product_images
 
 ALTER TABLE ONLY public.products
     ADD CONSTRAINT products_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: stripe_events stripe_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.stripe_events
+    ADD CONSTRAINT stripe_events_pkey PRIMARY KEY (event_id);
 
 
 --

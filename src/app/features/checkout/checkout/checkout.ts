@@ -14,7 +14,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { take } from 'rxjs';
 
-import type { OrderResponse } from '@core/models/order.models';
 import { AuthService } from '@core/services/auth.service';
 import { CartService } from '@core/services/cart.service';
 import { OrderService } from '@core/services/order.service';
@@ -42,6 +41,7 @@ export class Checkout implements OnInit {
 
   // Opcional: no existe mientras el carrito se carga ni tras confirmar el pedido
   private readonly submitButton = viewChild<ElementRef<HTMLButtonElement>>('submitButton');
+  private readonly retryPaymentButton = viewChild<ElementRef<HTMLButtonElement>>('retryPaymentButton');
 
   readonly formUtils = FormUtils;
   readonly cart$ = this.cartService.cart$;
@@ -59,7 +59,10 @@ export class Checkout implements OnInit {
 
   isSubmitting = false;
   errorMessage = '';
-  order: OrderResponse | null = null;
+  // Pedido ya creado (pendiente de pago): a partir de aquí solo falta ir a Stripe
+  createdOrderId: number | null = null;
+  isRedirecting = false;
+  paymentErrorMessage = '';
 
   ngOnInit(): void {
     this.authService.currentUser$.pipe(take(1)).subscribe((user) => {
@@ -90,6 +93,10 @@ export class Checkout implements OnInit {
   }
 
   onSubmit(): void {
+    if (this.isSubmitting) {
+      return;
+    }
+
     if (this.checkoutForm.invalid) {
       this.checkoutForm.markAllAsTouched();
       return;
@@ -98,14 +105,14 @@ export class Checkout implements OnInit {
     this.isSubmitting = true;
     this.errorMessage = '';
 
-    // La casilla no se envía: el backend solo recibe los datos de envío
+    // El validador requiredTrue garantiza que la casilla está marcada; el backend lo vuelve a exigir
     const { acceptTerms: _acceptTerms, ...shippingData } = this.checkoutForm.getRawValue();
 
-    this.orderService.createOrder(shippingData).subscribe({
+    this.orderService.createOrder({ ...shippingData, acceptTerms: true }).subscribe({
       next: (order) => {
-        this.order = order;
+        this.createdOrderId = order.id;
         this.isSubmitting = false;
-        this.cdr.markForCheck();
+        this.startPayment();
       },
       error: (error: HttpErrorResponse) => {
         console.error('Error al crear el pedido', error.status, error);
@@ -120,6 +127,33 @@ export class Checkout implements OnInit {
         this.isSubmitting = false;
         this.cdr.markForCheck();
         focusAfterRender(this.injector, () => this.submitButton()?.nativeElement);
+      },
+    });
+  }
+
+  // Pide la sesión de Stripe y sale de la tienda hacia la página de pago de Stripe.
+  // Si falla, el pedido ya existe (pendiente): se puede reintentar aquí o desde su detalle.
+  startPayment(): void {
+    if (this.createdOrderId === null || this.isRedirecting) {
+      return;
+    }
+
+    this.isRedirecting = true;
+    this.paymentErrorMessage = '';
+    this.cdr.markForCheck();
+
+    this.orderService.createCheckoutSession(this.createdOrderId).subscribe({
+      next: ({ url }) => {
+        // isRedirecting sigue en true: el navegador abandona la tienda
+        window.location.assign(url);
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('No se pudo iniciar el pago', error.status, error);
+        // 502: Stripe no responde (mensaje genérico del backend)
+        this.paymentErrorMessage = getErrorMessage(error, 'No se pudo abrir la página de pago. Inténtalo de nuevo.');
+        this.isRedirecting = false;
+        this.cdr.markForCheck();
+        focusAfterRender(this.injector, () => this.retryPaymentButton()?.nativeElement);
       },
     });
   }

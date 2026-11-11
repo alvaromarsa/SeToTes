@@ -4,7 +4,8 @@ const pool = require('../db');
 const { ORDER_STATUSES, ORDER_TRANSITIONS } = require('../config/constants');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { notifyOrderStatusChanged } = require('../services/email/order-notifications');
-const { OrderError, formatOrder } = require('../utils/orders');
+const { expireCheckoutSessionIfOpen } = require('../services/payments/stripe');
+const { OrderError, cancelOrderAndRestock, formatOrder } = require('../utils/orders');
 
 const router = express.Router();
 
@@ -135,7 +136,7 @@ router.patch('/:id/status', async (request, response) => {
     await client.query('BEGIN');
 
     const current = await client.query(
-      'SELECT status FROM orders WHERE id = $1 FOR UPDATE',
+      'SELECT status, stripe_checkout_session_id FROM orders WHERE id = $1 FOR UPDATE',
       [orderId]
     );
 
@@ -144,6 +145,7 @@ router.patch('/:id/status', async (request, response) => {
     }
 
     const currentStatus = current.rows[0].status;
+    const checkoutSessionId = current.rows[0].stripe_checkout_session_id;
 
     if (!ORDER_TRANSITIONS[currentStatus].includes(status)) {
       throw new OrderError(
@@ -152,30 +154,38 @@ router.patch('/:id/status', async (request, response) => {
       );
     }
 
-    if (status === 'cancelled') {
-      await client.query(
-        `UPDATE products p
-         SET stock = p.stock + oi.quantity
-         FROM order_items oi
-         WHERE oi.product_id = p.id AND oi.order_id = $1`,
-        [orderId]
-      );
-    }
+    let updated;
 
-    const result = await client.query(
-      `UPDATE orders
-       SET status = $1
-       WHERE id = $2
-       RETURNING id, status, subtotal, shipping_cost, total, created_at`,
-      [status, orderId]
-    );
+    if (status === 'cancelled') {
+      // Con la sesión abierta, el cliente aún podría pagar un pedido cancelado: se cierra antes.
+      // Mejor esfuerzo: si Stripe falla, se registra y la cancelación sigue adelante.
+      if (checkoutSessionId) {
+        await expireCheckoutSessionIfOpen(checkoutSessionId, orderId);
+      }
+
+      // Cancelar no reembolsa: el reembolso se hace a mano en el panel de Stripe
+      if (currentStatus === 'paid') {
+        console.warn(`Pedido #${orderId} cancelado tras el pago: reembolsar manualmente en Stripe`);
+      }
+
+      updated = await cancelOrderAndRestock(client, orderId);
+    } else {
+      const result = await client.query(
+        `UPDATE orders
+         SET status = $1
+         WHERE id = $2
+         RETURNING id, status, subtotal, shipping_cost, total, created_at`,
+        [status, orderId]
+      );
+      updated = result.rows[0];
+    }
 
     await client.query('COMMIT');
 
     // Tras el COMMIT y sin esperar; solo shipped y delivered avisan al cliente
     notifyOrderStatusChanged(orderId, status);
 
-    return response.json(formatOrder(result.rows[0]));
+    return response.json(formatOrder(updated));
   } catch (error) {
     await client.query('ROLLBACK');
 

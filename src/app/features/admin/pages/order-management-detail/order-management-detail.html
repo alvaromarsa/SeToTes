@@ -68,6 +68,17 @@
         @if (order.allowedStatuses.includes('cancelled')) {
           <p class="om-note">Cancelar el pedido devuelve las unidades al stock.</p>
         }
+        @if (order.status === 'pending') {
+          <p class="om-note">
+            El pago lo confirma Stripe automáticamente: un pedido no se puede marcar como pagado a mano.
+          </p>
+        }
+        @if (order.status === 'paid') {
+          <p class="om-error" role="note">
+            Este pedido ya está pagado. Si lo cancelas, recuerda reembolsarlo desde el panel de Stripe:
+            cancelarlo aquí no devuelve el dinero.
+          </p>
+        }
       } @else {
         <p class="om-note">Este pedido está en un estado final y no admite más cambios.</p>
       }

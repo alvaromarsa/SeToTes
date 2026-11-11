@@ -22,6 +22,13 @@ export interface CreateOrderRequest {
   address: string;
   city: string;
   postalCode: string;
+  // El backend lo exige y guarda la fecha y la versión de las condiciones aceptadas
+  acceptTerms: true;
+}
+
+export interface CheckoutSessionResponse {
+  // Página de pago alojada por Stripe: los datos de tarjeta nunca pasan por la tienda
+  url: string;
 }
 
 export interface OrderResponse {

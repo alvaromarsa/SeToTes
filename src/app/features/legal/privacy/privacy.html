@@ -27,11 +27,13 @@
 
   <h2>Qué datos tratamos</h2>
   <ul>
-    <li><strong>Al registrarte:</strong> nombre y apellidos, email, teléfono y contraseña (se guarda transformada de forma irreversible con un algoritmo seguro; nadie puede leerla, ni siquiera nosotros).</li>
+    <li><strong>Al registrarte:</strong> nombre y apellidos, email, teléfono y contraseña (se guarda transformada de forma irreversible con un algoritmo seguro; nadie puede leerla, ni siquiera nosotros), y la fecha y versión de esta política que confirmaste haber leído.</li>
     <li><strong>En tu perfil, si los añades:</strong> dirección, ciudad y código postal.</li>
     <li>
       <strong>Al hacer un pedido:</strong> los datos de envío (nombre, teléfono, dirección, ciudad y
-      código postal), los productos, cantidades e importes, y la fecha del pedido.
+      código postal), los productos, cantidades e importes, la fecha del pedido, la fecha y versión de
+      las condiciones de compra aceptadas y, al pagar, la fecha del pago y su referencia en Stripe.
+      <strong>No tratamos los datos de tu tarjeta</strong>: los introduces directamente en Stripe.
     </li>
     <li><strong>Tu carrito:</strong> los productos que añades y sus cantidades, mientras tienes cuenta.</li>
   </ul>
@@ -89,7 +91,11 @@
   <ul>
     <li><strong>Alojamiento del servidor:</strong> {{ legal.privacy.hostingProvider }}.</li>
     <li><strong>Transporte de los pedidos:</strong> {{ legal.shipping.carrier }} (recibe tus datos de envío).</li>
-    <li><strong>Pasarela de pago, cuando exista:</strong> {{ legal.privacy.paymentProvider }}.</li>
+    <li>
+      <strong>Pasarela de pago:</strong> {{ legal.privacy.paymentProvider }}. Gestiona el cobro con
+      tarjeta en su propia página: recibe tu email, el importe y los datos de la tarjeta, que la tienda
+      nunca ve ni almacena. Nosotros solo recibimos la confirmación del pago y su referencia.
+    </li>
     <li><strong>Servicio de email, cuando exista:</strong> {{ legal.privacy.emailProvider }}.</li>
   </ul>
   <p>

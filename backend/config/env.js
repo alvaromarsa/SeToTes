@@ -97,4 +97,24 @@ if (emailMode === 'smtp') {
   };
 }
 
-module.exports = { corsOrigins, publicBaseUrl, frontendUrl, emailMode, smtp };
+// Stripe: obligatorias siempre, también en desarrollo (los pagos dependen de ellas)
+const STRIPE_VARIABLES = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET'];
+const missingStripe = STRIPE_VARIABLES.filter((name) => !process.env[name]?.trim());
+
+if (missingStripe.length > 0) {
+  throw new Error(`Faltan variables de Stripe en backend/.env: ${missingStripe.join(', ')}`);
+}
+
+const stripe = {
+  secretKey: process.env.STRIPE_SECRET_KEY.trim(),
+  webhookSecret: process.env.STRIPE_WEBHOOK_SECRET.trim(),
+};
+
+// Fuera de producción solo claves de prueba: evita cobrar de verdad por accidente
+if (!isProduction && !stripe.secretKey.startsWith('sk_test_')) {
+  throw new Error(
+    'STRIPE_SECRET_KEY debe ser una clave de prueba (sk_test_...) fuera de producción'
+  );
+}
+
+module.exports = { corsOrigins, publicBaseUrl, frontendUrl, emailMode, smtp, stripe };

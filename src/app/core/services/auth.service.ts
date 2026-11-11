@@ -8,6 +8,7 @@ import type {
   CurrentUserResponse,
   LoginRequest,
   LogoutResponse,
+  MessageResponse,
   RegisterRequest,
   RegisterResponse,
   UpdateProfileRequest,
@@ -74,6 +75,16 @@ export class AuthService {
     .pipe(
       tap((response) => this.currentUserSubject.next(response.user))
     );
+  }
+
+  // Siempre responde lo mismo, exista o no la cuenta
+  forgotPassword(email: string): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  // No inicia sesión: el backend invalida las sesiones anteriores y el usuario entra con la nueva
+  resetPassword(token: string, password: string): Observable<MessageResponse> {
+    return this.http.post<MessageResponse>(`${this.apiUrl}/reset-password`, { token, password });
   }
 
   hasSession(): boolean {

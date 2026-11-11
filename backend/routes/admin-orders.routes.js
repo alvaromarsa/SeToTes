@@ -3,6 +3,7 @@ const express = require('express');
 const pool = require('../db');
 const { ORDER_STATUSES, ORDER_TRANSITIONS } = require('../config/constants');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { notifyOrderStatusChanged } = require('../services/email/order-notifications');
 const { OrderError, formatOrder } = require('../utils/orders');
 
 const router = express.Router();
@@ -170,6 +171,9 @@ router.patch('/:id/status', async (request, response) => {
     );
 
     await client.query('COMMIT');
+
+    // Tras el COMMIT y sin esperar; solo shipped y delivered avisan al cliente
+    notifyOrderStatusChanged(orderId, status);
 
     return response.json(formatOrder(result.rows[0]));
   } catch (error) {

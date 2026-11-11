@@ -28,6 +28,16 @@ export const routes: Routes = [
       import('./features/login/login').then((m) => m.Login),
   },
   {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./features/forgot-password/forgot-password').then((m) => m.ForgotPassword),
+  },
+  {
+    path: 'reset-password',
+    loadComponent: () =>
+      import('./features/reset-password/reset-password').then((m) => m.ResetPassword),
+  },
+  {
     path: 'register',
     loadComponent: () =>
       import('./features/register/register').then((m) => m.Register),

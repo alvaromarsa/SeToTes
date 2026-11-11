@@ -130,3 +130,37 @@
   font-size: 0.9rem;
   line-height: 1.45;
 }
+
+/* login.css lo comparten también forgot-password y reset-password (misma tarjeta) */
+.form-success {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  background: #edf7ef;
+  color: #24613a;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.auth-forgot {
+  margin: -0.4rem 0 0;
+  font-size: 0.9rem;
+}
+
+.auth-forgot a,
+.auth-card__text a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #111827;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.auth-card__text {
+  margin: 0 0 1rem;
+  color: #374151;
+  line-height: 1.55;
+}

@@ -54,6 +54,8 @@ export class Login implements OnInit {
   formMessage = '';
   // Informativo: se ha llegado aquí al intentar algo que necesita sesión
   infoMessage = '';
+  // Aviso de éxito de otra pantalla (por ejemplo, contraseña cambiada)
+  successMessage = '';
   private returnUrl: string | null = null;
 
   ngOnInit(): void {
@@ -68,11 +70,17 @@ export class Login implements OnInit {
         if (notice?.kind === 'error') {
           this.formMessage = notice.message;
           this.cdr.markForCheck();
+        } else if (notice?.kind === 'success') {
+          this.successMessage = notice.message;
+          this.cdr.markForCheck();
         }
       });
 
     // El aviso es para esta visita: al salir del login no debe reaparecer más tarde
-    this.destroyRef.onDestroy(() => this.sessionNoticeService.clear('error'));
+    this.destroyRef.onDestroy(() => {
+      this.sessionNoticeService.clear('error');
+      this.sessionNoticeService.clear('success');
+    });
   }
 
   onSubmit(): void {

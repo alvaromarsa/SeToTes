@@ -31,6 +31,10 @@ export interface CurrentUserResponse {
   user: AuthUser;
 }
 
+export interface MessageResponse {
+  message: string;
+}
+
 export interface LogoutResponse {
   message: string;
 }

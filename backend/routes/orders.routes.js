@@ -3,6 +3,7 @@ const express = require('express');
 const pool = require('../db');
 const { SHIPPING_COST } = require('../config/constants');
 const { requireAuth } = require('../middleware/auth');
+const { notifyOrderCreated } = require('../services/email/order-notifications');
 const { OrderError, formatOrder } = require('../utils/orders');
 
 const router = express.Router();
@@ -118,6 +119,9 @@ router.post('/', async (request, response) => {
     await client.query('DELETE FROM cart_items WHERE user_id = $1', [userId]);
 
     await client.query('COMMIT');
+
+    // Tras el COMMIT y sin esperar: si el email falla, el pedido sigue siendo válido
+    notifyOrderCreated(order.id);
 
     return response.status(201).json(formatOrder(order));
   } catch (error) {

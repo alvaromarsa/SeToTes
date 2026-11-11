@@ -42,7 +42,7 @@ async function requireAuth(request, response, next) {
 
   try {
     const result = await pool.query(
-      'SELECT id, role, is_blocked FROM users WHERE id = $1',
+      'SELECT id, role, is_blocked, password_changed_at FROM users WHERE id = $1',
       [payload.sub]
     );
 
@@ -52,6 +52,21 @@ async function requireAuth(request, response, next) {
       clearAuthCookie(response);
       return response.status(401).json({
         message: 'La sesión no es válida',
+      });
+    }
+
+    // Sesión emitida antes del último cambio de contraseña: deja de valer.
+    // iat va en segundos, así que el cambio se redondea hacia abajo al segundo; si no, un
+    // login hecho en el mismo segundo que el cambio se invalidaría por error. Contrapartida:
+    // un token emitido en ese mismo segundo, pero justo antes del cambio, sigue siendo válido.
+    if (
+      user.password_changed_at &&
+      (typeof payload.iat !== 'number' ||
+        Math.floor(user.password_changed_at.getTime() / 1000) > payload.iat)
+    ) {
+      clearAuthCookie(response);
+      return response.status(401).json({
+        message: 'Tu sesión ha caducado. Inicia sesión de nuevo.',
       });
     }
 

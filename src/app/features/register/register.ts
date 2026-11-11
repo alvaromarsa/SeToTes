@@ -7,23 +7,15 @@ import {
   Injector,
   viewChild,
 } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/services/auth.service';
 import { SessionNoticeService } from '@core/services/session-notice.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { FormUtils } from '@shared/utils/form-utils';
 import { focusAfterRender } from '@shared/utils/focus-after-render';
+import { passwordsMatchValidator } from '@shared/utils/password-validators';
 import { HttpErrorResponse } from '@angular/common/http';
-
-const passwordsMatchValidator: ValidatorFn = (
-  control: AbstractControl,
-): ValidationErrors | null => {
-  const password = control.get('password')?.value;
-  const confirmPassword = control.get('confirmPassword')?.value;
-
-  return password === confirmPassword ? null : { passwordMismatch: true };
-};
 
 @Component({
   selector: 'app-register',

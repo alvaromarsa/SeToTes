@@ -71,6 +71,12 @@ function retrieveCheckoutSession(sessionId) {
   return stripeClient.checkout.sessions.retrieve(sessionId);
 }
 
+// Expira una sesión abierta y devuelve la sesión ya expirada. Lanza el error si Stripe falla
+// (por ejemplo, porque el cliente acaba de pagar y la sesión ya no está abierta).
+function expireCheckoutSession(sessionId) {
+  return stripeClient.checkout.sessions.expire(sessionId);
+}
+
 // Al cancelar un pedido: si su sesión sigue abierta, se cierra para que ya no se pueda pagar.
 // "Mejor esfuerzo": si Stripe falla, se registra y la cancelación sigue adelante.
 async function expireCheckoutSessionIfOpen(sessionId, orderId) {
@@ -98,6 +104,7 @@ module.exports = {
   isStripeError,
   createCheckoutSession,
   retrieveCheckoutSession,
+  expireCheckoutSession,
   expireCheckoutSessionIfOpen,
   constructWebhookEvent,
 };

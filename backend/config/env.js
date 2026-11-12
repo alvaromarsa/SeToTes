@@ -2,6 +2,11 @@ const path = require('node:path');
 
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
+const {
+  RECONCILE_DEFAULT_INTERVAL_MINUTES,
+  RECONCILE_DEFAULT_MIN_AGE_MINUTES,
+} = require('./constants');
+
 if (!process.env.JWT_SECRET) {
   throw new Error('Falta JWT_SECRET en backend/.env');
 }
@@ -187,6 +192,12 @@ const database = {
 // Tiempo máximo para terminar las peticiones en curso al apagar el servidor (server.js)
 const shutdownTimeoutMs = readInteger('SHUTDOWN_TIMEOUT_MS', 10_000, 0);
 
+// Reconciliación con Stripe (jobs/reconcile-stripe-orders.js). Valores por defecto en constants.js
+const reconcile = {
+  minAgeMinutes: readInteger('RECONCILE_MIN_AGE_MINUTES', RECONCILE_DEFAULT_MIN_AGE_MINUTES, 1),
+  intervalMinutes: readInteger('RECONCILE_INTERVAL_MINUTES', RECONCILE_DEFAULT_INTERVAL_MINUTES, 1),
+};
+
 // Comprobaciones extra en producción: el servidor no arranca si algo crítico está mal.
 // Los mensajes dicen QUÉ falta o está mal, nunca el valor (pueden ser secretos).
 const JWT_SECRET_MIN_LENGTH = 32;
@@ -237,4 +248,5 @@ module.exports = {
   trustProxy,
   database,
   shutdownTimeoutMs,
+  reconcile,
 };

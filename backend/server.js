@@ -2,6 +2,7 @@ const app = require('./app');
 const pool = require('./db');
 const { shutdownTimeoutMs } = require('./config/env');
 const { startAbandonedOrdersJob } = require('./jobs/cancel-abandoned-orders');
+const { startReconcileJob } = require('./jobs/reconcile-stripe-orders');
 
 const port = Number(process.env.PORT) || 3000;
 
@@ -10,13 +11,13 @@ const server = app.listen(port, () => {
 });
 
 // Tareas periódicas: solo al arrancar el servidor, nunca al importar app.js
-const abandonedOrdersTimer = startAbandonedOrdersJob();
+const jobs = [startAbandonedOrdersJob(), startReconcileJob()];
 
 let isShuttingDown = false;
 
-// Cierre ordenado: parar el job, no aceptar conexiones nuevas, esperar a las peticiones en
-// curso (como máximo shutdownTimeoutMs) y cerrar el pool de PostgreSQL. Una segunda señal
-// mientras se cierra no lo repite.
+// Cierre ordenado: parar los jobs, no aceptar conexiones nuevas, esperar a las peticiones en
+// curso y a la pasada de job que esté en marcha (todo como máximo shutdownTimeoutMs) y cerrar
+// el pool de PostgreSQL. Una segunda señal mientras se cierra no lo repite.
 function shutdown(reason, exitCode) {
   if (isShuttingDown) {
     return;
@@ -24,12 +25,13 @@ function shutdown(reason, exitCode) {
   isShuttingDown = true;
 
   console.log(`Cerrando el servidor (${reason})…`);
-  clearInterval(abandonedOrdersTimer);
+  // Ninguna pasada nueva; la que esté en curso se espera antes de cerrar el pool
+  jobs.forEach((job) => job.stop());
 
   // Si las peticiones en curso no terminan a tiempo, se cortan. unref: este temporizador no
   // mantiene vivo el proceso si todo termina antes
   const forceExitTimer = setTimeout(() => {
-    console.error(`Las peticiones en curso no terminaron en ${shutdownTimeoutMs} ms: se cierran a la fuerza`);
+    console.error(`El cierre no terminó en ${shutdownTimeoutMs} ms (peticiones o jobs en curso): se fuerza`);
     server.closeAllConnections();
     process.exit(exitCode || 1);
   }, shutdownTimeoutMs);
@@ -46,6 +48,9 @@ function shutdown(reason, exitCode) {
     if (closeError) {
       console.error('Error al cerrar el servidor HTTP:', closeError.message);
     }
+
+    // Una pasada a medias chocaría con el pool cerrado: se espera a que termine
+    await Promise.all(jobs.map((job) => job.waitForCurrentRun()));
 
     try {
       await pool.end();

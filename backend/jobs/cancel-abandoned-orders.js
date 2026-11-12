@@ -1,13 +1,13 @@
 const pool = require('../db');
 const { PENDING_ORDER_TTL_MINUTES } = require('../config/constants');
-const { runInBackground } = require('../utils/background');
 const { cancelOrderAndRestock } = require('../utils/orders');
+const { startPeriodicJob } = require('../utils/periodic-job');
 
 const INTERVAL_MINUTES = 10;
 
 // Pedidos 'pending' SIN sesión de Stripe (el cliente no llegó a la pasarela) con más de
 // PENDING_ORDER_TTL_MINUTES: se cancelan y vuelve su stock. Los que tienen sesión los
-// resuelve el evento checkout.session.expired del webhook.
+// resuelve el evento checkout.session.expired del webhook (o, si se pierde, la reconciliación).
 async function cancelAbandonedOrders() {
   const candidates = await pool.query(
     `SELECT id
@@ -59,27 +59,14 @@ async function cancelAbandonedOrders() {
   }
 }
 
-let isRunning = false;
-
 // Se arranca desde server.js (no desde app.js), para que los tests que importan la app no lo lancen.
-// runInBackground captura cualquier error: un fallo nunca tira el proceso.
-// Devuelve el temporizador para poder pararlo en el cierre ordenado (clearInterval).
+// Devuelve el job para el cierre ordenado (stop y waitForCurrentRun, ver utils/periodic-job.js).
 function startAbandonedOrdersJob() {
-  return setInterval(() => {
-    // Si la pasada anterior sigue en marcha, no se solapan
-    if (isRunning) {
-      return;
-    }
-
-    isRunning = true;
-    runInBackground(async () => {
-      try {
-        await cancelAbandonedOrders();
-      } finally {
-        isRunning = false;
-      }
-    }, 'job de pedidos abandonados');
-  }, INTERVAL_MINUTES * 60 * 1000);
+  return startPeriodicJob({
+    name: 'job de pedidos abandonados',
+    intervalMinutes: INTERVAL_MINUTES,
+    task: cancelAbandonedOrders,
+  });
 }
 
 module.exports = { startAbandonedOrdersJob, cancelAbandonedOrders };

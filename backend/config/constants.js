@@ -30,6 +30,17 @@ const PENDING_ORDER_TTL_MINUTES = 60;
 // creación; 35 deja margen por si el reloj del servidor va algo desfasado
 const CHECKOUT_SESSION_TTL_MINUTES = 35;
 
+// Reconciliación con Stripe (jobs/reconcile-stripe-orders.js): cubre webhooks perdidos.
+// Edad mínima del pedido e intervalo entre pasadas: valores por defecto, configurables por
+// entorno (RECONCILE_MIN_AGE_MINUTES y RECONCILE_INTERVAL_MINUTES, validados en config/env.js)
+const RECONCILE_DEFAULT_MIN_AGE_MINUTES = 10;
+const RECONCILE_DEFAULT_INTERVAL_MINUTES = 5;
+// Pedidos revisados por pasada como máximo (los más antiguos primero)
+const RECONCILE_BATCH_SIZE = 20;
+// Sesión aún 'open' este tiempo después de su expires_at: Stripe debería haberla caducado ya,
+// así que la reconciliación la expira y cancela el pedido
+const RECONCILE_EXPIRY_GRACE_MINUTES = 10;
+
 // Límite de intentos por IP (express-rate-limit, contador en memoria del proceso).
 // Durante las pruebas se reinicia reiniciando el backend.
 const RATE_LIMITS = {
@@ -65,6 +76,10 @@ module.exports = {
   PRIVACY_NOTICE_VERSION,
   PENDING_ORDER_TTL_MINUTES,
   CHECKOUT_SESSION_TTL_MINUTES,
+  RECONCILE_DEFAULT_MIN_AGE_MINUTES,
+  RECONCILE_DEFAULT_INTERVAL_MINUTES,
+  RECONCILE_BATCH_SIZE,
+  RECONCILE_EXPIRY_GRACE_MINUTES,
   ORDER_STATUSES,
   ORDER_TRANSITIONS,
 };

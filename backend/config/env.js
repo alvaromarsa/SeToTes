@@ -129,4 +129,112 @@ if (!/^\d+$/.test(trustProxyRaw)) {
 
 const trustProxy = Number(trustProxyRaw);
 
-module.exports = { isProduction, corsOrigins, publicBaseUrl, frontendUrl, emailMode, smtp, stripe, trustProxy };
+// Entero de una variable opcional; si falta, el valor por defecto. El error nombra la
+// variable, nunca su valor.
+function readInteger(name, defaultValue, min) {
+  const raw = process.env[name]?.trim();
+
+  if (!raw) {
+    return defaultValue;
+  }
+
+  if (!/^\d+$/.test(raw) || Number(raw) < min) {
+    throw new Error(`${name} en backend/.env debe ser un número entero mayor o igual que ${min}`);
+  }
+
+  return Number(raw);
+}
+
+function readBoolean(name, defaultValue) {
+  const raw = process.env[name]?.trim().toLowerCase();
+
+  if (!raw) {
+    return defaultValue;
+  }
+
+  if (raw !== 'true' && raw !== 'false') {
+    throw new Error(`${name} en backend/.env debe ser "true" o "false"`);
+  }
+
+  return raw === 'true';
+}
+
+// Base de datos: DATABASE_URL (bases de datos gestionadas) o las variables DB_* sueltas.
+// SSL activado por defecto en producción y SIEMPRE verificando el certificado del servidor:
+// sin verificar, la conexión va cifrada pero un intermediario podría hacerse pasar por la
+// base de datos. Si el proveedor usa su propia autoridad de certificación, se indica en
+// DB_SSL_CA (PEM) en vez de desactivar la verificación.
+// Ojo: un "sslmode=..." dentro de DATABASE_URL tiene prioridad sobre esta configuración en pg.
+const DB_VARIABLES = ['DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER', 'DB_PASSWORD'];
+const databaseUrl = process.env.DATABASE_URL?.trim() || null;
+const sslEnabled = readBoolean('DB_SSL', isProduction);
+// En variables de entorno de una línea, los saltos del PEM suelen escribirse como \n
+const sslCa = process.env.DB_SSL_CA?.trim().replace(/\\n/g, '\n') || null;
+
+const database = {
+  connectionString: databaseUrl,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT ? readInteger('DB_PORT', 5432, 1) : undefined,
+  name: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  ssl: sslEnabled ? { rejectUnauthorized: true, ...(sslCa ? { ca: sslCa } : {}) } : false,
+  poolMax: readInteger('DB_POOL_MAX', 10, 1),
+  idleTimeoutMs: readInteger('DB_IDLE_TIMEOUT_MS', 30_000, 0),
+  connectionTimeoutMs: readInteger('DB_CONNECTION_TIMEOUT_MS', 5_000, 0),
+};
+
+// Tiempo máximo para terminar las peticiones en curso al apagar el servidor (server.js)
+const shutdownTimeoutMs = readInteger('SHUTDOWN_TIMEOUT_MS', 10_000, 0);
+
+// Comprobaciones extra en producción: el servidor no arranca si algo crítico está mal.
+// Los mensajes dicen QUÉ falta o está mal, nunca el valor (pueden ser secretos).
+const JWT_SECRET_MIN_LENGTH = 32;
+
+function isHttpsUrl(value) {
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+if (isProduction) {
+  if (process.env.JWT_SECRET.length < JWT_SECRET_MIN_LENGTH) {
+    throw new Error(`JWT_SECRET debe tener al menos ${JWT_SECRET_MIN_LENGTH} caracteres en producción`);
+  }
+
+  // Cada origen de CORS: https y solo origen (sin ruta ni "/" final), p. ej. https://www.setotes.es
+  const invalidOrigins = corsOrigins.filter((origin) => !isHttpsUrl(origin) || new URL(origin).origin !== origin);
+  if (invalidOrigins.length > 0) {
+    throw new Error(
+      `CORS_ORIGIN tiene ${invalidOrigins.length} origen(es) no válidos: en producción cada uno debe ser https://dominio, sin ruta ni "/" final`
+    );
+  }
+
+  for (const [name, value] of [['FRONTEND_URL', frontendUrl], ['PUBLIC_BASE_URL', publicBaseUrl]]) {
+    if (!isHttpsUrl(value)) {
+      throw new Error(`${name} debe ser una URL https válida en producción`);
+    }
+  }
+
+  if (!databaseUrl) {
+    const missingDb = DB_VARIABLES.filter((name) => !process.env[name]?.trim());
+    if (missingDb.length > 0) {
+      throw new Error(`Falta la configuración de la base de datos: define DATABASE_URL o ${missingDb.join(', ')}`);
+    }
+  }
+}
+
+module.exports = {
+  isProduction,
+  corsOrigins,
+  publicBaseUrl,
+  frontendUrl,
+  emailMode,
+  smtp,
+  stripe,
+  trustProxy,
+  database,
+  shutdownTimeoutMs,
+};

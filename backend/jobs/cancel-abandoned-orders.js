@@ -63,8 +63,9 @@ let isRunning = false;
 
 // Se arranca desde server.js (no desde app.js), para que los tests que importan la app no lo lancen.
 // runInBackground captura cualquier error: un fallo nunca tira el proceso.
+// Devuelve el temporizador para poder pararlo en el cierre ordenado (clearInterval).
 function startAbandonedOrdersJob() {
-  setInterval(() => {
+  return setInterval(() => {
     // Si la pasada anterior sigue en marcha, no se solapan
     if (isRunning) {
       return;

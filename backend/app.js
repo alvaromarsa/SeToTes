@@ -41,6 +41,11 @@ app.use(cors({
   credentials: true,
 }));
 
+// Healthcheck antes de cualquier otra ruta. No pasa por ningún límite de intentos: los
+// limitadores están puestos ruta a ruta (login, registro…). Si algún día se añade uno
+// global, este endpoint debe quedar fuera.
+app.use('/api/health', require('./routes/health.routes'));
+
 // Webhook de Stripe ANTES de express.json(): Stripe firma el cuerpo exacto que envía, y la
 // firma solo se puede verificar sobre esos mismos bytes. express.json() lo convertiría en un
 // objeto y ya no se podría comprobar. Esta ruta usa express.raw() (cuerpo como Buffer); como

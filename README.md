@@ -72,6 +72,37 @@ ng serve
 
 La URL de la API está en un único sitio: la constante `API_BASE_URL` de `src/app/core/config/api.config.ts`. Todos los servicios construyen sus URLs a partir de ella (`${API_BASE_URL}/api/...`) y los interceptores la usan para reconocer las peticiones a la API. El origen del frontend tiene que estar incluido en `CORS_ORIGIN` del backend.
 
+## Desarrollo con Docker (opcional)
+
+`docker-compose.yml` levanta PostgreSQL 16.15 y el backend en contenedores. **Solo para desarrollo local: no es una configuración de producción.** El frontend sigue con `ng serve` en la máquina.
+
+```bash
+cp .env.docker.example .env.docker      # una vez: rellenar con valores propios (no se versiona)
+docker compose up -d --build            # construir y levantar (db + api)
+docker compose ps                       # estado: ambos deben estar "healthy"
+docker compose logs -f api              # logs del backend (aquí salen los emails en modo console)
+docker compose restart api              # reiniciar solo el backend
+docker compose down                     # parar; los datos y las imágenes se conservan
+docker compose down -v                  # parar y BORRAR la base de datos y las imágenes subidas
+```
+
+Aplicar una migración nueva (initdb solo carga `schema.sql` con el volumen vacío):
+
+```bash
+docker compose exec -T db psql -1 -v ON_ERROR_STOP=1 -U totebag -d totebag_db < backend/database/migrations/NNN_descripcion.sql
+```
+
+Dar rol de administrador a un usuario registrado (la base de datos del compose empieza vacía):
+
+```bash
+docker compose exec db psql -U totebag -d totebag_db -c "UPDATE users SET role = 'admin' WHERE email = 'tu@email.com'"
+```
+
+- Antes de levantarlo, para el backend local (`npm run dev`): los dos usan el puerto 3000.
+- PostgreSQL del compose: `127.0.0.1:5433` (no choca con un PostgreSQL local en el 5432).
+- Stripe CLI funciona igual: `stripe listen --forward-to localhost:3000/api/payments/webhook`.
+- `schema.sql` solo se carga la primera vez (volumen vacío). Para empezar de cero: `docker compose down -v`.
+
 ## Estructura
 
 ```

@@ -1,0 +1,61 @@
+# SOLO DESARROLLO LOCAL. No es una configuración de producción.
+# Secretos (contraseña de PostgreSQL, DATABASE_URL, JWT_SECRET, Stripe) en .env.docker,
+# que no se versiona: copiar .env.docker.example y rellenarlo.
+#
+#   docker compose up -d --build     construir y levantar
+#   docker compose logs -f api       ver los logs del backend
+#   docker compose down              parar (los datos se conservan en los volúmenes)
+#   docker compose down -v           parar y BORRAR la base de datos y las imágenes subidas
+
+services:
+  db:
+    image: postgres:16.15-bookworm
+    environment:
+      POSTGRES_DB: totebag_db
+      POSTGRES_USER: totebag
+    # POSTGRES_PASSWORD sale de aquí. Con un único archivo, este contenedor también ve las demás
+    # variables de .env.docker aunque no las use (aceptable en local)
+    env_file: .env.docker
+    ports:
+      # Solo desde esta máquina, y en el 5433 para no chocar con el PostgreSQL local (5432)
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Esquema inicial. Solo se ejecuta si el volumen db-data está vacío (primera vez o tras down -v)
+      - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U totebag -d totebag_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    # Secretos: DATABASE_URL (con la contraseña), JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+    env_file: .env.docker
+    environment:
+      # development y no production: en producción config/env.js exige URLs https, JWT_SECRET
+      # de 32+ caracteres, SMTP real y claves de Stripe reales, que no tienen sentido en local.
+      # En development los emails van a la consola (docker compose logs api) y Stripe exige sk_test_
+      NODE_ENV: development
+      PORT: "3000"
+      DB_SSL: "false"
+      CORS_ORIGIN: http://localhost:4200
+      FRONTEND_URL: http://localhost:4200
+      PUBLIC_BASE_URL: http://localhost:3000
+      EMAIL_MODE: console
+    ports:
+      # Solo desde esta máquina. ng serve y Stripe CLI usan localhost:3000 igual que sin Docker
+      - "127.0.0.1:3000:3000"
+    volumes:
+      # Imágenes subidas (temporal, hasta moverlas a almacenamiento en la nube)
+      - uploads:/app/uploads
+    # Margen sobre SHUTDOWN_TIMEOUT_MS (10 s) para que el cierre ordenado termine antes del SIGKILL
+    stop_grace_period: 15s
+
+volumes:
+  db-data:
+  uploads:

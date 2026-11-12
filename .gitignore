@@ -55,3 +55,7 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Docker (solo desarrollo): .env.docker tiene secretos; el ejemplo sí se versiona
+.env.docker
+!.env.docker.example

@@ -76,3 +76,15 @@
 .orders-message--error {
   color: #b3261e;
 }
+
+.orders-message a {
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.orders-message a:focus-visible {
+  border-radius: 2px;
+  outline: 3px solid #111827;
+  outline-offset: 2px;
+}

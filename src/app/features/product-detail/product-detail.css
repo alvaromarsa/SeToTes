@@ -184,6 +184,8 @@
 
 .product-info__details a {
   color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .product-info__description {

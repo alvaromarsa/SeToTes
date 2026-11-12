@@ -163,6 +163,10 @@
   line-height: 1.4;
 }
 
+/* Descripción: estilos mínimos (el diseño se rehará después) */
+.product-form__textarea { min-height: 8rem; resize: vertical; font: inherit; }
+.product-form__counter { color: #6b625d; font-size: 0.82rem; }
+
 .product-form__submit {
   min-height: 49px;
   margin-top: 0.3rem;

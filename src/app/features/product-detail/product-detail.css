@@ -186,6 +186,22 @@
   color: inherit;
 }
 
+.product-info__description {
+  margin-top: 1.5rem;
+}
+
+.product-info__description h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.product-info__description p {
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 .availability {
   display: inline-block;
   margin: 0 0 1rem;

@@ -16,11 +16,17 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { CATEGORY_INFO } from '@core/config/categories.config';
 import type { AdminProduct } from '@core/models/admin-product.models';
 import type { ProductImage } from '@core/models/product-image.models';
-import { ProductService, PRODUCT_CATEGORIES, ProductCategory } from '@core/services/product.service';
+import {
+  PRODUCT_CATEGORIES,
+  PRODUCT_DESCRIPTION_MAX_LENGTH,
+  ProductCategory,
+  ProductService,
+} from '@core/services/product.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { ProductImageManager } from '@features/admin/components/product-image-manager/product-image-manager';
 import { VisibilitySwitch } from '@features/admin/components/visibility-switch/visibility-switch';
 import { FormUtils } from '@shared/utils/form-utils';
+import { countCharacters, plainTextLength } from '@shared/utils/plain-text';
 
 type CategoryFilter = ProductCategory | 'all';
 type StatusFilter = 'all' | 'visible' | 'hidden';
@@ -46,6 +52,7 @@ export class ProductManagement implements OnInit {
   isLoading = true;
   readonly formUtils = FormUtils;
   readonly categories = PRODUCT_CATEGORIES;
+  readonly descriptionMaxLength = PRODUCT_DESCRIPTION_MAX_LENGTH;
   readonly categoryFilters: readonly CategoryFilter[] = ['all', ...PRODUCT_CATEGORIES];
   selectedCategory: CategoryFilter = 'all';
   readonly statusFilters: readonly { value: StatusFilter; label: string }[] = [
@@ -85,7 +92,14 @@ export class ProductManagement implements OnInit {
     stock: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
     color: ['', [Validators.required]],
     category: ['bolsas' as ProductCategory, [Validators.required]],
+    // Texto plano opcional (saltos de línea permitidos)
+    description: ['', [plainTextLength({ max: PRODUCT_DESCRIPTION_MAX_LENGTH })]],
   });
+
+  // Mismo recuento que el servidor (caracteres, sin los espacios de los extremos)
+  get descriptionLength(): number {
+    return countCharacters(this.productForm.controls.description.value);
+  }
 
   // El filtro de estado se aplica primero: las pestañas de categoría cuentan sobre él
   get statusFilteredProducts(): AdminProduct[] {
@@ -279,6 +293,7 @@ export class ProductManagement implements OnInit {
       stock: product.stock,
       color: product.color ?? '',
       category: product.category,
+      description: product.description ?? '',
     });
   }
 

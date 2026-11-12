@@ -3,7 +3,13 @@ const express = require('express');
 const pool = require('../db');
 const { CATEGORIES } = require('../config/constants');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { PRODUCT_IMAGES_SQL, formatAdminProduct, formatProduct } = require('../utils/products');
+const {
+  PRODUCT_IMAGES_SQL,
+  formatAdminProduct,
+  formatProduct,
+  formatProductDetail,
+  parseDescription,
+} = require('../utils/products');
 
 const router = express.Router();
 
@@ -53,7 +59,7 @@ router.get('/:id', async (request, response) => {
 
   try {
     const result = await pool.query(
-      `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
+      `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, p.description, ${PRODUCT_IMAGES_SQL}
        FROM products p
        WHERE p.id = $1 AND p.is_visible`,
       [productId]
@@ -65,7 +71,7 @@ router.get('/:id', async (request, response) => {
       });
     }
 
-    return response.json(formatProduct(result.rows[0]));
+    return response.json(formatProductDetail(result.rows[0]));
   } catch (error) {
     console.error('Error al consultar el producto:', error.message);
     return response.status(500).json({
@@ -76,6 +82,7 @@ router.get('/:id', async (request, response) => {
 
 router.post('/', requireAuth, requireAdmin, async (request, response) => {
   const { name, price, stock, color, category } = request.body ?? {};
+  const description = parseDescription(request.body?.description);
 
   if (
     typeof name !== 'string' ||
@@ -93,12 +100,16 @@ router.post('/', requireAuth, requireAdmin, async (request, response) => {
     });
   }
 
+  if (description.error) {
+    return response.status(400).json({ message: description.error });
+  }
+
   try {
     const result = await pool.query(
-      `INSERT INTO products (name, price, stock, color, category, is_visible)
-       VALUES ($1, $2, $3, $4, $5, false)
-       RETURNING id, name, price, stock, color, category, is_visible`,
-      [name.trim(), price, stock, color ?? null, category]
+      `INSERT INTO products (name, price, stock, color, category, description, is_visible)
+       VALUES ($1, $2, $3, $4, $5, $6, false)
+       RETURNING id, name, price, stock, color, category, description, is_visible`,
+      [name.trim(), price, stock, color ?? null, category, description.value]
     );
 
     // Solo lo usa el admin: formato de administración. Recién creado: oculto y sin imágenes
@@ -114,6 +125,7 @@ router.post('/', requireAuth, requireAdmin, async (request, response) => {
 router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
   const productId = Number(request.params.id);
   const { name, price, stock, color, category } = request.body ?? {};
+  const description = parseDescription(request.body?.description);
 
   if (
     !Number.isInteger(productId) ||
@@ -133,13 +145,19 @@ router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
     });
   }
 
+  if (description.error) {
+    return response.status(400).json({ message: description.error });
+  }
+
   try {
+    // Si no se envía description, se conserva la que había ($8 = false)
     const result = await pool.query(
       `UPDATE products AS p
-       SET name = $1, price = $2, stock = $3, color = $4, category = $5
+       SET name = $1, price = $2, stock = $3, color = $4, category = $5,
+           description = CASE WHEN $8::boolean THEN $7 ELSE p.description END
        WHERE p.id = $6
-       RETURNING p.id, p.name, p.price, p.stock, p.color, p.category, p.is_visible, ${PRODUCT_IMAGES_SQL}`,
-      [name.trim(), price, stock, color ?? null, category, productId]
+       RETURNING p.id, p.name, p.price, p.stock, p.color, p.category, p.description, p.is_visible, ${PRODUCT_IMAGES_SQL}`,
+      [name.trim(), price, stock, color ?? null, category, productId, description.value, description.provided]
     );
 
     if (result.rows.length === 0) {

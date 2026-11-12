@@ -22,10 +22,10 @@ import { CATEGORY_INFO, categoryPath } from '@core/config/categories.config';
 import { CartService } from '@core/services/cart.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { loginUrlTree } from '@core/utils/return-url';
-import { PRODUCT_CATEGORIES, Product, ProductService } from '@core/services/product.service';
+import { DetailedProduct, PRODUCT_CATEGORIES, ProductService } from '@core/services/product.service';
 
 type LoadResult =
-  | { state: 'loaded'; product: Product }
+  | { state: 'loaded'; product: DetailedProduct }
   | { state: 'not-found' }
   | { state: 'error' };
 
@@ -65,7 +65,7 @@ export class ProductDetail implements OnInit, OnDestroy {
   readonly quantityControl = this.fb.nonNullable.control(1);
 
   viewState: ViewState = 'loading';
-  product: Product | null = null;
+  product: DetailedProduct | null = null;
   activeImageIndex = 0;
   quantityOptions: number[] = [];
   isAdding = false;

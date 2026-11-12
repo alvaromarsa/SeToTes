@@ -204,7 +204,9 @@ CREATE TABLE public.products (
     color text,
     category text NOT NULL,
     is_visible boolean DEFAULT false NOT NULL,
+    description text,
     CONSTRAINT products_category_check CHECK ((category = ANY (ARRAY['bolsas'::text, 'neceseres'::text, 'fundas'::text, 'telas'::text]))),
+    CONSTRAINT products_description_length_check CHECK ((char_length(description) <= 2000)),
     CONSTRAINT products_price_check CHECK ((price >= (0)::numeric)),
     CONSTRAINT products_stock_check CHECK ((stock >= 0))
 );
@@ -221,6 +223,18 @@ ALTER TABLE public.products ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
+);
+
+
+--
+-- Name: store_settings; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.store_settings (
+    key text NOT NULL,
+    value text NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_by integer
 );
 
 
@@ -351,6 +365,14 @@ ALTER TABLE ONLY public.product_images
 
 ALTER TABLE ONLY public.products
     ADD CONSTRAINT products_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: store_settings store_settings_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.store_settings
+    ADD CONSTRAINT store_settings_pkey PRIMARY KEY (key);
 
 
 --

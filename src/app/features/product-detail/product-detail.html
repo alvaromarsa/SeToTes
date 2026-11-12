@@ -128,6 +128,14 @@
             }
 
             <p class="purchase__success" aria-live="polite">{{ addSuccessMessage }}</p>
+
+            <!-- Texto plano escrito por el admin: interpolación (nunca innerHTML); pre-line respeta los saltos -->
+            @if (product.description) {
+              <section class="product-info__description" aria-labelledby="product-description-title">
+                <h2 id="product-description-title">Descripción</h2>
+                <p>{{ product.description }}</p>
+              </section>
+            }
           </section>
         </div>
       }

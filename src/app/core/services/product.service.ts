@@ -20,8 +20,20 @@ export interface Product {
   mainImage: ProductMainImage | null;
 }
 
-// Datos que el formulario del admin envía al crear o editar (las imágenes van aparte)
-export type ProductInput = Pick<Product, 'name' | 'price' | 'stock' | 'color' | 'category'>;
+// Máximo de la descripción (igual que PRODUCT_DESCRIPTION_MAX_LENGTH del backend, que es quien manda)
+export const PRODUCT_DESCRIPTION_MAX_LENGTH = 2000;
+
+// Detalle de un producto (/api/products/:id y administración). El listado del catálogo no
+// trae la descripción. Es texto plano: se muestra siempre con interpolación, nunca como HTML
+export interface DetailedProduct extends Product {
+  description: string | null;
+}
+
+// Datos que el formulario del admin envía al crear o editar (las imágenes van aparte).
+// Una descripción vacía la guarda el servidor como null
+export type ProductInput = Pick<Product, 'name' | 'price' | 'stock' | 'color' | 'category'> & {
+  description: string;
+};
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
@@ -36,7 +48,7 @@ export class ProductService {
   }
 
   getProduct(id: number) {
-    return this.http.get<Product>(`${this.apiUrl}/${id}`);
+    return this.http.get<DetailedProduct>(`${this.apiUrl}/${id}`);
   }
 
   // Todos los productos, visibles y ocultos (solo admin)

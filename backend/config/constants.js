@@ -8,6 +8,10 @@ const SHIPPING_COST = 7.5;
 // Única fuente del máximo de imágenes por producto (el frontend tiene una copia solo para la interfaz)
 const MAX_PRODUCT_IMAGES = 3;
 
+// Coincide con el CHECK products_description_length_check (migración 006). Se cuentan
+// caracteres, no unidades UTF-16 (un emoji cuenta 1, como char_length en PostgreSQL)
+const PRODUCT_DESCRIPTION_MAX_LENGTH = 2000;
+
 // Coinciden con el CHECK users_role_check de la base de datos
 const USER_ROLES = ['customer', 'admin'];
 
@@ -66,6 +70,7 @@ module.exports = {
   CATEGORIES,
   SHIPPING_COST,
   MAX_PRODUCT_IMAGES,
+  PRODUCT_DESCRIPTION_MAX_LENGTH,
   USER_ROLES,
   USER_STATUSES,
   PASSWORD_RESET_TOKEN_TTL_MINUTES,

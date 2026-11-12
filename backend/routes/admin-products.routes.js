@@ -20,7 +20,7 @@ class ProductVisibilityError extends Error {
 router.get('/', async (request, response) => {
   try {
     const result = await pool.query(
-      `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, p.is_visible, ${PRODUCT_IMAGES_SQL}
+      `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, p.description, p.is_visible, ${PRODUCT_IMAGES_SQL}
        FROM products p
        ORDER BY p.id`
     );
@@ -78,7 +78,7 @@ router.patch('/:id/visibility', async (request, response) => {
       `UPDATE products AS p
        SET is_visible = $1
        WHERE p.id = $2
-       RETURNING p.id, p.name, p.price, p.stock, p.color, p.category, p.is_visible, ${PRODUCT_IMAGES_SQL}`,
+       RETURNING p.id, p.name, p.price, p.stock, p.color, p.category, p.description, p.is_visible, ${PRODUCT_IMAGES_SQL}`,
       [isVisible, productId]
     );
 

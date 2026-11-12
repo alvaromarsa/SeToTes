@@ -1,0 +1,72 @@
+/* Estilos mínimos: el diseño se rehará después */
+:host {
+  display: block;
+  min-height: 100%;
+  background: #f9ece5;
+  padding: clamp(1.5rem, 4vw, 3.5rem) 1.25rem 4rem;
+}
+
+.store-settings {
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+
+.store-settings__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  color: #704833;
+  font-weight: 700;
+}
+
+.store-settings__form {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.store-settings__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.store-settings__field input {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+}
+
+.store-settings__field small {
+  color: #6b625d;
+}
+
+.store-settings__field .store-settings__error,
+.store-settings__feedback--error {
+  color: #a12a20;
+}
+
+.store-settings__form button {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  font: inherit;
+  font-weight: 700;
+}
+
+.store-settings__feedback {
+  margin: 0;
+}
+
+.store-settings__feedback--success {
+  color: #24613a;
+}
+
+.store-settings input:focus-visible,
+.store-settings button:focus-visible,
+.store-settings a:focus-visible {
+  outline: 3px solid #111827;
+  outline-offset: 2px;
+}

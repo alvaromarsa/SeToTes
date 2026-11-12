@@ -1,0 +1,4 @@
+<!-- Texto plano escrito por el admin: solo interpolación, nunca innerHTML -->
+@if (announcement$ | async; as announcement) {
+  <p class="announcement-bar" role="status">{{ announcement }}</p>
+}

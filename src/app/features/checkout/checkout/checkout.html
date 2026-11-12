@@ -67,6 +67,7 @@
               <span>Envío</span>
               <strong>{{ cart.shippingCost | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>
             </div>
+            <app-shipping-info [showTermsLink]="false" />
             <div class="checkout-summary__row checkout-summary__row--total">
               <span>Total</span>
               <strong>{{ (cart.total + cart.shippingCost) | currency: 'EUR' : 'symbol' : '1.2-2' }}</strong>

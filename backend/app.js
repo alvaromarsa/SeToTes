@@ -77,11 +77,13 @@ if (storage.driverName === 'local') {
 
 app.use('/api/products/:productId/images', require('./routes/product-images.routes'));
 app.use('/api/products', require('./routes/products.routes'));
+app.use('/api/settings', require('./routes/settings.routes'));
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/cart', require('./routes/cart.routes'));
 app.use('/api/orders', require('./routes/orders.routes'));
 app.use('/api/admin/orders', require('./routes/admin-orders.routes'));
 app.use('/api/admin/products', require('./routes/admin-products.routes'));
+app.use('/api/admin/settings', require('./routes/admin-settings.routes'));
 app.use('/api/admin/users', require('./routes/admin-users.routes'));
 
 // Cualquier otra ruta /api: 404 en JSON. Después, el manejador global de errores (siempre el último)

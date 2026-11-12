@@ -1,0 +1,7 @@
+<!-- Texto plano escrito por el admin: solo interpolación, nunca innerHTML -->
+<p class="shipping-info">
+  {{ shippingTime$ | async }}
+  @if (showTermsLink()) {
+    <a routerLink="/condiciones">Términos y condiciones</a>
+  }
+</p>

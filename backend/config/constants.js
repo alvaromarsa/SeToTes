@@ -12,6 +12,29 @@ const MAX_PRODUCT_IMAGES = 3;
 // caracteres, no unidades UTF-16 (un emoji cuenta 1, como char_length en PostgreSQL)
 const PRODUCT_DESCRIPTION_MAX_LENGTH = 2000;
 
+// Ajustes de la tienda (tabla store_settings, migración 006): lista blanca de claves.
+// field es el nombre en la API (camelCase) y label, el de los mensajes de error. defaultValue es
+// el respaldo si falta la fila en la BD; el frontend tiene su propio respaldo si falla la petición.
+// Todos son texto plano de una sola línea.
+const STORE_SETTINGS = [
+  {
+    key: 'shipping_time_text',
+    field: 'shippingTimeText',
+    label: 'El tiempo de envío',
+    minLength: 1,
+    maxLength: 120,
+    defaultValue: 'Entrega estimada en 3-5 días laborables',
+  },
+  {
+    key: 'announcement_text',
+    field: 'announcementText',
+    label: 'El aviso general',
+    minLength: 0,
+    maxLength: 200,
+    defaultValue: '',
+  },
+];
+
 // Coinciden con el CHECK users_role_check de la base de datos
 const USER_ROLES = ['customer', 'admin'];
 
@@ -25,7 +48,7 @@ const PASSWORD_MAX_LENGTH = 128;
 
 // Versiones de los textos legales aceptados (se guardan con el pedido y con el usuario).
 // Cambiarlas cuando cambien las condiciones de compra o la política de privacidad.
-const TERMS_VERSION = '2026-11';
+const TERMS_VERSION = '2026-11-12';
 const PRIVACY_NOTICE_VERSION = '2026-11';
 
 // Pedido 'pending' sin sesión de Stripe: se cancela pasado este tiempo (jobs/cancel-abandoned-orders.js)
@@ -71,6 +94,7 @@ module.exports = {
   SHIPPING_COST,
   MAX_PRODUCT_IMAGES,
   PRODUCT_DESCRIPTION_MAX_LENGTH,
+  STORE_SETTINGS,
   USER_ROLES,
   USER_STATUSES,
   PASSWORD_RESET_TOKEN_TTL_MINUTES,

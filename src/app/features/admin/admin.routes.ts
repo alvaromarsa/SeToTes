@@ -28,6 +28,13 @@ export const ADMIN_ROUTES: Routes = [
       ),
   },
   {
+    path: 'settings',
+    loadComponent: () =>
+      import('./pages/store-settings/store-settings').then(
+        (m) => m.StoreSettingsPage,
+      ),
+  },
+  {
     path: 'orders/:id',
     loadComponent: () =>
       import('./pages/order-management-detail/order-management-detail').then(

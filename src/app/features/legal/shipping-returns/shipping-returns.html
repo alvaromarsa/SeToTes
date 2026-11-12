@@ -7,7 +7,10 @@
   <h2>Envíos</h2>
   <ul>
     <li><strong>Precio:</strong> {{ legal.shipping.costEur | currency: 'EUR' : 'symbol' : '1.2-2' }} por pedido.</li>
-    <li><strong>Plazo:</strong> {{ legal.shipping.deliveryTime }}.</li>
+    <li>
+      <strong>Plazo:</strong> el estimado aparece en cada producto y en el resumen del pedido; como
+      máximo, {{ legal.shipping.maxDeliveryTime }}.
+    </li>
     <li><strong>Dónde enviamos:</strong> {{ legal.shipping.shippingArea }}.</li>
     <li><strong>Con quién:</strong> {{ legal.shipping.carrier }}.</li>
     <li>Puedes ver el estado de tus pedidos en «Mis pedidos».</li>

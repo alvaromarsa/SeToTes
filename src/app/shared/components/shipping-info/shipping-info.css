@@ -1,0 +1,14 @@
+/* Estilo mínimo: el diseño se rehará después */
+.shipping-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #4b5563;
+  overflow-wrap: anywhere;
+}
+
+.shipping-info a {
+  color: inherit;
+}

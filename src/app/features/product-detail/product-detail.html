@@ -129,6 +129,8 @@
 
             <p class="purchase__success" aria-live="polite">{{ addSuccessMessage }}</p>
 
+            <app-shipping-info />
+
             <!-- Texto plano escrito por el admin: interpolación (nunca innerHTML); pre-line respeta los saltos -->
             @if (product.description) {
               <section class="product-info__description" aria-labelledby="product-description-title">

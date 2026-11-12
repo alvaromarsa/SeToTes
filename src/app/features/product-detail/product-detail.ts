@@ -22,6 +22,7 @@ import { CATEGORY_INFO, categoryPath } from '@core/config/categories.config';
 import { CartService } from '@core/services/cart.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { loginUrlTree } from '@core/utils/return-url';
+import { ShippingInfo } from '@shared/components/shipping-info/shipping-info';
 import { DetailedProduct, PRODUCT_CATEGORIES, ProductService } from '@core/services/product.service';
 
 type LoadResult =
@@ -38,7 +39,7 @@ const MAX_QUANTITY = 99;
 
 @Component({
   selector: 'app-product-detail',
-  imports: [CurrencyPipe, ReactiveFormsModule, RouterLink],
+  imports: [CurrencyPipe, ReactiveFormsModule, RouterLink, ShippingInfo],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,0 +1,10 @@
+/* Estilo mínimo: el diseño se rehará después */
+.announcement-bar {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: #111827;
+  color: #fff;
+  font-size: 0.9rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}

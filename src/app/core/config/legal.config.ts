@@ -33,7 +33,9 @@ export const LEGAL_CONFIG = {
   shipping: {
     // Debe coincidir con SHIPPING_COST de backend/config/constants.js (el backend es quien lo cobra)
     costEur: 7.5,
-    deliveryTime: '[RELLENAR: plazo de entrega, p. ej. 3 a 5 días laborables]',
+    // El plazo ESTIMADO lo edita el admin (ajuste shippingTimeText) y se muestra en cada producto
+    // y en el resumen del pedido; aquí solo va el plazo MÁXIMO, que no cambia sin revisar los textos
+    maxDeliveryTime: '[RELLENAR: plazo máximo de entrega, p. ej. 30 días naturales]',
     shippingArea: '[RELLENAR: zonas de envío, p. ej. España peninsular]',
     carrier: '[RELLENAR: empresa de transporte]',
     returnsAddress: '[RELLENAR: dirección para devoluciones]',

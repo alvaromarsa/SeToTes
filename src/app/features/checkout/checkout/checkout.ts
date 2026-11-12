@@ -20,12 +20,13 @@ import { OrderService } from '@core/services/order.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { loginUrlTree } from '@core/utils/return-url';
 import { FormUtils } from '@shared/utils/form-utils';
+import { ShippingInfo } from '@shared/components/shipping-info/shipping-info';
 import { focusAfterRender } from '@shared/utils/focus-after-render';
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [AsyncPipe, CurrencyPipe, ReactiveFormsModule, RouterLink],
+  imports: [AsyncPipe, CurrencyPipe, ReactiveFormsModule, RouterLink, ShippingInfo],
   templateUrl: './checkout.html',
   styleUrl: './checkout.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

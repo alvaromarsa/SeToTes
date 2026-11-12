@@ -1,0 +1,63 @@
+<main class="store-settings">
+  <header class="store-settings__header">
+    <a class="store-settings__back" routerLink="/adminpanel">
+      <span aria-hidden="true">←</span> Volver al panel
+    </a>
+    <h1>Ajustes de la tienda</h1>
+    <p>Textos que se muestran en toda la tienda. Se guardan como texto plano: el HTML no se interpreta.</p>
+  </header>
+
+  @if (isLoading) {
+    <p role="status">Cargando ajustes…</p>
+  } @else if (loadError) {
+    <p class="store-settings__feedback store-settings__feedback--error" role="alert">{{ loadError }}</p>
+  } @else {
+    <form class="store-settings__form" [formGroup]="settingsForm" (ngSubmit)="onSubmit()">
+      <div class="store-settings__field">
+        <label for="shipping-time">Tiempo de envío</label>
+        <input
+          id="shipping-time"
+          type="text"
+          formControlName="shippingTimeText"
+          autocomplete="off"
+          aria-describedby="shipping-time-hint shipping-time-counter"
+        >
+        <small id="shipping-time-hint">Aparece en cada producto y en el resumen del pedido.</small>
+        <small id="shipping-time-counter">
+          {{ length('shippingTimeText') }} de {{ limits.shippingTimeText.max }} caracteres
+        </small>
+        @if (formUtils.isValidField(settingsForm, 'shippingTimeText')) {
+          <small class="store-settings__error">{{ formUtils.getFieldError(settingsForm, 'shippingTimeText') }}</small>
+        }
+      </div>
+
+      <div class="store-settings__field">
+        <label for="announcement">Aviso general (opcional)</label>
+        <input
+          id="announcement"
+          type="text"
+          formControlName="announcementText"
+          autocomplete="off"
+          aria-describedby="announcement-hint announcement-counter"
+        >
+        <small id="announcement-hint">Franja encima de la cabecera. Déjalo vacío para no mostrar ningún aviso.</small>
+        <small id="announcement-counter">
+          {{ length('announcementText') }} de {{ limits.announcementText.max }} caracteres
+        </small>
+        @if (formUtils.isValidField(settingsForm, 'announcementText')) {
+          <small class="store-settings__error">{{ formUtils.getFieldError(settingsForm, 'announcementText') }}</small>
+        }
+      </div>
+
+      <button #submitButton type="submit" [disabled]="isSaving">
+        {{ isSaving ? 'Guardando…' : 'Guardar ajustes' }}
+      </button>
+
+      <!-- Siempre presente (aunque vacío) para que los lectores de pantalla anuncien el éxito -->
+      <p class="store-settings__feedback store-settings__feedback--success" role="status">{{ successMessage }}</p>
+      @if (saveError) {
+        <p class="store-settings__feedback store-settings__feedback--error" role="alert">{{ saveError }}</p>
+      }
+    </form>
+  }
+</main>

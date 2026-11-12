@@ -8,12 +8,11 @@ import { CartService } from '@core/services/cart.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { loginUrlTree } from '@core/utils/return-url';
 import { Product, ProductCategory, ProductService,} from '@core/services/product.service';
-import { ShippingInfo } from '@shared/components/shipping-info/shipping-info';
 
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CurrencyPipe, RouterLink, ShippingInfo],
+  imports: [CurrencyPipe, RouterLink],
   templateUrl: './catalog.html',
   styleUrl: './catalog.css',
 })

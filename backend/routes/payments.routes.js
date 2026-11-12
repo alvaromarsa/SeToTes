@@ -87,7 +87,8 @@ const EVENT_HANDLERS = {
   'checkout.session.expired': handleCheckoutExpired,
 };
 
-router.post('/webhook', express.raw({ type: 'application/json' }), async (request, response) => {
+// Límite propio del cuerpo crudo: los eventos de Stripe son pequeños; 1mb evita rechazar uno legítimo
+router.post('/webhook', express.raw({ type: 'application/json', limit: '1mb' }), async (request, response) => {
   const signature = request.headers['stripe-signature'];
   let event;
 

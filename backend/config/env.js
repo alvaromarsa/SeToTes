@@ -117,4 +117,16 @@ if (!isProduction && !stripe.secretKey.startsWith('sk_test_')) {
   );
 }
 
-module.exports = { corsOrigins, publicBaseUrl, frontendUrl, emailMode, smtp, stripe };
+// Número de proxies delante del backend (balanceador de la plataforma). Con él, request.ip es
+// la IP real del cliente y el límite de intentos funciona. Un número MAYOR que los proxies
+// reales permite falsear la IP con X-Forwarded-For; 0 detrás de un proxy hace que todos los
+// clientes compartan la IP del proxy. Nunca "true".
+const trustProxyRaw = process.env.TRUST_PROXY?.trim() || '0';
+
+if (!/^\d+$/.test(trustProxyRaw)) {
+  throw new Error('TRUST_PROXY en backend/.env debe ser un número entero de proxies (0 si no hay ninguno)');
+}
+
+const trustProxy = Number(trustProxyRaw);
+
+module.exports = { isProduction, corsOrigins, publicBaseUrl, frontendUrl, emailMode, smtp, stripe, trustProxy };

@@ -58,19 +58,22 @@ app.use('/api/payments', require('./routes/payments.routes'));
 app.use(express.json({ limit: '100kb' }));
 app.use(cookieParser());
 
-// Imágenes subidas. Los nombres son únicos (uuid), así que se pueden cachear para siempre.
+// Imágenes subidas, solo con el driver local (con s3 las sirve el proveedor desde
+// PUBLIC_IMAGES_BASE_URL). Los nombres son únicos (uuid), así que se pueden cachear para siempre.
 // express.static no lista directorios; index: false evita servir index.html.
-app.use('/uploads', express.static(storage.UPLOADS_DIR, {
-  index: false,
-  dotfiles: 'ignore',
-  maxAge: '1y',
-  immutable: true,
-  setHeaders: (response) => {
-    response.setHeader('X-Content-Type-Options', 'nosniff');
-    // El frontend está en otro origen (sobrescribe el same-origin de helmet)
-    response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  },
-}));
+if (storage.driverName === 'local') {
+  app.use('/uploads', express.static(storage.UPLOADS_DIR, {
+    index: false,
+    dotfiles: 'ignore',
+    maxAge: '1y',
+    immutable: true,
+    setHeaders: (response) => {
+      response.setHeader('X-Content-Type-Options', 'nosniff');
+      // El frontend está en otro origen (sobrescribe el same-origin de helmet)
+      response.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    },
+  }));
+}
 
 app.use('/api/products/:productId/images', require('./routes/product-images.routes'));
 app.use('/api/products', require('./routes/products.routes'));

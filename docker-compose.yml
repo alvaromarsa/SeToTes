@@ -6,6 +6,9 @@
 #   docker compose logs -f api       ver los logs del backend
 #   docker compose down              parar (los datos se conservan en los volúmenes)
 #   docker compose down -v           parar y BORRAR la base de datos y las imágenes subidas
+#
+# Imágenes en MinIO (compatible con S3) en vez de en disco: STORAGE_DRIVER=s3 en .env.docker y
+#   docker compose --profile s3 up -d --build
 
 services:
   db:
@@ -34,7 +37,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    # Secretos: DATABASE_URL (con la contraseña), JWT_SECRET, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
+    # Secretos: DATABASE_URL (con la contraseña), JWT_SECRET, Stripe y credenciales S3 de la API.
+    # STORAGE_DRIVER (local o s3) también se elige en .env.docker
     env_file: .env.docker
     environment:
       # development y no production: en producción config/env.js exige URLs https, JWT_SECRET
@@ -47,15 +51,60 @@ services:
       FRONTEND_URL: http://localhost:4200
       PUBLIC_BASE_URL: http://localhost:3000
       EMAIL_MODE: console
+      # Almacenamiento S3 (solo se usa con STORAGE_DRIVER=s3 y el perfil s3): MinIO del compose.
+      # La API habla con minio:9000 (red interna) y el navegador descarga desde localhost:9000
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_BUCKET: totebag-images
+      S3_FORCE_PATH_STYLE: "true"
+      PUBLIC_IMAGES_BASE_URL: http://localhost:9000/totebag-images
     ports:
       # Solo desde esta máquina. ng serve y Stripe CLI usan localhost:3000 igual que sin Docker
       - "127.0.0.1:3000:3000"
     volumes:
-      # Imágenes subidas (temporal, hasta moverlas a almacenamiento en la nube)
+      # Imágenes con STORAGE_DRIVER=local (con s3 van a MinIO)
       - uploads:/app/uploads
     # Margen sobre SHUTDOWN_TIMEOUT_MS (10 s) para que el cierre ordenado termine antes del SIGKILL
     stop_grace_period: 15s
 
+  # Almacenamiento compatible con S3 para desarrollo (perfil s3).
+  # AVISO: bitnamilegacy/minio está CONGELADA (sin parches desde 2025-08): MinIO ya no publica
+  # imágenes en Docker Hub. SOLO desarrollo, solo en 127.0.0.1, nunca en producción
+  minio:
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+    profiles: ["s3"]
+    # MINIO_ROOT_USER y MINIO_ROOT_PASSWORD: administrador de MinIO (los usan minio y minio-init,
+    # nunca la API, que tiene su propio usuario con permisos mínimos)
+    env_file: .env.docker
+    ports:
+      - "127.0.0.1:9000:9000"   # API S3 (y descarga pública de products/*)
+      - "127.0.0.1:9001:9001"   # consola web
+    volumes:
+      - minio-data:/bitnami/minio/data
+      - ./docker/minio:/init:ro
+    healthcheck:
+      # Sin curl en la imagen: petición HTTP con bash (docker/minio/healthcheck.sh)
+      test: ["CMD", "bash", "/init/healthcheck.sh"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Una sola vez tras arrancar minio: bucket, lectura pública solo de products/* y usuario de la API
+  minio-init:
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+    profiles: ["s3"]
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file: .env.docker
+    environment:
+      S3_BUCKET: totebag-images
+    volumes:
+      - ./docker/minio:/init:ro
+    entrypoint: ["bash", "/init/init.sh"]
+    restart: "no"
+
 volumes:
   db-data:
   uploads:
+  minio-data:

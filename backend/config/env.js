@@ -198,6 +198,48 @@ const reconcile = {
   intervalMinutes: readInteger('RECONCILE_INTERVAL_MINUTES', RECONCILE_DEFAULT_INTERVAL_MINUTES, 1),
 };
 
+// Almacenamiento de imágenes (storage/). local: disco, solo para desarrollo. s3: cualquier
+// almacenamiento compatible con S3 (R2, S3, B2, MinIO); exige todas sus variables.
+const STORAGE_DRIVERS = ['local', 's3'];
+const storageDriver = process.env.STORAGE_DRIVER?.trim() || 'local';
+
+if (!STORAGE_DRIVERS.includes(storageDriver)) {
+  throw new Error('STORAGE_DRIVER en backend/.env debe ser "local" o "s3"');
+}
+
+const S3_VARIABLES = [
+  'S3_ENDPOINT',
+  'S3_REGION',
+  'S3_BUCKET',
+  'S3_ACCESS_KEY_ID',
+  'S3_SECRET_ACCESS_KEY',
+  'S3_FORCE_PATH_STYLE',
+  'PUBLIC_IMAGES_BASE_URL',
+];
+let s3 = null;
+
+if (storageDriver === 's3') {
+  const missingS3 = S3_VARIABLES.filter((name) => !process.env[name]?.trim());
+
+  if (missingS3.length > 0) {
+    throw new Error(`Faltan variables de almacenamiento S3 en backend/.env: ${missingS3.join(', ')}`);
+  }
+
+  s3 = {
+    endpoint: process.env.S3_ENDPOINT.trim(),
+    region: process.env.S3_REGION.trim(),
+    bucket: process.env.S3_BUCKET.trim(),
+    accessKeyId: process.env.S3_ACCESS_KEY_ID.trim(),
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY.trim(),
+    // true para MinIO y la mayoría de compatibles (bucket en la ruta); false para AWS S3
+    forcePathStyle: readBoolean('S3_FORCE_PATH_STYLE', false),
+    // URL desde la que el navegador descarga las imágenes (sin "/" final)
+    publicImagesBaseUrl: process.env.PUBLIC_IMAGES_BASE_URL.trim().replace(/\/+$/, ''),
+  };
+}
+
+const storage = { driver: storageDriver, s3 };
+
 // Comprobaciones extra en producción: el servidor no arranca si algo crítico está mal.
 // Los mensajes dicen QUÉ falta o está mal, nunca el valor (pueden ser secretos).
 const JWT_SECRET_MIN_LENGTH = 32;
@@ -223,7 +265,12 @@ if (isProduction) {
     );
   }
 
-  for (const [name, value] of [['FRONTEND_URL', frontendUrl], ['PUBLIC_BASE_URL', publicBaseUrl]]) {
+  const httpsUrls = [['FRONTEND_URL', frontendUrl], ['PUBLIC_BASE_URL', publicBaseUrl]];
+  if (s3) {
+    httpsUrls.push(['S3_ENDPOINT', s3.endpoint], ['PUBLIC_IMAGES_BASE_URL', s3.publicImagesBaseUrl]);
+  }
+
+  for (const [name, value] of httpsUrls) {
     if (!isHttpsUrl(value)) {
       throw new Error(`${name} debe ser una URL https válida en producción`);
     }
@@ -249,4 +296,5 @@ module.exports = {
   database,
   shutdownTimeoutMs,
   reconcile,
+  storage,
 };

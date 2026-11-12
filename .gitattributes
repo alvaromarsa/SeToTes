@@ -1,0 +1,3 @@
+# Los scripts de shell se ejecutan dentro de contenedores Linux: siempre con finales LF,
+# aunque el repositorio se clone en Windows (si no, bash falla con "\r")
+*.sh text eol=lf

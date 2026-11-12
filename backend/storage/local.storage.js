@@ -2,33 +2,37 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 const { publicBaseUrl } = require('../config/env');
+const { StorageError } = require('./errors');
+const { VARIANTS, objectKey } = require('./keys');
 
-// Almacenamiento en disco: backend/uploads/products/<key>-<variant>.webp,
+// Driver "local" (desarrollo): backend/uploads/products/<key>-<variant>.webp,
 // servido por express.static en /uploads (ver app.js)
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
-const PRODUCTS_DIR = path.join(UPLOADS_DIR, 'products');
-const VARIANTS = ['large', 'card'];
 
-function fileName(key, variant) {
-  return `${key}-${variant}.webp`;
+function filePath(key, variant) {
+  return path.join(UPLOADS_DIR, objectKey(key, variant));
 }
 
 async function save(key, variant, buffer) {
-  await fs.mkdir(PRODUCTS_DIR, { recursive: true });
-  await fs.writeFile(path.join(PRODUCTS_DIR, fileName(key, variant)), buffer);
+  try {
+    await fs.mkdir(path.dirname(filePath(key, variant)), { recursive: true });
+    await fs.writeFile(filePath(key, variant), buffer);
+  } catch (error) {
+    throw new StorageError('No se pudo guardar la imagen en disco', error);
+  }
 }
 
 // Borra todas las variantes; no falla si alguna ya no existe
 async function remove(key) {
-  await Promise.all(
-    VARIANTS.map((variant) =>
-      fs.rm(path.join(PRODUCTS_DIR, fileName(key, variant)), { force: true })
-    )
-  );
+  try {
+    await Promise.all(VARIANTS.map((variant) => fs.rm(filePath(key, variant), { force: true })));
+  } catch (error) {
+    throw new StorageError('No se pudo borrar la imagen del disco', error);
+  }
 }
 
 function publicUrl(key, variant) {
-  return `${publicBaseUrl}/uploads/products/${fileName(key, variant)}`;
+  return `${publicBaseUrl}/uploads/${objectKey(key, variant)}`;
 }
 
 module.exports = { UPLOADS_DIR, save, remove, publicUrl };

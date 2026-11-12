@@ -103,6 +103,22 @@ docker compose exec db psql -U totebag -d totebag_db -c "UPDATE users SET role =
 - Stripe CLI funciona igual: `stripe listen --forward-to localhost:3000/api/payments/webhook`.
 - `schema.sql` solo se carga la primera vez (volumen vacío). Para empezar de cero: `docker compose down -v`.
 
+### Imágenes en MinIO (compatible con S3)
+
+Por defecto las imágenes se guardan en disco (`STORAGE_DRIVER=local`). Para probar el almacenamiento S3 con MinIO:
+
+```bash
+# en .env.docker: STORAGE_DRIVER=s3 (y MINIO_ROOT_* y S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY con valores propios)
+docker compose --profile s3 up -d --build
+docker compose ps                         # minio-init "Exited (0)" es lo normal: solo se ejecuta una vez
+```
+
+- Consola de MinIO: http://127.0.0.1:9001 (usuario `MINIO_ROOT_USER`).
+- Las imágenes se descargan desde `http://localhost:9000/totebag-images/products/...` sin credenciales; listar el bucket o escribir sin credenciales está prohibido.
+- Pasar las imágenes que ya había en disco: `docker compose exec api node scripts/migrate-images-to-storage.js --dry-run` (simulación) y después sin `--dry-run`. No borra los archivos locales.
+- Volver a disco: `STORAGE_DRIVER=local` en `.env.docker` y `docker compose up -d`.
+- La imagen de MinIO está congelada (MinIO ya no publica imágenes): solo para desarrollo.
+
 ## Estructura
 
 ```

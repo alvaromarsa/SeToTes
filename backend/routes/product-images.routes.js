@@ -3,6 +3,7 @@ const express = require('express');
 
 const pool = require('../db');
 const storage = require('../storage');
+const { StorageError } = require('../storage/errors');
 const { MAX_PRODUCT_IMAGES } = require('../config/constants');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { uploadProductImages } = require('../middleware/upload');
@@ -143,7 +144,9 @@ router.post('/', uploadProductImages, async (request, response) => {
       await client.query('ROLLBACK');
     }
 
-    // Sin fila en la base de datos, los archivos escritos quedarían huérfanos
+    // Orden: primero el almacenamiento y después la BD. Si algo falla antes del COMMIT, lo ya
+    // subido se borra (mejor esfuerzo): un fallo al limpiar se registra pero NO sustituye al
+    // error original, que es el que se responde
     await Promise.all(
       (committed ? [] : savedKeys).map((key) =>
         storage.remove(key).catch((removeError) => {
@@ -154,6 +157,14 @@ router.post('/', uploadProductImages, async (request, response) => {
 
     if (error instanceof ProductImageError || error instanceof ImageError) {
       return response.status(error.status).json({ message: error.message });
+    }
+
+    // Almacenamiento caído o rechazando la subida: no es culpa del cliente ni de la API
+    if (error instanceof StorageError) {
+      console.error('Error del almacenamiento al subir las imágenes:', error.message, error.cause?.name ?? '', error.cause?.message ?? '');
+      return response.status(502).json({
+        message: 'No se pudieron guardar las imágenes. Inténtalo de nuevo en unos minutos.',
+      });
     }
 
     console.error('Error al subir las imágenes:', error);
@@ -310,8 +321,9 @@ router.delete('/:imageId', async (request, response) => {
     client.release();
   }
 
-  // Los archivos se borran tras el COMMIT: un ROLLBACK nunca deja filas sin archivo.
-  // Si falla, la imagen ya no existe para la tienda; solo queda un archivo huérfano.
+  // Orden: primero la BD y después el almacenamiento (mejor esfuerzo, tras el COMMIT). Un
+  // ROLLBACK nunca deja filas sin archivo, y si falla el borrado la imagen ya no existe para la
+  // tienda: solo queda un objeto huérfano, que es preferible a una imagen rota.
   try {
     await storage.remove(deletedKey);
   } catch (error) {

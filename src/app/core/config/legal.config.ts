@@ -25,6 +25,9 @@ export const LEGAL_CONFIG = {
     paymentProvider: 'Stripe [REVISAR: entidad de Stripe con la que se contrata y su domicilio]',
     emailProvider: '[RELLENAR: servicio de email, cuando exista]',
     hostingProvider: '[RELLENAR: proveedor de alojamiento del servidor]',
+    // Almacenamiento de las fotos del catálogo (compatible con S3: R2, S3, B2…). Ve la IP de quien
+    // descarga una imagen. Si se usa un dominio propio con funciones antibots, revisar si pone cookies
+    storageProvider: '[RELLENAR: proveedor de almacenamiento de imágenes]',
   },
 
   shipping: {

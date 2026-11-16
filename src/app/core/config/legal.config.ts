@@ -4,30 +4,30 @@
 
 export const LEGAL_CONFIG = {
   storeName: 'SeToTes',
-  domain: '[RELLENAR: dominio de la tienda, p. ej. www.setotes.es]',
-  lastUpdated: '[RELLENAR: fecha de última actualización, p. ej. 10 de noviembre de 2026]',
+  domain: 'https://setotes-demo.onrender.com',
+  lastUpdated: '16 de noviembre de 2026',
 
   owner: {
-    name: 'Inmaculada ',
-    nif: '[RELLENAR: NIF del titular]',
-    address: '[RELLENAR: domicilio completo del titular]',
-    email: '[RELLENAR: email de contacto]',
-    phone: '[RELLENAR: teléfono de contacto]',
+    name: 'Tienda de demostración (proyecto de portfolio, sin actividad comercial)',
+    nif: 'No aplica (sitio de demostración)',
+    address: 'No aplica (sitio de demostración)',
+    email: 'demo@setotes.invalid',
+    phone: 'No aplica',
     // Solo si el titular es una sociedad; si es autónomo, déjalo en null
-    registryData: '[RELLENAR: datos del Registro Mercantil, o null si no aplica]' as string | null,
+    registryData: 'No aplica' as string | null,
   },
 
   privacy: {
     // Email o dirección para ejercer los derechos de protección de datos
-    contactEmail: '[RELLENAR: email para ejercer los derechos de protección de datos]',
+    contactEmail: 'demo@setotes.invalid',
     // Encargados del tratamiento: se muestran como "cuando existan"
     // Pasarela de pago (Stripe Checkout). La entidad concreta depende del contrato con Stripe
-    paymentProvider: 'Stripe [REVISAR: entidad de Stripe con la que se contrata y su domicilio]',
-    emailProvider: '[RELLENAR: servicio de email, cuando exista]',
-    hostingProvider: '[RELLENAR: proveedor de alojamiento del servidor]',
+    paymentProvider: 'Stripe (modo de pruebas, sin cobros reales)',
+    emailProvider: 'No aplica en la demostración',
+    hostingProvider: 'Render',
     // Almacenamiento de las fotos del catálogo (compatible con S3: R2, S3, B2…). Ve la IP de quien
     // descarga una imagen. Si se usa un dominio propio con funciones antibots, revisar si pone cookies
-    storageProvider: '[RELLENAR: proveedor de almacenamiento de imágenes]',
+    storageProvider: 'Cloudflare R2',
   },
 
   shipping: {
@@ -35,13 +35,13 @@ export const LEGAL_CONFIG = {
     costEur: 7.5,
     // El plazo ESTIMADO lo edita el admin (ajuste shippingTimeText) y se muestra en cada producto
     // y en el resumen del pedido; aquí solo va el plazo MÁXIMO, que no cambia sin revisar los textos
-    maxDeliveryTime: '[RELLENAR: plazo máximo de entrega, p. ej. 30 días naturales]',
-    shippingArea: '[RELLENAR: zonas de envío, p. ej. España peninsular]',
-    carrier: '[RELLENAR: empresa de transporte]',
-    returnsAddress: '[RELLENAR: dirección para devoluciones]',
+    maxDeliveryTime: 'No aplica (sin ventas reales)',
+    shippingArea: 'No aplica',
+    carrier: 'No aplica',
+    returnsAddress: 'No aplica',
   },
 
   // Se indica en las condiciones si alguno de los productos se hace a medida
   customProductsNote:
-    '[RELLENAR: indicar si hay productos personalizados o hechos a medida y, en ese caso, cuáles quedan fuera del derecho de desistimiento]',
+    'No aplica: sitio de demostración sin ventas reales.',
 } as const;

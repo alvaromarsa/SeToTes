@@ -240,6 +240,14 @@ if (storageDriver === 's3') {
 
 const storage = { driver: storageDriver, s3 };
 
+// Build de Angular que sirve Express en producción (mismo origen que la API). Por defecto, la
+// salida de "ng build" en la raíz del repositorio. Una ruta relativa se resuelve desde backend/
+const DEFAULT_FRONTEND_DIST_DIR = path.join(__dirname, '..', '..', 'dist', 'ToteBag', 'browser');
+const frontendDistDir = path.resolve(
+  path.join(__dirname, '..'),
+  process.env.FRONTEND_DIST_DIR?.trim() || DEFAULT_FRONTEND_DIST_DIR
+);
+
 // Comprobaciones extra en producción: el servidor no arranca si algo crítico está mal.
 // Los mensajes dicen QUÉ falta o está mal, nunca el valor (pueden ser secretos).
 const JWT_SECRET_MIN_LENGTH = 32;
@@ -297,4 +305,5 @@ module.exports = {
   shutdownTimeoutMs,
   reconcile,
   storage,
+  frontendDistDir,
 };

@@ -70,7 +70,23 @@ npm install
 ng serve
 ```
 
-La URL de la API está en un único sitio: la constante `API_BASE_URL` de `src/app/core/config/api.config.ts`. Todos los servicios construyen sus URLs a partir de ella (`${API_BASE_URL}/api/...`) y los interceptores la usan para reconocer las peticiones a la API. El origen del frontend tiene que estar incluido en `CORS_ORIGIN` del backend.
+La URL de la API está en un único sitio: la constante `API_BASE_URL` de `src/app/core/config/api.config.ts`, que sale de `src/environments/`. En desarrollo (`ng serve`) es `http://localhost:3000`; en el build de producción es relativa (`/api/...`), porque Express sirve el frontend y la API desde el mismo origen. Todos los servicios construyen sus URLs a partir de ella (`${API_BASE_URL}/api/...`) y los interceptores reconocen las peticiones a la API por el prefijo `/api/`. En desarrollo, el origen del frontend tiene que estar incluido en `CORS_ORIGIN` del backend.
+
+### 4. Producción en un solo servicio
+
+```bash
+npm run start:prod
+```
+
+Compila el frontend (`ng build`, configuración de producción) y arranca el backend con `NODE_ENV=production`, que sirve el build de Angular y la API desde el mismo origen, con su propia CSP. La carpeta del build se puede cambiar con `FRONTEND_DIST_DIR`. En producción, `env.js` exige https, `JWT_SECRET` largo, SMTP y Stripe (ver `backend/.env.example`).
+
+Para desplegar en un contenedor (Render), el `Dockerfile` de la raíz compila el frontend y empaqueta el backend con el build en una sola imagen:
+
+```bash
+docker build -t setotes .
+```
+
+Las variables de entorno se configuran en la plataforma, nunca en la imagen. En Render, la ruta de healthcheck es `/api/health`, y `PORT` la pone la propia plataforma.
 
 ## Desarrollo con Docker (opcional)
 

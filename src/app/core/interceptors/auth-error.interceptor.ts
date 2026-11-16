@@ -6,7 +6,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 
-import { API_BASE_URL } from '../config/api.config';
+import { API_URL_PREFIX } from '../config/api.config';
 import { AuthService } from '../services/auth.service';
 import { SessionNoticeService } from '../services/session-notice.service';
 import { isAccountBlockedError } from '../utils/http-error-message';
@@ -23,7 +23,7 @@ export const authErrorInterceptor: HttpInterceptorFn = (request, next) => {
 
   return next(request).pipe(
     catchError((error: unknown) => {
-      if (!(error instanceof HttpErrorResponse) || !request.url.startsWith(API_BASE_URL)) {
+      if (!(error instanceof HttpErrorResponse) || !request.url.startsWith(API_URL_PREFIX)) {
         return throwError(() => error);
       }
 

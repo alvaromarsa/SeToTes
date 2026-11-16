@@ -1,0 +1,36 @@
+# Contexto de la imagen de producción (Dockerfile de la raíz). Nada de esto debe entrar en ella.
+# (backend/.dockerignore solo cuenta para backend/Dockerfile, el del docker-compose de desarrollo)
+
+# Secretos: ningún archivo de entorno, en ninguna carpeta (backend/.env, .env.docker…).
+# Ni siquiera los .example: la imagen no los necesita
+**/.env
+**/.env.*
+
+# Dependencias: se instalan dentro de la imagen con npm ci (y para Linux, no para Windows)
+**/node_modules
+
+# Builds y cachés locales: el frontend se compila dentro de la imagen
+**/dist
+.angular
+out-tsc
+coverage
+
+# Imágenes subidas en local (datos de desarrollo)
+backend/uploads
+
+# Control de versiones, editores y logs
+.git
+**/.gitignore
+.gitattributes
+.vscode
+.idea
+*.code-workspace
+**/*.log
+
+# Docker de desarrollo (compose, MinIO) y los propios archivos de Docker
+docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+backend/Dockerfile
+backend/.dockerignore

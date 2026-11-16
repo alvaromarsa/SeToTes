@@ -1,4 +1,11 @@
-const { corsOrigins, isProduction, trustProxy } = require('./config/env');
+const {
+  corsOrigins,
+  frontendDistDir,
+  isProduction,
+  publicBaseUrl,
+  storage: storageConfig,
+  trustProxy,
+} = require('./config/env');
 
 const express = require('express');
 const cors = require('cors');
@@ -7,6 +14,7 @@ const helmet = require('helmet');
 
 const storage = require('./storage');
 const { apiNotFound, errorHandler } = require('./middleware/error-handler');
+const { createFrontendRouter } = require('./middleware/frontend');
 const { requestLogger } = require('./middleware/request-logger');
 
 const app = express();
@@ -86,8 +94,25 @@ app.use('/api/admin/products', require('./routes/admin-products.routes'));
 app.use('/api/admin/settings', require('./routes/admin-settings.routes'));
 app.use('/api/admin/users', require('./routes/admin-users.routes'));
 
-// Cualquier otra ruta /api: 404 en JSON. Después, el manejador global de errores (siempre el último)
+// Cualquier otra ruta /api: 404 en JSON (antes del frontend: una /api desconocida nunca recibe HTML)
 app.use('/api', apiNotFound);
+
+// Producción: Express sirve también el build de Angular (mismo origen que la API, un solo
+// servicio), con su propia CSP. En desarrollo el frontend lo sirve ng serve en el puerto 4200
+if (isProduction) {
+  const frontendRouter = createFrontendRouter({
+    distDir: frontendDistDir,
+    imageBaseUrls: storageConfig.driver === 's3'
+      ? [storageConfig.s3.publicImagesBaseUrl]
+      : [publicBaseUrl],
+  });
+
+  if (frontendRouter) {
+    app.use(frontendRouter);
+  }
+}
+
+// Manejador global de errores (siempre el último)
 app.use(errorHandler);
 
 module.exports = app;

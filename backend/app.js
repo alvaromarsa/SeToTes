@@ -19,6 +19,11 @@ const { requestLogger } = require('./middleware/request-logger');
 
 const app = express();
 
+// Endpoint para que cron-job.org mantenga despierto el servidor en Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Nº de proxies delante del backend: así request.ip es la IP real (límite de intentos).
 // Ver config/env.js: un valor mayor que los proxies reales permite falsear la IP.
 app.set('trust proxy', trustProxy);

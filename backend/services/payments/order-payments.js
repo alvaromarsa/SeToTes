@@ -41,7 +41,7 @@ async function markOrderPaidFromSession(client, session) {
     return { orderId: order.id, transitioned: false };
   }
 
-  // Ya pagado, enviado o entregado: nada que hacer
+  // Ya pagado, enviado o entregado: nada que hacer, es idempotencia por estado
   if (order.status !== 'pending') {
     return { orderId: order.id, transitioned: false };
   }

@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { RouterLink } from '@angular/router';
 
 import { CATEGORY_INFO } from '@core/config/categories.config';
 import { ProductService, type Product, type ProductCategory } from '@core/services/product.service';
@@ -9,7 +8,7 @@ import { TrustStrip } from './components/trust-strip/trust-strip';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterLink, NewArrivals, TrustStrip],
+  imports: [NewArrivals, TrustStrip],
   standalone: true,
   templateUrl: './home.html',
   styleUrl: './home.css',

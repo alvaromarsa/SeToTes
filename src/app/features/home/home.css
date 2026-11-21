@@ -4,39 +4,43 @@
   gap: 3rem;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem 1rem 4rem;
+  padding: 0.75rem 1rem 4rem;
 }
 
-/* Copa de seta: cúpula ancha (base más ancha que la parte de arriba) hecha con border-radius,
-   con puntos crema translúcidos por los bordes, lejos del texto (centrado en la parte ancha).
+/* Copa de seta hecha con border-radius elíptico: cúpula arriba (radio vertical grande) y base
+   curvada hacia fuera, más suave (radio vertical pequeño); los dos se juntan en los laterales,
+   como el filo de la copa. El texto va centrado en la franja ancha y los puntos crema
+   translúcidos, por los bordes y lejos del texto.
    cream sobre red 9,67:1; cream-dark sobre red 8,15:1 (más de 6:1 aunque pase por un punto).
-   Móvil: copa más plana y puntos solo arriba y en las esquinas de abajo */
+   Altura contenida: en 375x667, navbar + copa ocupan menos de media pantalla */
 .hero {
   --d1: rgba(251, 246, 236, 0.24);
   --d2: rgba(251, 246, 236, 0.14);
 
-  padding: 4.5rem 1.25rem 2.75rem;
-  border-radius: 50% 50% 24px 24px / 22% 22% 24px 24px;
+  padding: 1.2rem 1.25rem 1.1rem;
+  border-radius: 50% / 70% 70% 30% 30%;
   background:
-    radial-gradient(circle at 50% 5%, var(--d1) 0 10px, #0000 11px),
-    radial-gradient(circle at 30% 8%, var(--d2) 0 7px, #0000 8px),
-    radial-gradient(circle at 70% 8%, var(--d1) 0 6px, #0000 7px),
-    radial-gradient(circle at 16% 13%, var(--d2) 0 5px, #0000 6px),
-    radial-gradient(circle at 84% 13%, var(--d2) 0 8px, #0000 9px),
-    radial-gradient(circle at 5% 96%, var(--d2) 0 7px, #0000 8px),
-    radial-gradient(circle at 95% 96%, var(--d1) 0 5px, #0000 6px),
+    radial-gradient(circle at 29% 9%, var(--d2) 0 3px, #0000 4px),
+    radial-gradient(circle at 71% 9%, var(--d1) 0 4px, #0000 5px),
+    radial-gradient(circle at 10% 38%, var(--d1) 0 5px, #0000 6px),
+    radial-gradient(circle at 90% 36%, var(--d2) 0 6px, #0000 7px),
+    radial-gradient(circle at 4% 62%, var(--d2) 0 4px, #0000 5px),
+    radial-gradient(circle at 96% 60%, var(--d1) 0 5px, #0000 6px),
+    radial-gradient(circle at 25% 95%, var(--d2) 0 3px, #0000 4px),
+    radial-gradient(circle at 75% 95%, var(--d1) 0 4px, #0000 5px),
     var(--color-red);
   color: var(--color-cream);
   text-align: center;
-  box-shadow: inset 0 -12px 0 rgba(43, 29, 26, 0.18), 0 18px 40px rgba(43, 29, 26, 0.18);
+  box-shadow: 0 18px 40px rgba(43, 29, 26, 0.18);
 }
+
 .hero__eyebrow {
   display: inline-block;
-  margin-bottom: 1rem;
-  padding: 0.45rem 0.8rem;
+  margin-bottom: 0.5rem;
+  padding: 0.3rem 0.7rem;
   border-radius: 999px;
   background: rgba(251, 246, 236, 0.16);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -45,55 +49,17 @@
 .hero h1 {
   max-width: 16ch;
   margin: 0 auto;
-  font-size: clamp(2.2rem, 6vw, 4rem);
+  font-size: 1.4rem;
   font-weight: 700;
   line-height: 1.05;
 }
 
 .hero p {
-  max-width: 34rem;
-  margin: 1.25rem auto 0;
+  max-width: 19rem;
+  margin: 0.45rem auto 0;
   color: var(--color-cream-dark);
-  font-size: 1.08rem;
-  line-height: 1.7;
-}
-
-.hero__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.9rem;
-  margin-top: 2rem;
-}
-
-.hero__btn {
-  display: inline-flex;
-  align-items: center;
-  min-height: 48px;
-  padding: 0 1.5rem;
-  border-radius: 999px;
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.hero__btn:focus-visible {
-  outline: 3px solid var(--color-cream);
-  outline-offset: 3px;
-}
-
-/* Rojo sobre crema: 9,67:1 */
-.hero__btn--primary {
-  background: var(--color-cream);
-  color: var(--color-red);
-}
-
-.hero__btn--secondary {
-  border: 2px solid var(--color-cream);
-  color: var(--color-cream);
-}
-
-.hero__btn:hover {
-  transform: translateY(-1px);
+  font-size: 0.85rem;
+  line-height: 1.45;
 }
 
 @media (min-width: 768px) {
@@ -102,44 +68,70 @@
   }
 
   .hero {
-    padding: 6rem 3rem 3.5rem;
-    border-radius: 50% 50% 28px 28px / 45% 45% 28px 28px;
+    padding: 2.5rem 3rem 2.25rem;
+    border-radius: 50% / 68% 68% 32% 32%;
     background:
-      radial-gradient(circle at 50% 5%, var(--d1) 0 14px, #0000 15px),
-      radial-gradient(circle at 32% 9%, var(--d2) 0 9px, #0000 10px),
-      radial-gradient(circle at 68% 8%, var(--d1) 0 8px, #0000 9px),
-      radial-gradient(circle at 17% 25%, var(--d2) 0 12px, #0000 13px),
-      radial-gradient(circle at 83% 23%, var(--d1) 0 10px, #0000 11px),
-      radial-gradient(circle at 5% 58%, var(--d1) 0 14px, #0000 15px),
-      radial-gradient(circle at 95% 55%, var(--d2) 0 16px, #0000 17px),
-      radial-gradient(circle at 6% 92%, var(--d2) 0 9px, #0000 10px),
-      radial-gradient(circle at 94% 90%, var(--d1) 0 11px, #0000 12px),
+      radial-gradient(circle at 50% 7%, var(--d1) 0 8px, #0000 9px),
+      radial-gradient(circle at 34% 12%, var(--d2) 0 6px, #0000 7px),
+      radial-gradient(circle at 66% 11%, var(--d1) 0 7px, #0000 8px),
+      radial-gradient(circle at 20% 30%, var(--d2) 0 10px, #0000 11px),
+      radial-gradient(circle at 80% 28%, var(--d1) 0 8px, #0000 9px),
+      radial-gradient(circle at 6% 58%, var(--d1) 0 10px, #0000 11px),
+      radial-gradient(circle at 94% 62%, var(--d2) 0 12px, #0000 13px),
+      radial-gradient(circle at 14% 84%, var(--d2) 0 7px, #0000 8px),
+      radial-gradient(circle at 86% 86%, var(--d1) 0 6px, #0000 7px),
+      radial-gradient(circle at 50% 96%, var(--d2) 0 5px, #0000 6px),
       var(--color-red);
+  }
+
+  .hero__eyebrow {
+    margin-bottom: 0.8rem;
+    font-size: 0.75rem;
+  }
+
+  .hero h1 {
+    font-size: 2.4rem;
+    line-height: 1.05;
+  }
+
+  .hero p {
+    max-width: 30rem;
+    margin-top: 0.8rem;
+    font-size: 1rem;
+    line-height: 1.6;
   }
 }
 
-/* Escritorio: cúpula más alta y puntos repartidos por todo el borde (el texto, ≤ 640 px, centrado) */
+/* Escritorio: copa ancha y baja (no domina la pantalla), con más puntos por todo el borde */
 @media (min-width: 1024px) {
   .hero {
-    padding: 7rem 4rem 4rem;
-    border-radius: 50% 50% 32px 32px / 62% 62% 32px 32px;
+    padding: 3rem 4rem 2.75rem;
+    border-radius: 50% / 66% 66% 34% 34%;
     background:
-      radial-gradient(circle at 50% 6%, var(--d1) 0 18px, #0000 19px),
-      radial-gradient(circle at 38% 9%, var(--d2) 0 12px, #0000 13px),
-      radial-gradient(circle at 62% 10%, var(--d1) 0 10px, #0000 11px),
-      radial-gradient(circle at 27% 17%, var(--d1) 0 16px, #0000 17px),
-      radial-gradient(circle at 73% 15%, var(--d2) 0 20px, #0000 21px),
-      radial-gradient(circle at 16% 31%, var(--d2) 0 26px, #0000 27px),
-      radial-gradient(circle at 84% 29%, var(--d1) 0 14px, #0000 15px),
-      radial-gradient(circle at 9% 50%, var(--d1) 0 18px, #0000 19px),
-      radial-gradient(circle at 92% 47%, var(--d2) 0 28px, #0000 29px),
-      radial-gradient(circle at 13% 72%, var(--d2) 0 22px, #0000 23px),
-      radial-gradient(circle at 88% 74%, var(--d1) 0 16px, #0000 17px),
-      radial-gradient(circle at 5% 90%, var(--d1) 0 10px, #0000 11px),
-      radial-gradient(circle at 95% 91%, var(--d2) 0 12px, #0000 13px),
-      radial-gradient(circle at 21% 91%, var(--d2) 0 8px, #0000 9px),
-      radial-gradient(circle at 79% 92%, var(--d1) 0 9px, #0000 10px),
+      radial-gradient(circle at 50% 7%, var(--d1) 0 10px, #0000 11px),
+      radial-gradient(circle at 36% 11%, var(--d2) 0 8px, #0000 9px),
+      radial-gradient(circle at 64% 12%, var(--d1) 0 6px, #0000 7px),
+      radial-gradient(circle at 24% 26%, var(--d1) 0 14px, #0000 15px),
+      radial-gradient(circle at 77% 24%, var(--d2) 0 11px, #0000 12px),
+      radial-gradient(circle at 12% 45%, var(--d2) 0 18px, #0000 19px),
+      radial-gradient(circle at 88% 50%, var(--d1) 0 22px, #0000 23px),
+      radial-gradient(circle at 4% 64%, var(--d1) 0 8px, #0000 9px),
+      radial-gradient(circle at 96% 66%, var(--d2) 0 6px, #0000 7px),
+      radial-gradient(circle at 18% 80%, var(--d2) 0 16px, #0000 17px),
+      radial-gradient(circle at 82% 82%, var(--d1) 0 12px, #0000 13px),
+      radial-gradient(circle at 32% 92%, var(--d1) 0 8px, #0000 9px),
+      radial-gradient(circle at 68% 93%, var(--d2) 0 6px, #0000 7px),
+      radial-gradient(circle at 50% 96%, var(--d2) 0 5px, #0000 6px),
       var(--color-red);
   }
-}
 
+  .hero h1 {
+    max-width: 22ch;
+    font-size: 3.2rem;
+  }
+
+  .hero p {
+    max-width: 34rem;
+    font-size: 1.05rem;
+  }
+}

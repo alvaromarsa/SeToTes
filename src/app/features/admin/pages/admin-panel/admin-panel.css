@@ -1,7 +1,6 @@
 :host {
   display: block;
   min-height: 100%;
-  background: #f9ece5;
   padding: clamp(2rem, 5vw, 4rem) 1.25rem;
 }
 
@@ -115,7 +114,7 @@ a.admin-card:hover .admin-card__action span {
 }
 
 .admin-card--upcoming {
-  background: rgba(255, 255, 255, 0.62);
+  background: var(--color-cream);
   box-shadow: none;
 }
 

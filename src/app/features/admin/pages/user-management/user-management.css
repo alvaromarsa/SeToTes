@@ -6,7 +6,6 @@
 :host {
   display: block;
   min-height: 100%;
-  background: #f9ece5;
   padding: clamp(1.5rem, 4vw, 3.5rem) 1.25rem 4rem;
 }
 

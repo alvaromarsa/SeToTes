@@ -1,0 +1,29 @@
+<section aria-labelledby="home-new-arrivals-title">
+  <h2 id="home-new-arrivals-title" class="arrivals__title">Novedades</h2>
+
+  <ul class="arrivals">
+    @for (item of items(); track item.product.id) {
+      <li>
+        <!-- Un solo enlace por producto; el alt de la foto es su nombre -->
+        <a class="arrival-card" [routerLink]="['/producto', item.product.id]">
+          @if (item.product.mainImage; as mainImage) {
+            <img
+              class="arrival-card__photo"
+              [src]="mainImage.cardUrl"
+              [alt]="item.product.name"
+              width="600"
+              height="450"
+              loading="lazy"
+            >
+          } @else {
+            <!-- Sin imagen: color plano de la categoría (misma proporción, sin saltos) -->
+            <span class="arrival-card__photo arrival-card__photo--{{ item.category }}"></span>
+          }
+          <span class="arrival-card__tag">{{ item.categoryTitle }}</span>
+          <span class="arrival-card__name">{{ item.product.name }}</span>
+          <span class="arrival-card__price">{{ item.product.price | currency: 'EUR' : 'symbol' : '1.2-2' }}</span>
+        </a>
+      </li>
+    }
+  </ul>
+</section>

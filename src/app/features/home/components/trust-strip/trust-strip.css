@@ -1,0 +1,47 @@
+﻿/* Una columna en móvil; tres desde tablet */
+.trust {
+  display: grid;
+  gap: 1rem;
+}
+
+.trust__item {
+  padding: 1.25rem 1.25rem 1.4rem;
+  border: 1px solid var(--color-cream-dark);
+  border-radius: 24px;
+  background: #fff;
+  color: var(--color-text);
+}
+
+.trust__item h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* #5c4a44 (marrón cálido) sobre blanco: 8,34:1 */
+.trust__item p {
+  margin: 0;
+  color: #5c4a44;
+  line-height: 1.6;
+}
+
+/* Enlace dentro de texto: subrayado y foco visible (regla de CLAUDE.md) */
+.trust__item a {
+  color: var(--color-red);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.trust__item a:focus-visible {
+  border-radius: 2px;
+  outline: 3px solid var(--color-red);
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .trust {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}

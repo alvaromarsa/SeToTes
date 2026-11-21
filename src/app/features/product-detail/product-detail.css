@@ -1,7 +1,6 @@
 /* Mobile-first. Estilos sobrios: el diseño fino se ajustará después */
 :host {
   display: block;
-  background: #f9ece5;
 }
 
 .product-detail {

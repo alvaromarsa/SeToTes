@@ -1,24 +1,21 @@
 /* Navbar, contenido y pie en columna: main crece y el pie queda abajo aunque la página
-   sea corta, sin position: fixed (nunca tapa contenido) */
+   sea corta, sin position: fixed (nunca tapa contenido).
+   Sin fondo propio: el de la página (crema con puntos) está en el body, en styles.css */
 :host {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #B8FF8C;
 }
 
 body {
   margin: 0;
-  background: #B8FF8C;
 }
 
 main {
   flex: 1;
-  background: #B8FF8C;
 }
 
 app-root {
   display: block;
   min-height: 100vh;
-  background: #B8FF8C;
 }

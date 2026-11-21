@@ -2,7 +2,6 @@
   display: block;
   min-height: calc(100vh - 88px);
   padding: 3rem 1.5rem;
-  background: #F9ECE5;
   box-sizing: border-box;
 }
 
@@ -18,7 +17,7 @@
 }
 
 .checkout-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: #fff;
   border: 1px solid #eaded4;
   border-radius: 28px;
   box-shadow: 0 18px 40px rgba(17, 24, 39, 0.08);

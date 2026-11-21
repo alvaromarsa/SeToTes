@@ -6,10 +6,72 @@
    Móvil: fila principal 64px + fila de categorías 44px + bordes 2px. Escritorio (mismo corte que navbar.css): 64px + borde 1px. */
 :root {
   --navbar-height: 110px;
+
+  /* Paleta del logo (amanita muscaria). Contrastes (WCAG):
+     cream sobre red 9,67:1 · cream-dark sobre red 8,15:1 · text sobre cream 15,07:1 · text sobre blanco 16,24:1 · red sobre blanco 10,41:1 */
+  --color-red: #7b1b1d;        /* copa (medido en el logo) */
+  --color-cream: #fbf6ec;      /* puntos de la copa: blanco crema; también el fondo de la página */
+  --color-cream-dark: #ede3ca; /* tallo (medido en el logo) */
+  --color-text: #2b1d1a;       /* oscuro cálido derivado del rojo (el texto del logo es negro neutro) */
 }
 
 @media (min-width: 768px) {
   :root {
     --navbar-height: 65px;
+  }
+}
+
+/* Fondo crema con puntos muy sutiles (crema oscuro al 55 %, bajo contraste: el texto se sigue
+   leyendo). Dos capas desplazadas para que no parezca una cuadrícula. Sin imágenes */
+body {
+  background-color: var(--color-cream);
+  background-image:
+    radial-gradient(circle, rgba(237, 227, 202, 0.55) 0 3px, transparent 3.5px),
+    radial-gradient(circle, rgba(237, 227, 202, 0.4) 0 2px, transparent 2.5px);
+  background-size: 64px 64px, 64px 64px;
+  background-position: 0 0, 32px 32px;
+  color: var(--color-text);
+}
+
+/* Fondo de la navbar (copa de seta): rojo con puntos crema translúcidos de varios tamaños.
+   Aquí y no en navbar.css para no pasar el presupuesto de 4 kB del CSS del componente.
+   Los puntos van SOLO en la fila superior (y < 64 px), en los huecos entre el logo, los enlaces y
+   los botones (posiciones respecto al centro); los que caen detrás del logo o de un botón quedan
+   tapados. La fila de categorías del móvil (y > 64 px) no tiene puntos detrás. Texto crema sobre
+   el rojo: 9,67:1 */
+app-navbar {
+  --d1: rgba(251, 246, 236, 0.24);
+  --d2: rgba(251, 246, 236, 0.14);
+
+  /* Móvil: hueco entre el logo y los botones (centro de la fila superior) */
+  background:
+    radial-gradient(circle at 6px 8px, var(--d2) 0 3px, #0000 4px),
+    radial-gradient(circle at calc(50% - 32px) 14px, var(--d2) 0 5px, #0000 6px),
+    radial-gradient(circle at calc(50% - 14px) 46px, var(--d1) 0 7px, #0000 8px),
+    radial-gradient(circle at calc(50% + 6px) 12px, var(--d1) 0 4px, #0000 5px),
+    radial-gradient(circle at calc(50% + 22px) 34px, var(--d2) 0 6px, #0000 7px),
+    radial-gradient(circle at calc(50% + 38px) 10px, var(--d2) 0 3px, #0000 4px),
+    radial-gradient(circle at calc(50% + 40px) 52px, var(--d1) 0 4px, #0000 5px),
+    var(--color-red);
+}
+
+/* Huecos a los lados de los enlaces y, con pantalla ancha, fuera del contenedor de 1280 px */
+@media (min-width: 768px) {
+  app-navbar {
+    background:
+      radial-gradient(circle at calc(50% - 680px) 18px, var(--d1) 0 9px, #0000 10px),
+      radial-gradient(circle at calc(50% - 650px) 50px, var(--d2) 0 5px, #0000 6px),
+      radial-gradient(circle at calc(50% - 300px) 14px, var(--d2) 0 6px, #0000 7px),
+      radial-gradient(circle at calc(50% - 265px) 46px, var(--d1) 0 9px, #0000 10px),
+      radial-gradient(circle at calc(50% - 228px) 20px, var(--d2) 0 4px, #0000 5px),
+      radial-gradient(circle at calc(50% - 200px) 52px, var(--d1) 0 6px, #0000 7px),
+      radial-gradient(circle at calc(50% - 190px) 10px, var(--d2) 0 3px, #0000 4px),
+      radial-gradient(circle at calc(50% + 225px) 16px, var(--d1) 0 7px, #0000 8px),
+      radial-gradient(circle at calc(50% + 255px) 48px, var(--d2) 0 5px, #0000 6px),
+      radial-gradient(circle at calc(50% + 300px) 26px, var(--d2) 0 10px, #0000 11px),
+      radial-gradient(circle at calc(50% + 345px) 54px, var(--d1) 0 4px, #0000 5px),
+      radial-gradient(circle at calc(50% + 660px) 44px, var(--d1) 0 8px, #0000 9px),
+      radial-gradient(circle at calc(50% + 690px) 12px, var(--d2) 0 4px, #0000 5px),
+      var(--color-red);
   }
 }

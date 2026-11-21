@@ -2,8 +2,9 @@
 .announcement-bar {
   margin: 0;
   padding: 0.5rem 1rem;
-  background: #111827;
-  color: #fff;
+  /* Oscuro cálido con texto crema: 15,07:1 */
+  background: var(--color-text);
+  color: var(--color-cream);
   font-size: 0.9rem;
   text-align: center;
   overflow-wrap: anywhere;

@@ -2,7 +2,6 @@
   display: block;
   min-height: calc(100vh - 88px);
   padding: 4rem 1.5rem;
-  background: #B8FF8C;
   box-sizing: border-box;
 }
 
@@ -13,7 +12,7 @@
 
 .auth-card {
   width: min(100%, 700px);
-  background: rgba(255, 255, 255, 0.75);
+  background: #fff;
   border: 1px solid #eaded4;
   border-radius: 28px;
   box-shadow: 0 20px 45px rgba(24, 24, 27, 0.08);
@@ -72,8 +71,8 @@
 }
 
 .field input:focus {
-  outline: 2px solid rgba(184, 255, 140, 0.6);
-  border-color: #b8ff8c;
+  outline: 2px solid var(--color-red);
+  border-color: var(--color-red);
 }
 
 .field small,

@@ -27,9 +27,12 @@
   color: #111827;
 }
 
+/* auto-fill (no auto-fit): las columnas vacías se mantienen, así una tarjeta sola mide lo
+   mismo que en una fila llena y queda a la izquierda (con auto-fit, las vacías se eliminaban
+   y una sola tarjeta se estiraba a todo el ancho). El nº de columnas sale del mínimo (220 px). */
 .feature__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1.5rem;
 }
 

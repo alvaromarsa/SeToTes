@@ -48,7 +48,7 @@ const PASSWORD_MAX_LENGTH = 128;
 
 // Versiones de los textos legales aceptados (se guardan con el pedido y con el usuario).
 // Cambiarlas cuando cambien las condiciones de compra o la política de privacidad.
-const TERMS_VERSION = '2026-11-12';
+const TERMS_VERSION = '2026-11-21';
 const PRIVACY_NOTICE_VERSION = '2026-11';
 
 // Pedido 'pending' sin sesión de Stripe: se cancela pasado este tiempo (jobs/cancel-abandoned-orders.js)

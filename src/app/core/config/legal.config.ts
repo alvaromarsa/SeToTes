@@ -5,7 +5,7 @@
 export const LEGAL_CONFIG = {
   storeName: 'SeToTes',
   domain: 'https://setotes-demo.onrender.com',
-  lastUpdated: '16 de noviembre de 2026',
+  lastUpdated: '21 de noviembre de 2026',
 
   owner: {
     name: 'Tienda de demostración (proyecto de portfolio, sin actividad comercial)',

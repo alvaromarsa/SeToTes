@@ -43,7 +43,7 @@ export class Register {
       password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]],
       phone: ['', [Validators.required, Validators.minLength(9)]],
-      // Solo en el frontend por ahora: la fecha y versión aceptadas se guardarán en el backend
+      // Se envía con el registro: el backend exige acceptPrivacy === true y guarda privacy_accepted_at y privacy_notice_version
       acceptPrivacy: [false, [Validators.requiredTrue]],
     },
     {

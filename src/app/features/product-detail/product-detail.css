@@ -262,8 +262,11 @@
   opacity: 0.55;
 }
 
+/* .handmade: aviso de hecho a mano, con el color normal del texto (no depende de color ni icono).
+   Comparte esta regla porque este CSS está justo en el límite de 4 kB del presupuesto */
 .purchase__error,
-.purchase__success {
+.purchase__success,
+.handmade {
   margin: 0.75rem 0 0;
   font-size: 0.9rem;
 }

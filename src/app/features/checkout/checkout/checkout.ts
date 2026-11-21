@@ -54,7 +54,7 @@ export class Checkout implements OnInit {
     address: ['', [Validators.required]],
     city: ['', [Validators.required]],
     postalCode: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-    // Solo en el frontend por ahora: la aceptación se guardará con el pedido (terms_accepted_at)
+    // Se envía con el pedido: el backend exige acceptTerms === true y guarda terms_accepted_at y terms_version
     acceptTerms: [false, [Validators.requiredTrue]],
   });
 

@@ -81,7 +81,7 @@ async function categoryExists(db, slug) {
 
 // Nombre que escribe el admin al crear una categoría: texto plano de una línea, recortado y con
 // los espacios repetidos reducidos a uno; de 2 a 40 caracteres. Genera el slug y lo valida.
-// Devuelve { name, slug } o { error } con un mensaje para el usuario.
+// Devuelve { name, slug, nameKey } o { error } con un mensaje para el usuario.
 function parseCategoryName(value) {
   const text = normalizePlainText(typeof value === 'string' ? value.replace(/ {2,}/g, ' ') : value, {
     maxLength: Number.POSITIVE_INFINITY,
@@ -110,7 +110,9 @@ function parseCategoryName(value) {
     return { error: 'Ese nombre no se puede usar para una categoría' };
   }
 
-  return { name: text, slug };
+  // nameKey (columna name_key, migración 008): el nombre normalizado, único entre categorías. Al
+  // crear coincide con el slug; al renombrar cambia el nameKey pero NUNCA el slug de la categoría
+  return { name: text, slug, nameKey: slug };
 }
 
 module.exports = {

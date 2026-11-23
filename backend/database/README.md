@@ -28,13 +28,22 @@ backend/database/migrations/NNN_descripcion.sql
 - `NNN`: número de tres cifras, correlativo (`001`, `002`, `003`…). Fija el orden de aplicación.
 - `descripcion`: en minúsculas y con guiones bajos, explica el cambio. Ejemplo: `004_add_image_url_to_products.sql`.
 - Una migración ya aplicada no se edita: si hay que corregir algo, se crea una migración nueva.
-- Conviene envolver cada migración en `BEGIN; … COMMIT;` para que se aplique entera o no se aplique.
+- Desde la 005, las migraciones no llevan `BEGIN; … COMMIT;`: se aplican con `psql -1` (todo en una transacción) y `ON_ERROR_STOP=1`, así se aplican enteras o no se aplican.
 
 Las migraciones **se aplican a mano** con `psql`, en orden numérico:
 
 ```bash
-psql -U <usuario> -d totebag_db -f backend/database/migrations/NNN_descripcion.sql
+psql -1 -v ON_ERROR_STOP=1 -U <usuario> -d totebag_db -f backend/database/migrations/NNN_descripcion.sql
 ```
+
+Con el Postgres del `docker-compose.yml` de desarrollo, ver el README principal.
+
+### 007_categories.sql
+
+Crea la tabla `categories` (`slug` único, `name`, `position`) con las 4 categorías de siempre y cambia `products.category`: deja de tener el `CHECK` con la lista fija y pasa a ser una clave ajena a `categories.slug` (`ON DELETE RESTRICT`). Los productos no cambian.
+
+- **Orden de despliegue:** aplicarla ANTES de desplegar el backend que lee `categories`. El backend anterior funciona igual con ella aplicada.
+- Después, regenerar `schema.sql` (abajo).
 
 No hay herramienta de migraciones ni tabla de control: hay que llevar la cuenta de cuál es la última aplicada en cada entorno.
 

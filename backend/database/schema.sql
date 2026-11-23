@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 5Uo6VX1s6ZwU7VfSXbkhzFk9IpinXYSg35BbDSulBYcf6spHN63jnQNaxIQmPrB
+\restrict f1rxcuTc9OhVt32UVKf5DBRArYuf7v6f5n5vgiTyETIbpssykgIgVh5hJCNzxmR
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -61,6 +61,35 @@ CREATE TABLE public.cart_items (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT cart_items_quantity_check CHECK ((quantity > 0))
+);
+
+
+--
+-- Name: categories; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.categories (
+    id integer NOT NULL,
+    slug text NOT NULL,
+    name text NOT NULL,
+    "position" integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT categories_name_length_check CHECK (((char_length(name) >= 2) AND (char_length(name) <= 40))),
+    CONSTRAINT categories_slug_format_check CHECK (((slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text) AND (char_length(slug) <= 60)))
+);
+
+
+--
+-- Name: categories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.categories ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.categories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
 );
 
 
@@ -205,7 +234,6 @@ CREATE TABLE public.products (
     category text NOT NULL,
     is_visible boolean DEFAULT false NOT NULL,
     description text,
-    CONSTRAINT products_category_check CHECK ((category = ANY (ARRAY['bolsas'::text, 'neceseres'::text, 'fundas'::text, 'telas'::text]))),
     CONSTRAINT products_description_length_check CHECK ((char_length(description) <= 2000)),
     CONSTRAINT products_price_check CHECK ((price >= (0)::numeric)),
     CONSTRAINT products_stock_check CHECK ((stock >= 0))
@@ -301,6 +329,22 @@ ALTER TABLE ONLY public.admin_audit_log
 
 ALTER TABLE ONLY public.cart_items
     ADD CONSTRAINT cart_items_pkey PRIMARY KEY (user_id, product_id);
+
+
+--
+-- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: categories categories_slug_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_slug_key UNIQUE (slug);
 
 
 --
@@ -435,6 +479,13 @@ CREATE INDEX product_images_product_id_position_idx ON public.product_images USI
 
 
 --
+-- Name: products_category_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX products_category_idx ON public.products USING btree (category);
+
+
+--
 -- Name: cart_items cart_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -491,8 +542,16 @@ ALTER TABLE ONLY public.product_images
 
 
 --
+-- Name: products products_category_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_category_fkey FOREIGN KEY (category) REFERENCES public.categories(slug) ON DELETE RESTRICT;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 5Uo6VX1s6ZwU7VfSXbkhzFk9IpinXYSg35BbDSulBYcf6spHN63jnQNaxIQmPrB
+\unrestrict f1rxcuTc9OhVt32UVKf5DBRArYuf7v6f5n5vgiTyETIbpssykgIgVh5hJCNzxmR
 

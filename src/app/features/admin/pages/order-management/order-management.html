@@ -15,14 +15,21 @@
     </select>
   </div>
 
-  @if (isLoading) {
-    <p role="status">Cargando pedidos…</p>
-  } @else if (errorMessage) {
+  <!-- Zona de estado siempre presente (vacía si no se carga nada): así el lector de pantalla
+       anuncia "Cargando pedidos…" también en las recargas. Va encima de la tabla y no la
+       sustituye: al cambiar el filtro, la página no encoge y el scroll no salta arriba -->
+  <p role="status">{{ isLoading ? 'Cargando pedidos…' : '' }}</p>
+
+  @if (errorMessage) {
     <p class="om-error" role="alert">{{ errorMessage }}</p>
   } @else if (orders.length === 0) {
-    <p>No hay pedidos con este filtro.</p>
+    <!-- En la primera carga aún no hay pedidos: solo se ve el aviso de carga -->
+    @if (!isLoading) {
+      <p>No hay pedidos con este filtro.</p>
+    }
   } @else {
-    <div class="om-table-wrap">
+    <!-- Durante una recarga se sigue viendo la lista anterior hasta que llega la nueva -->
+    <div class="om-table-wrap" [attr.aria-busy]="isLoading">
       <table class="om-table">
         <thead>
           <tr>

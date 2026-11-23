@@ -1,0 +1,132 @@
+/* Mismo aspecto que Ajustes de la tienda (store-settings.css): tarjetas blancas sobre el fondo */
+:host {
+  display: block;
+  min-height: 100%;
+  padding: clamp(1.5rem, 4vw, 3.5rem) 1.25rem 4rem;
+}
+
+.category-admin {
+  display: grid;
+  gap: 1.5rem;
+  width: min(100%, 720px);
+  margin: 0 auto;
+}
+
+.category-admin__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  color: #704833;
+  font-weight: 700;
+}
+
+.category-admin__header h1 {
+  margin: 0.5rem 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.category-admin__header p {
+  margin: 0;
+  color: #5c4a44;
+}
+
+.category-admin__card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.category-admin__card h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.category-admin__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.category-admin__field label {
+  font-weight: 600;
+}
+
+.category-admin__field input {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font: inherit;
+}
+
+/* #5c4a44 sobre blanco: 8,34:1 */
+.category-admin__field small {
+  color: #5c4a44;
+}
+
+.category-admin__field .category-admin__error,
+.category-admin__error {
+  margin: 0;
+  color: #a12a20;
+}
+
+.category-admin__card button {
+  justify-self: start;
+  min-height: 44px;
+  padding: 0 1.25rem;
+  border-radius: 10px;
+  background: #111827;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.category-admin__card button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.category-admin__success {
+  margin: 0;
+  color: #24613a;
+}
+
+.category-admin__list {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-admin__list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.category-admin__name {
+  font-weight: 600;
+}
+
+.category-admin__slug {
+  color: #5c4a44;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.category-admin input:focus-visible,
+.category-admin button:focus-visible,
+.category-admin a:focus-visible {
+  outline: 3px solid #111827;
+  outline-offset: 2px;
+}

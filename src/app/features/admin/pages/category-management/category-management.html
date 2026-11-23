@@ -1,0 +1,64 @@
+<main class="category-admin">
+  <header class="category-admin__header">
+    <a class="category-admin__back" routerLink="/adminpanel">
+      <span aria-hidden="true">←</span> Volver al panel
+    </a>
+    <h1>Categorías</h1>
+    <p>Crea categorías nuevas: aparecen al momento en la navbar, en el catálogo y en el formulario de productos.</p>
+  </header>
+
+  <form class="category-admin__card" [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
+    <h2>Nueva categoría</h2>
+
+    <div class="category-admin__field">
+      <label for="category-name">Nombre</label>
+      <!-- maxlength 40: el mismo límite que el servidor. El error (del formulario o de la API)
+           se enlaza con aria-describedby para que el lector de pantalla lo lea con el campo -->
+      <input
+        #nameInput
+        id="category-name"
+        type="text"
+        formControlName="name"
+        autocomplete="off"
+        [attr.maxlength]="nameMaxLength"
+        [attr.aria-invalid]="serverError() || formUtils.isValidField(categoryForm, 'name') ? 'true' : null"
+        [attr.aria-describedby]="
+          'category-name-hint' + (serverError() || formUtils.isValidField(categoryForm, 'name') ? ' category-name-error' : '')
+        "
+      >
+      <small id="category-name-hint">De 2 a {{ nameMaxLength }} caracteres. La dirección web se genera sola a partir del nombre.</small>
+      @if (serverError()) {
+        <small id="category-name-error" class="category-admin__error">{{ serverError() }}</small>
+      } @else if (formUtils.isValidField(categoryForm, 'name')) {
+        <small id="category-name-error" class="category-admin__error">{{ formUtils.getFieldError(categoryForm, 'name') }}</small>
+      }
+    </div>
+
+    <button type="submit" [disabled]="isSaving()">
+      {{ isSaving() ? 'Creando…' : 'Crear categoría' }}
+    </button>
+
+    <!-- Siempre presente (aunque vacío) para que los lectores de pantalla anuncien el éxito -->
+    <p class="category-admin__success" role="status">{{ successMessage() }}</p>
+  </form>
+
+  <section class="category-admin__card" aria-labelledby="category-list-title">
+    <h2 id="category-list-title">Categorías actuales</h2>
+
+    @if (status() === 'loading' || status() === 'idle') {
+      <p role="status">Cargando categorías…</p>
+    } @else if (status() === 'error' && categories().length === 0) {
+      <p class="category-admin__error" role="alert">No se pudieron cargar las categorías. Recarga la página.</p>
+    } @else {
+      <!-- En el orden en que aparecen en la tienda -->
+      <ol class="category-admin__list">
+        @for (category of categories(); track category.slug) {
+          <li>
+            <span class="category-admin__name">{{ category.name }}</span>
+            <code class="category-admin__slug">/categoria/{{ category.slug }}</code>
+          </li>
+        }
+      </ol>
+    }
+  </section>
+</main>

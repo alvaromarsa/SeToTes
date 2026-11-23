@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { retry } from 'rxjs';
+import { Observable, retry, tap } from 'rxjs';
 
 import { API_BASE_URL } from '@core/config/api.config';
 import type { Category } from '../models/category.models';
@@ -21,6 +21,7 @@ const RETRY_DELAY_MS = 2000;
 export class CategoryService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = `${API_BASE_URL}/api/categories`;
+  private readonly adminApiUrl = `${API_BASE_URL}/api/admin/categories`;
 
   private readonly categoriesState = signal<Category[]>([]);
   private readonly statusState = signal<CategoriesStatus>('idle');
@@ -49,6 +50,21 @@ export class CategoryService {
           this.statusState.set('error');
         },
       });
+  }
+
+  // Solo admin (POST /api/admin/categories). El servidor genera el slug y la posición. La nueva
+  // se añade a la lista compartida al momento: la navbar y el selector de productos la ven sin
+  // recargar (signal)
+  create(name: string): Observable<Category> {
+    return this.http.post<Category>(this.adminApiUrl, { name }).pipe(
+      tap((created) => {
+        this.categoriesState.update((categories) =>
+          [...categories.filter((category) => category.slug !== created.slug), created].sort(
+            (a, b) => a.position - b.position || a.id - b.id,
+          ),
+        );
+      }),
+    );
   }
 
   findBySlug(slug: string): Category | undefined {

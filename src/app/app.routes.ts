@@ -70,7 +70,8 @@ export const routes: Routes = [
   },
   {
     path: 'adminpanel',
-    canActivateChild: [adminGuard],
+    // canMatch: el guard decide antes de descargar el chunk del admin (ver admin.guard.ts)
+    canMatch: [adminGuard],
     loadChildren: () =>
       import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
   },

@@ -48,6 +48,7 @@ Tienda online (Angular + Node/Express + PostgreSQL) que pasará a producción co
 - Gestión de usuarios: `/adminpanel/users` (`features/admin/pages/user-management`), con `AdminUserService` y `core/models/admin-user.models.ts`.
 - Todo error visible para el usuario pasa por getErrorMessage (`core/utils/http-error-message.ts`); nunca solo a consola; 5xx siempre genérico.
 - Tras un error, el foco vuelve al botón que lanzó la petición (`shared/utils/focus-after-render.ts`); en los éxitos, no.
+- `/adminpanel` usa `canMatch: [adminGuard]` (no `canActivateChild`): el guard decide ANTES de descargar el chunk perezoso del admin, así un cliente o un visitante sin sesión no lo descarga. Devuelve siempre `true` o un `UrlTree`, nunca `false` (con `false` la ruta no coincidiría y caería en `**`, la portada): admin → entra; cliente → `/bolsas`; sin sesión → `/login?returnUrl=…` con la URL pedida (sale de `router.currentNavigation()`, porque `canMatch` no recibe `state.url`). Es experiencia de usuario: la seguridad real sigue siendo `requireAdmin` en el backend.
 - Volver a donde estaba: los guards y los 401 llevan a `/login?returnUrl=...` con `loginUrlTree` (`core/utils/return-url.ts`); el login solo acepta rutas que pasan `isSafeReturnUrl` (evita redirecciones abiertas).
 - `SessionNoticeService`: avisos entre pantallas con tipo (`error` en el login, `success` en el perfil); cada pantalla borra los de su tipo al salir.
 - Pendiente: el error de carga del carrito al iniciar sesión (`CartService`) sigue yendo solo a consola.

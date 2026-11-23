@@ -98,6 +98,7 @@ app.use('/api/orders', require('./routes/orders.routes'));
 app.use('/api/admin/orders', require('./routes/admin-orders.routes'));
 app.use('/api/admin/products', require('./routes/admin-products.routes'));
 app.use('/api/admin/settings', require('./routes/admin-settings.routes'));
+app.use('/api/admin/categories', require('./routes/admin-categories.routes'));
 app.use('/api/admin/users', require('./routes/admin-users.routes'));
 
 // Cualquier otra ruta /api: 404 en JSON (antes del frontend: una /api desconocida nunca recibe HTML)

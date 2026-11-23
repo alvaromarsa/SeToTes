@@ -57,23 +57,20 @@
   background: #fff;
 }
 
+/* Foto (o recuadro sin foto) cuadrada y fija: object-fit recorta sin deformar */
 .checkout-item__thumb {
+  display: block;
   width: 96px;
   height: 96px;
   border-radius: 18px;
-  background: linear-gradient(135deg, #f0d1b4, #e7ded4);
-}
-
-.checkout-item__thumb--green {
-  background: linear-gradient(135deg, #dff9c7, #b8ff8c);
-}
-
-.checkout-item__thumb--beige {
-  background: linear-gradient(135deg, #f7d9bb, #eedcc8);
+  background: var(--color-cream-dark);
+  object-fit: cover;
 }
 
 .checkout-item__details {
   display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
@@ -173,6 +170,19 @@
 @media (max-width: 800px) {
   .checkout-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Móvil: foto más pequeña para dejar sitio al nombre */
+@media (max-width: 480px) {
+  .checkout-item {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .checkout-item__thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 14px;
   }
 }
 

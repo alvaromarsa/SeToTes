@@ -31,11 +31,13 @@
           <div class="checkout-items">
             @for (item of cart.items; track item.productId) {
               <article class="checkout-item">
-                <div
-                  class="checkout-item__thumb"
-                  [class.checkout-item__thumb--green]="item.color?.toLowerCase() === 'verde'"
-                  [class.checkout-item__thumb--beige]="item.color?.toLowerCase() !== 'verde'"
-                ></div>
+                <!-- Solo información (sin enlace). alt vacío: el nombre ya va al lado como texto -->
+                @if (item.mainImage; as mainImage) {
+                  <img class="checkout-item__thumb" [src]="mainImage.cardUrl" alt="" width="96" height="96">
+                } @else {
+                  <!-- Sin imagen: recuadro de color plano del mismo tamaño (la fila no cambia) -->
+                  <div class="checkout-item__thumb"></div>
+                }
                 <div class="checkout-item__details">
                   <div>
                     <h2>{{ item.name }}</h2>

@@ -13,7 +13,7 @@ Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con 
 ## Funcionalidades
 
 **Clientes**
-- Catálogo con una página por categoría (`/bolsas`, `/neceseres`, `/fundas`, `/telas`).
+- Catálogo con una página por categoría (`/categoria/<slug>`; las URL antiguas `/bolsas`, `/neceseres`, `/fundas` y `/telas` redirigen).
 - Registro e inicio de sesión. Contraseñas con hash argon2.
 - Perfil de usuario editable (nombre, teléfono, email, dirección, ciudad y código postal).
 - Carrito guardado en la base de datos: añadir productos, cambiar cantidades y quitarlos, con comprobación de stock.

@@ -56,10 +56,12 @@
   background: var(--color-cream);
 }
 
-/* Una sola línea con scroll horizontal propio si no cabe */
+/* Una sola línea con scroll horizontal propio si no cabe. min-height: un enlace (44px) más el
+   borde superior, para que la fila no salte mientras cargan las categorías (o si fallan) */
 .navbar__categories {
   grid-area: categories;
   min-width: 0;
+  min-height: 45px;
   margin: 0 -1rem;
   padding: 0 1rem;
   border-top: 1px solid var(--navbar-border);

@@ -1,46 +1,69 @@
 <section class="feature">
-  <div class="feature__header">
-    <span class="feature__tag">{{ info.tag }}</span>
-    <h2>{{ info.title }}</h2>
-  </div>
-
-  @if (errorMessage) {
-    <p class="feature__error" role="alert">{{ errorMessage }}</p>
-  }
-
-  <div class="feature__grid">
-    @for (product of products; track product.id) {
-      <article class="product-card">
-        <!-- Mismo destino que el nombre: fuera del orden de tabulación para no repetir parada -->
-        <a class="product-card__media" [routerLink]="['/producto', product.id]" tabindex="-1" aria-hidden="true">
-          @if (product.mainImage; as mainImage) {
-            <img
-              class="product-card__photo"
-              [src]="mainImage.cardUrl"
-              [alt]="product.name"
-              loading="lazy"
-            >
-          } @else {
-            <div class="product-card__image product-card__image--{{ info.imageClass }}">
-              {{ product.color }}
-            </div>
-          }
-        </a>
-        <h3><a class="product-card__link" [routerLink]="['/producto', product.id]">{{ product.name }}</a></h3>
-        <p>Disponibles: {{ product.stock }}</p>
-        <div class="product-card__meta">
-          <span>{{ product.price | currency: 'EUR' : 'symbol' : '1.2-2' }}</span>
-          <button
-            type="button"
-            [disabled]="product.stock === 0"
-            (click)="addToCart(product)"
-          >
-            Comprar
-          </button>
-        </div>
-      </article>
-    } @empty {
-      <p>Todavía no hay productos en esta categoría.</p>
+  @if (notFound()) {
+    <!-- Slug que no existe (o una categoría que ya no está): se explica y se ofrecen las que sí -->
+    <div class="feature__header">
+      <h2>Categoría no encontrada</h2>
+    </div>
+    <p>Puede que el enlace no sea correcto o que la categoría ya no exista.</p>
+    @if (categories().length > 0) {
+      <p>Echa un vistazo a nuestras categorías:</p>
+      <ul class="feature__categories">
+        @for (item of categories(); track item.slug) {
+          <li><a [routerLink]="categoryPath(item.slug)">{{ item.name }}</a></li>
+        }
+      </ul>
     }
-  </div>
+  } @else {
+    <div class="feature__header">
+      <!-- Etiqueta genérica para todas las categorías -->
+      <span class="feature__tag">Colección</span>
+      <h2>{{ title() }}</h2>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="feature__error" role="alert">{{ errorMessage() }}</p>
+    }
+
+    @if (isLoading()) {
+      <p role="status">Cargando productos…</p>
+    } @else {
+      <div class="feature__grid">
+        @for (product of products(); track product.id) {
+          <article class="product-card">
+            <!-- Mismo destino que el nombre: fuera del orden de tabulación para no repetir parada -->
+            <a class="product-card__media" [routerLink]="['/producto', product.id]" tabindex="-1" aria-hidden="true">
+              @if (product.mainImage; as mainImage) {
+                <img
+                  class="product-card__photo"
+                  [src]="mainImage.cardUrl"
+                  [alt]="product.name"
+                  loading="lazy"
+                >
+              } @else {
+                <div class="product-card__image product-card__image--{{ placeholderTone() }}">
+                  {{ product.color }}
+                </div>
+              }
+            </a>
+            <h3><a class="product-card__link" [routerLink]="['/producto', product.id]">{{ product.name }}</a></h3>
+            <p>Disponibles: {{ product.stock }}</p>
+            <div class="product-card__meta">
+              <span>{{ product.price | currency: 'EUR' : 'symbol' : '1.2-2' }}</span>
+              <button
+                type="button"
+                [disabled]="product.stock === 0"
+                (click)="addToCart(product)"
+              >
+                Comprar
+              </button>
+            </div>
+          </article>
+        } @empty {
+          @if (!errorMessage()) {
+            <p>Todavía no hay productos en esta categoría.</p>
+          }
+        }
+      </div>
+    }
+  }
 </section>

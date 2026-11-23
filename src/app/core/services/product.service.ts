@@ -41,7 +41,8 @@ export class ProductService {
   private readonly apiUrl = `${API_BASE_URL}/api/products`;
   private readonly adminApiUrl = `${API_BASE_URL}/api/admin/products`;
 
-  getProducts(category?: ProductCategory) {
+  // category: slug de la categoría (cualquiera de la tabla categories, no solo las 4 iniciales)
+  getProducts(category?: string) {
     return this.http.get<Product[]>(this.apiUrl, {
       params: category ? { category } : {},
     });

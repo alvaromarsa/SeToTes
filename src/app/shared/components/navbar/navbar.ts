@@ -16,6 +16,8 @@ import { filter } from 'rxjs';
 
 import { ShoppingCart } from '@features/shopping-cart/shopping-cart';
 import { AuthService } from '@core/services/auth.service';
+import { categoryPath } from '@core/config/categories.config';
+import { CategoryService } from '@core/services/category.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import type { AuthUser } from '@core/models/auth.models';
 
@@ -40,18 +42,20 @@ export class Navbar implements OnInit {
   private readonly userMenuButton = viewChild.required<ElementRef<HTMLButtonElement>>('userMenuButton');
   private readonly menuItems = viewChildren<ElementRef<HTMLElement>>('menuItem');
 
-  readonly categories = [
-    { path: '/bolsas', label: 'Bolsas' },
-    { path: '/neceseres', label: 'Neceseres' },
-    { path: '/fundas', label: 'Fundas' },
-    { path: '/telas', label: 'Telas' },
-  ];
+  private readonly categoryService = inject(CategoryService);
+
+  // Categorías de la BD (signal del servicio, cargado una vez). Mientras cargan, o si fallan,
+  // la fila queda vacía pero conserva su altura (min-height en navbar.css): nada salta
+  readonly categories = this.categoryService.categories;
+  readonly categoryPath = categoryPath;
 
   currentUser: AuthUser | null = null;
   isUserMenuOpen = false;
   logoutError = '';
 
   ngOnInit(): void {
+    this.categoryService.load();
+
     this.authService.currentUser$.subscribe((user) => {
       this.currentUser = user;
       this.cdr.markForCheck();

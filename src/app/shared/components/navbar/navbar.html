@@ -7,15 +7,15 @@
 
   <nav class="navbar__categories" aria-label="Categorías">
     <ul class="navbar__category-list">
-      @for (category of categories; track category.path) {
+      @for (category of categories(); track category.slug) {
         <li>
           <a
             class="navbar__category"
-            [routerLink]="category.path"
+            [routerLink]="categoryPath(category.slug)"
             routerLinkActive="active"
             ariaCurrentWhenActive="page"
           >
-            {{ category.label }}
+            {{ category.name }}
           </a>
         </li>
       }

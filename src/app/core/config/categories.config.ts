@@ -7,8 +7,8 @@ export interface CategoryInfo {
   imageClass: string;
 }
 
-//Record<ProductCategory, CategoryInfo>. Obliga a que haya una entrada para cada categoría de la lista.
-// Si mañana añado 'mochilas' a PRODUCT_CATEGORIES y me olvido de describirla aquí, TypeScript no compila. Es un seguro contra olvidos.
+// TEMPORAL (paso 5 del plan de categorías): aún lo usan el detalle de producto, la portada y la
+// gestión de productos. El catálogo y la navbar ya leen las categorías de CategoryService.
 export const CATEGORY_INFO: Record<ProductCategory, CategoryInfo> = {
   bolsas: { tag: 'Colección', title: 'Bolsas', imageClass: 'beige' },
   neceseres: { tag: 'Organización', title: 'Neceseres', imageClass: 'sand' },
@@ -16,7 +16,8 @@ export const CATEGORY_INFO: Record<ProductCategory, CategoryInfo> = {
   telas: { tag: 'Materiales', title: 'Telas', imageClass: 'linen' },
 };
 
-// Cada categoría tiene su propia ruta en app.routes.ts: /bolsas, /neceseres…
-export function categoryPath(category: ProductCategory): string {
-  return `/${category}`;
+// Todas las categorías viven en /categoria/<slug> (las URL antiguas /bolsas… redirigen aquí).
+// Los enlaces internos usan SIEMPRE esta función, nunca la URL antigua
+export function categoryPath(slug: string): string {
+  return `/categoria/${slug}`;
 }

@@ -8,10 +8,14 @@ const loadCatalog = () =>
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
-  { path: 'bolsas', loadComponent: loadCatalog, data: { category: 'bolsas' } },
-  { path: 'neceseres', loadComponent: loadCatalog, data: { category: 'neceseres' } },
-  { path: 'fundas', loadComponent: loadCatalog, data: { category: 'fundas' } },
-  { path: 'telas', loadComponent: loadCatalog, data: { category: 'telas' } },
+  // Una sola ruta para todas las categorías (también las que cree el admin)
+  { path: 'categoria/:slug', loadComponent: loadCatalog },
+  // URL antiguas: redirigen para no romper marcadores ni enlaces compartidos. Los enlaces
+  // internos ya usan categoryPath() (/categoria/<slug>) y no pasan por aquí
+  { path: 'bolsas', redirectTo: 'categoria/bolsas', pathMatch: 'full' },
+  { path: 'neceseres', redirectTo: 'categoria/neceseres', pathMatch: 'full' },
+  { path: 'fundas', redirectTo: 'categoria/fundas', pathMatch: 'full' },
+  { path: 'telas', redirectTo: 'categoria/telas', pathMatch: 'full' },
   {
     path: 'home',
     loadComponent: () =>

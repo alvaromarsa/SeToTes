@@ -22,6 +22,7 @@ Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con 
 
 **Administración** (rol `admin`)
 - Crear y editar productos (nombre, precio, stock, color y categoría).
+- Crear categorías nuevas (`/adminpanel/categories`): aparecen al momento en la navbar, el catálogo y el formulario de productos.
 - Listado de todos los pedidos con filtro por estado, y detalle con datos del cliente y del envío.
 - Cambio de estado de los pedidos según transiciones permitidas. Al cancelar un pedido se devuelve el stock.
 
@@ -142,13 +143,13 @@ docker compose ps                         # minio-init "Exited (0)" es lo normal
 .
 ├── src/app/
 │   ├── core/
-│   │   ├── config/          # URL base de la API
+│   │   ├── config/          # URL base de la API, categoryPath
 │   │   ├── guards/          # authGuard, adminGuard
 │   │   ├── interceptors/    # credenciales y sesión caducada (401)
 │   │   ├── models/          # interfaces de datos
-│   │   └── services/        # auth, productos, carrito, pedidos, pedidos (admin)
+│   │   └── services/        # auth, productos, categorías, carrito, pedidos, pedidos (admin)
 │   ├── features/            # pantallas, cargadas con lazy loading
-│   │   ├── admin/           # rutas hijas: panel, productos, pedidos, detalle de pedido
+│   │   ├── admin/           # rutas hijas: panel, productos, categorías, pedidos, usuarios, ajustes
 │   │   ├── catalog/  checkout/  home/  login/  register/
 │   │   ├── orders/  order-detail/  shopping-cart/  user-profile/
 │   └── shared/
@@ -158,11 +159,11 @@ docker compose ps                         # minio-init "Exited (0)" es lo normal
     ├── app.js               # construye la app Express y monta las rutas
     ├── server.js            # solo arranca el servidor
     ├── db.js                # pool de conexiones PostgreSQL
-    ├── config/              # carga de .env y constantes (categorías, estados, envío)
+    ├── config/              # carga de .env y constantes (estados, envío)
     ├── middleware/auth.js   # requireAuth, requireAdmin
-    ├── routes/              # auth, products, cart, orders, admin-orders
+    ├── routes/              # auth, products, categories, cart, orders, admin-*
     ├── utils/
-    └── database/            # schema.sql y migraciones
+    └── database/            # schema.sql, seed.sql y migraciones
 ```
 
 Los imports del frontend usan los alias `@core/*`, `@features/*` y `@shared/*`.
@@ -190,7 +191,15 @@ shipped → delivered
 `delivered` y `cancelled` son finales. Una transición no permitida devuelve `409`. El detalle de pedido de administración devuelve `allowedStatuses`, y el frontend solo ofrece esas opciones. La base de datos también restringe los valores con un `CHECK`.
 
 ### Lazy loading
-Todas las pantallas se cargan bajo demanda con `loadComponent`. La zona de administración es un grupo de rutas hijas (`loadChildren`) protegido con `canActivateChild: [adminGuard]`, así que su código solo se descarga cuando se entra en ella.
+Todas las pantallas se cargan bajo demanda con `loadComponent`. La zona de administración es un grupo de rutas hijas (`loadChildren`) protegido con `canMatch: [adminGuard]`: el guard decide antes de descargar el código, así que un cliente o un visitante sin sesión nunca lo descarga.
+
+### Categorías dinámicas
+Las categorías están en la tabla `categories` (migración `007_categories.sql`: `slug` único, `name`, `position`), no en el código. `products.category` guarda el slug con una clave ajena a `categories.slug` (`ON DELETE RESTRICT`). Una BD nueva recibe las 4 categorías iniciales con `seed.sql`, que es solo para BD nuevas.
+
+- **API:** `GET /api/categories` es público (`no-cache` + ETag: revalida en cada uso y responde `304` si no ha cambiado). `POST /api/admin/categories` (solo admin) recibe únicamente el nombre; el servidor genera el slug (minúsculas, sin tildes, con guiones), rechaza los reservados (`login`, `checkout`…) y responde `409` si ya existe uno equivalente («Bolsas», «BOLSÁS» y «bolsas!» chocan). Al crear o editar un producto se comprueba que su categoría existe.
+- **Frontend:** `CategoryService` carga la lista una vez en una signal (con un reintento si falla) y la comparten la navbar, el catálogo, el detalle de producto, Novedades y la gestión de productos. Cada categoría vive en `/categoria/<slug>`; las URL antiguas (`/bolsas`…) redirigen. Al crear una categoría desde `/adminpanel/categories`, aparece en todas partes sin recargar.
+- **Muchas categorías:** la fila de la navbar se desplaza en horizontal, con un degradado en el borde por el que queda más, y el tabulador lleva la vista hasta la categoría enfocada.
+- **Pendiente:** renombrar, reordenar, ocultar y borrar categorías; y, con más de 6 u 8, una página «Ver todas» o un menú desplegable.
 
 ### Interceptor de sesión
 Hay dos interceptores funcionales. `credentialsInterceptor` añade `withCredentials` solo a las peticiones dirigidas a la API, para que viaje la cookie. `authErrorInterceptor` detecta un `401` cuando el usuario tenía sesión (sesión caducada), limpia el estado del usuario y redirige a `/login`. Excluye el propio login, para que unas credenciales incorrectas no se traten como sesión caducada.

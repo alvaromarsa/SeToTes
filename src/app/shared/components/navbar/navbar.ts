@@ -3,10 +3,12 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  effect,
   ElementRef,
   inject,
   Injector,
   OnInit,
+  signal,
   viewChild,
   viewChildren,
 } from '@angular/core';
@@ -30,6 +32,7 @@ import type { AuthUser } from '@core/models/auth.models';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:click)': 'onDocumentClick($event)',
+    '(window:resize)': 'updateScrollHints()',
   },
 })
 export class Navbar implements OnInit {
@@ -48,6 +51,33 @@ export class Navbar implements OnInit {
   // la fila queda vacía pero conserva su altura (min-height en navbar.css): nada salta
   readonly categories = this.categoryService.categories;
   readonly categoryPath = categoryPath;
+
+  // Fila de categorías con desplazamiento horizontal propio: degradado en el borde de cada lado
+  // por el que aún queda algo que desplazar (se recalcula al desplazar, al redimensionar y al
+  // cambiar la lista)
+  private readonly categoriesNav = viewChild.required<ElementRef<HTMLElement>>('categoriesNav');
+  readonly hasMoreBefore = signal(false);
+  readonly hasMoreAfter = signal(false);
+
+  constructor() {
+    effect(() => {
+      this.categories();
+      afterNextRender(() => this.updateScrollHints(), { injector: this.injector });
+    });
+  }
+
+  updateScrollHints(): void {
+    const nav = this.categoriesNav().nativeElement;
+    // 1 px de margen por el redondeo de los subpíxeles
+    this.hasMoreBefore.set(nav.scrollLeft > 1);
+    this.hasMoreAfter.set(nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1);
+  }
+
+  // Al llegar con el tabulador a una categoría fuera de la vista, se desplaza hasta ella
+  // (scroll-padding en navbar.css la deja lejos del degradado, con el foco visible)
+  revealFocusedCategory(event: FocusEvent): void {
+    (event.target as HTMLElement).scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
 
   currentUser: AuthUser | null = null;
   isUserMenuOpen = false;

@@ -35,15 +35,17 @@ body {
 
 /* Fondo de la navbar (copa de seta): rojo con puntos crema translúcidos de varios tamaños.
    Aquí y no en navbar.css para no pasar el presupuesto de 4 kB del CSS del componente.
-   Los puntos van SOLO en la fila superior (y < 64 px), en los huecos entre el logo, los enlaces y
-   los botones (posiciones respecto al centro); los que caen detrás del logo o de un botón quedan
-   tapados. La fila de categorías del móvil (y > 64 px) no tiene puntos detrás. Texto crema sobre
-   el rojo: 9,67:1 */
+   Los puntos van SOLO en la fila superior (y < 64 px) y NUNCA en la zona de las categorías,
+   que puede ocupar todo el centro según cuántas haya:
+   - móvil: en el hueco entre el logo y los botones (las categorías van en la segunda fila,
+     sin puntos detrás);
+   - desde tablet: solo en los márgenes exteriores (el relleno de 24 px de cada lado y, con
+     pantalla ancha, fuera del contenedor de 1280 px).
+   Texto crema sobre el rojo: 9,67:1 */
 app-navbar {
   --d1: rgba(251, 246, 236, 0.24);
   --d2: rgba(251, 246, 236, 0.14);
 
-  /* Móvil: hueco entre el logo y los botones (centro de la fila superior) */
   background:
     radial-gradient(circle at 6px 8px, var(--d2) 0 3px, #0000 4px),
     radial-gradient(circle at calc(50% - 32px) 14px, var(--d2) 0 5px, #0000 6px),
@@ -55,23 +57,32 @@ app-navbar {
     var(--color-red);
 }
 
-/* Huecos a los lados de los enlaces y, con pantalla ancha, fuera del contenedor de 1280 px */
 @media (min-width: 768px) {
   app-navbar {
     background:
+      radial-gradient(circle at 8px 12px, var(--d1) 0 3px, #0000 4px),
+      radial-gradient(circle at 15px 46px, var(--d2) 0 4px, #0000 5px),
+      radial-gradient(circle at calc(100% - 9px) 18px, var(--d2) 0 4px, #0000 5px),
+      radial-gradient(circle at calc(100% - 14px) 52px, var(--d1) 0 3px, #0000 4px),
       radial-gradient(circle at calc(50% - 680px) 18px, var(--d1) 0 9px, #0000 10px),
       radial-gradient(circle at calc(50% - 650px) 50px, var(--d2) 0 5px, #0000 6px),
-      radial-gradient(circle at calc(50% - 300px) 14px, var(--d2) 0 6px, #0000 7px),
-      radial-gradient(circle at calc(50% - 265px) 46px, var(--d1) 0 9px, #0000 10px),
-      radial-gradient(circle at calc(50% - 228px) 20px, var(--d2) 0 4px, #0000 5px),
-      radial-gradient(circle at calc(50% - 200px) 52px, var(--d1) 0 6px, #0000 7px),
-      radial-gradient(circle at calc(50% - 190px) 10px, var(--d2) 0 3px, #0000 4px),
-      radial-gradient(circle at calc(50% + 225px) 16px, var(--d1) 0 7px, #0000 8px),
-      radial-gradient(circle at calc(50% + 255px) 48px, var(--d2) 0 5px, #0000 6px),
-      radial-gradient(circle at calc(50% + 300px) 26px, var(--d2) 0 10px, #0000 11px),
-      radial-gradient(circle at calc(50% + 345px) 54px, var(--d1) 0 4px, #0000 5px),
       radial-gradient(circle at calc(50% + 660px) 44px, var(--d1) 0 8px, #0000 9px),
       radial-gradient(circle at calc(50% + 690px) 12px, var(--d2) 0 4px, #0000 5px),
       var(--color-red);
   }
+}
+
+/* Fila de categorías con más contenido por un lado: ese borde se difumina para indicar que se
+   puede desplazar (las clases las pone navbar.ts y desaparecen al llegar al final). Aquí y no en
+   navbar.css por el presupuesto de 4 kB */
+.navbar__categories--more-before {
+  mask-image: linear-gradient(to right, transparent, #000 2rem);
+}
+
+.navbar__categories--more-after {
+  mask-image: linear-gradient(to left, transparent, #000 2rem);
+}
+
+.navbar__categories--more-before.navbar__categories--more-after {
+  mask-image: linear-gradient(to right, transparent, #000 2rem calc(100% - 2rem), transparent);
 }

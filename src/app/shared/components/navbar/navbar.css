@@ -67,6 +67,8 @@
   border-top: 1px solid var(--navbar-border);
   overflow-x: auto;
   scrollbar-width: none;
+  /* Al tabular, la categoría enfocada queda lejos del degradado de los bordes (styles.css) */
+  scroll-padding-inline: 2.5rem;
 }
 
 .navbar__category-list {

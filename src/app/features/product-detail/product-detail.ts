@@ -18,12 +18,13 @@ import { Title } from '@angular/platform-browser';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, map, Observable, of, switchMap, tap } from 'rxjs';
 
-import { CATEGORY_INFO, categoryPath } from '@core/config/categories.config';
+import { categoryPath } from '@core/config/categories.config';
 import { CartService } from '@core/services/cart.service';
+import { CategoryService } from '@core/services/category.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { loginUrlTree } from '@core/utils/return-url';
 import { ShippingInfo } from '@shared/components/shipping-info/shipping-info';
-import { DetailedProduct, PRODUCT_CATEGORIES, ProductService } from '@core/services/product.service';
+import { DetailedProduct, ProductService } from '@core/services/product.service';
 
 type LoadResult =
   | { state: 'loaded'; product: DetailedProduct }
@@ -49,6 +50,7 @@ export class ProductDetail implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
   private readonly cartService = inject(CartService);
+  private readonly categoryService = inject(CategoryService);
   private readonly titleService = inject(Title);
   private readonly destroyRef = inject(DestroyRef);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -60,8 +62,8 @@ export class ProductDetail implements OnInit, OnDestroy {
   // Ninguna otra ruta fija su título: al salir se restaura el original
   private readonly originalTitle = this.titleService.getTitle();
 
-  readonly categories = PRODUCT_CATEGORIES;
-  readonly categoryInfo = CATEGORY_INFO;
+  // Migas de pan, ficha y «Producto no encontrado» con las categorías de la BD
+  readonly categories = this.categoryService.categories;
   readonly categoryPath = categoryPath;
   readonly quantityControl = this.fb.nonNullable.control(1);
 
@@ -74,6 +76,8 @@ export class ProductDetail implements OnInit, OnDestroy {
   addSuccessMessage = '';
 
   ngOnInit(): void {
+    this.categoryService.load();
+
     // paramMap (no snapshot): el componente se reutiliza al ir de un producto a otro
     this.route.paramMap
       .pipe(
@@ -231,5 +235,15 @@ export class ProductDetail implements OnInit, OnDestroy {
     this.isAdding = false;
     this.addErrorMessage = '';
     this.addSuccessMessage = '';
+  }
+
+  // Nombre para mostrar (la BD guarda el slug); mientras cargan las categorías, el slug
+  categoryName(slug: string): string {
+    return this.categoryService.findBySlug(slug)?.name ?? slug;
+  }
+
+  // Recuadro sin foto: tono según la posición de la categoría (los 4 tonos se repiten)
+  placeholderTone(slug: string): string {
+    return this.categoryService.placeholderTone(slug);
   }
 }

@@ -18,9 +18,9 @@
         <p>Puede que el enlace no sea correcto o que el producto ya no esté a la venta.</p>
         <p>Vuelve al catálogo:</p>
         <ul class="product-detail__categories">
-          @for (category of categories; track category) {
+          @for (category of categories(); track category.slug) {
             <li>
-              <a class="product-detail__back" [routerLink]="categoryPath(category)">{{ categoryInfo[category].title }}</a>
+              <a class="product-detail__back" [routerLink]="categoryPath(category.slug)">{{ category.name }}</a>
             </li>
           }
         </ul>
@@ -32,7 +32,7 @@
         <nav class="breadcrumbs" aria-label="Migas de pan">
           <ol>
             <li><a routerLink="/home">Inicio</a></li>
-            <li><a [routerLink]="categoryPath(product.category)">{{ categoryInfo[product.category].title }}</a></li>
+            <li><a [routerLink]="categoryPath(product.category)">{{ categoryName(product.category) }}</a></li>
             <li><span aria-current="page">{{ product.name }}</span></li>
           </ol>
         </nav>
@@ -76,7 +76,7 @@
                 </div>
               }
             } @else {
-              <div class="gallery__placeholder gallery__placeholder--{{ categoryInfo[product.category].imageClass }}">
+              <div class="gallery__placeholder gallery__placeholder--{{ placeholderTone(product.category) }}">
                 {{ product.color }}
               </div>
             }
@@ -89,7 +89,7 @@
             <dl class="product-info__details">
               <div>
                 <dt>Categoría</dt>
-                <dd><a [routerLink]="categoryPath(product.category)">{{ categoryInfo[product.category].title }}</a></dd>
+                <dd><a [routerLink]="categoryPath(product.category)">{{ categoryName(product.category) }}</a></dd>
               </div>
               <div>
                 <dt>Color</dt>

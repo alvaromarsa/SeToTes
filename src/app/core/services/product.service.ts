@@ -5,17 +5,14 @@ import { API_BASE_URL } from '@core/config/api.config';
 import type { AdminProduct, ProductVisibilityRequest } from '@core/models/admin-product.models';
 import type { ProductImage, ProductMainImage } from '@core/models/product-image.models';
 
-export const PRODUCT_CATEGORIES = ['bolsas', 'neceseres', 'fundas', 'telas'] as const;
-
-export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
-
 export interface Product {
   id: number;
   name: string;
   price: number;
   stock: number;
   color: string | null;
-  category: ProductCategory;
+  // Slug de la categoría (tabla categories; nombre y orden en CategoryService)
+  category: string;
   images: ProductImage[];
   mainImage: ProductMainImage | null;
 }

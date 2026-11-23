@@ -1,4 +1,4 @@
-﻿.arrivals__title {
+.arrivals__title {
   margin: 0 0 1.25rem;
   color: var(--color-text);
   font-size: clamp(1.6rem, 3vw, 2.2rem);
@@ -42,11 +42,11 @@
   object-fit: cover;
 }
 
-/* Sin imagen: color plano, el tono final de los degradados de catalog.css */
-.arrival-card__photo--bolsas { background: #e7d5b5; }
-.arrival-card__photo--neceseres { background: #d8c0a4; }
-.arrival-card__photo--fundas { background: #94a3b8; }
-.arrival-card__photo--telas { background: #d7d0c7; }
+/* Sin imagen: color plano por tono (CategoryService.placeholderTone; finales de los degradados de catalog.css) */
+.arrival-card__photo--beige { background: #e7d5b5; }
+.arrival-card__photo--sand { background: #d8c0a4; }
+.arrival-card__photo--graphite { background: #94a3b8; }
+.arrival-card__photo--linen { background: #d7d0c7; }
 
 /* Etiqueta de categoría: rojo sobre crema, 9,67:1 */
 .arrival-card__tag {

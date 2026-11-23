@@ -2,6 +2,8 @@ import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  computed,
+  effect,
   ElementRef,
   inject,
   OnInit,
@@ -10,36 +12,33 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { CurrencyPipe, TitleCasePipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 
-import { CATEGORY_INFO } from '@core/config/categories.config';
 import type { AdminProduct } from '@core/models/admin-product.models';
 import type { ProductImage } from '@core/models/product-image.models';
-import {
-  PRODUCT_CATEGORIES,
-  PRODUCT_DESCRIPTION_MAX_LENGTH,
-  ProductCategory,
-  ProductService,
-} from '@core/services/product.service';
+import { CategoryService } from '@core/services/category.service';
+import { PRODUCT_DESCRIPTION_MAX_LENGTH, ProductService } from '@core/services/product.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { ProductImageManager } from '@features/admin/components/product-image-manager/product-image-manager';
 import { VisibilitySwitch } from '@features/admin/components/visibility-switch/visibility-switch';
 import { FormUtils } from '@shared/utils/form-utils';
 import { countCharacters, plainTextLength } from '@shared/utils/plain-text';
 
-type CategoryFilter = ProductCategory | 'all';
+// 'all' o el slug de una categoría
+type CategoryFilter = string;
 type StatusFilter = 'all' | 'visible' | 'hidden';
 
 @Component({
   selector: 'app-product-management',
-  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, TitleCasePipe, ProductImageManager, VisibilitySwitch],
+  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, ProductImageManager, VisibilitySwitch],
   templateUrl: './product-management.html',
   styleUrl: './product-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProductManagement implements OnInit {
   private readonly productService = inject(ProductService);
+  private readonly categoryService = inject(CategoryService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly fb = inject(FormBuilder);
 
@@ -51,9 +50,11 @@ export class ProductManagement implements OnInit {
   errorMessage = '';
   isLoading = true;
   readonly formUtils = FormUtils;
-  readonly categories = PRODUCT_CATEGORIES;
+  // Selector, pestañas y contadores salen de las categorías de la BD (CategoryService)
+  readonly categories = this.categoryService.categories;
+  readonly categoriesFailed = computed(() => this.categoryService.status() === 'error');
   readonly descriptionMaxLength = PRODUCT_DESCRIPTION_MAX_LENGTH;
-  readonly categoryFilters: readonly CategoryFilter[] = ['all', ...PRODUCT_CATEGORIES];
+  readonly categoryFilters = computed<CategoryFilter[]>(() => ['all', ...this.categories().map((category) => category.slug)]);
   selectedCategory: CategoryFilter = 'all';
   readonly statusFilters: readonly { value: StatusFilter; label: string }[] = [
     { value: 'all', label: 'Todos' },
@@ -68,6 +69,21 @@ export class ProductManagement implements OnInit {
   isSaving = false;
   saveSuccessMessage = '';
   saveErrorMessage = '';
+
+  constructor() {
+    this.categoryService.load();
+
+    // Las categorías llegan después que el formulario: al llegar, un alta nueva sin tocar toma
+    // la categoría por defecto (la primera de la lista, o la de la pestaña elegida)
+    effect(() => {
+      const firstSlug = this.categories()[0]?.slug;
+      const categoryControl = this.productForm.controls.category;
+
+      if (firstSlug && this.editingProductId === null && categoryControl.value === '') {
+        categoryControl.setValue(this.defaultCategory());
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.productService.getAdminProducts().subscribe({
@@ -91,7 +107,8 @@ export class ProductManagement implements OnInit {
     price: [0, [Validators.required, Validators.min(0)]],
     stock: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
     color: ['', [Validators.required]],
-    category: ['bolsas' as ProductCategory, [Validators.required]],
+    // Vacía hasta que cargan las categorías (ver el effect del constructor)
+    category: ['', [Validators.required]],
     // Texto plano opcional (saltos de línea permitidos)
     description: ['', [plainTextLength({ max: PRODUCT_DESCRIPTION_MAX_LENGTH })]],
   });
@@ -119,11 +136,16 @@ export class ProductManagement implements OnInit {
 
     return this.selectedCategory === 'all'
       ? `No hay productos${status}.`
-      : `No hay productos${status} en la categoría «${CATEGORY_INFO[this.selectedCategory].title}».`;
+      : `No hay productos${status} en la categoría «${this.categoryName(this.selectedCategory)}».`;
   }
 
   get editingProduct(): AdminProduct | null {
     return this.products.find((product) => product.id === this.editingProductId) ?? null;
+  }
+
+  // Nombre para mostrar (la BD guarda el slug). Si la categoría no está en la lista, el slug
+  categoryName(slug: string): string {
+    return this.categoryService.findBySlug(slug)?.name ?? slug;
   }
 
   countProducts(filter: CategoryFilter): number {
@@ -177,8 +199,9 @@ export class ProductManagement implements OnInit {
 
   // Navegación con teclado del patrón "tabs" de WAI-ARIA: flechas, Inicio y Fin
   onTabKeydown(event: KeyboardEvent): void {
-    const lastIndex = this.categoryFilters.length - 1;
-    const currentIndex = this.categoryFilters.indexOf(this.selectedCategory);
+    const filters = this.categoryFilters();
+    const lastIndex = filters.length - 1;
+    const currentIndex = filters.indexOf(this.selectedCategory);
     let nextIndex: number;
 
     switch (event.key) {
@@ -199,7 +222,7 @@ export class ProductManagement implements OnInit {
     }
 
     event.preventDefault();
-    this.selectCategory(this.categoryFilters[nextIndex]);
+    this.selectCategory(filters[nextIndex]);
     this.categoryTabs()[nextIndex]?.nativeElement.focus();
   }
 
@@ -297,9 +320,10 @@ export class ProductManagement implements OnInit {
     });
   }
 
-  private defaultCategory(): ProductCategory {
+  // La de la pestaña elegida; con «Todas», la primera de la lista ('' si aún no han cargado)
+  private defaultCategory(): string {
     return this.selectedCategory === 'all'
-      ? this.productForm.controls.category.defaultValue
+      ? (this.categories()[0]?.slug ?? '')
       : this.selectedCategory;
   }
 

@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict f1rxcuTc9OhVt32UVKf5DBRArYuf7v6f5n5vgiTyETIbpssykgIgVh5hJCNzxmR
+\restrict DcFc7ByZfnsBUdOUheUwZrCyffyVHEEkCicN1vFltKrOUtwJmGKLVPHNzm3g4wQ
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -74,6 +74,8 @@ CREATE TABLE public.categories (
     name text NOT NULL,
     "position" integer NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
+    name_key text NOT NULL,
+    CONSTRAINT categories_name_key_format_check CHECK (((name_key ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text) AND (char_length(name_key) <= 60))),
     CONSTRAINT categories_name_length_check CHECK (((char_length(name) >= 2) AND (char_length(name) <= 40))),
     CONSTRAINT categories_slug_format_check CHECK (((slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text) AND (char_length(slug) <= 60)))
 );
@@ -332,6 +334,14 @@ ALTER TABLE ONLY public.cart_items
 
 
 --
+-- Name: categories categories_name_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_name_key_key UNIQUE (name_key);
+
+
+--
 -- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -553,5 +563,5 @@ ALTER TABLE ONLY public.products
 -- PostgreSQL database dump complete
 --
 
-\unrestrict f1rxcuTc9OhVt32UVKf5DBRArYuf7v6f5n5vgiTyETIbpssykgIgVh5hJCNzxmR
+\unrestrict DcFc7ByZfnsBUdOUheUwZrCyffyVHEEkCicN1vFltKrOUtwJmGKLVPHNzm3g4wQ
 

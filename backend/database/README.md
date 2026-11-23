@@ -19,9 +19,10 @@ psql -v ON_ERROR_STOP=1 -U <usuario> -d totebag_db -f backend/database/seed.sql
 
 `schema.sql` refleja el estado actual del esquema, así que ya incluye todas las migraciones existentes. Como es solo estructura, no trae datos: sin `seed.sql`, la tabla `categories` estaría vacía y no se podría crear ningún producto.
 
-> **AVISO:** `seed.sql` es solo para una BD NUEVA. No lo ejecutes sobre una BD con datos reales: cuando exista el borrado de categorías, volvería a crear las que hayas borrado. Una BD que ya existía recibe las categorías con la migración `007_categories.sql`, no con el seed.
+> **AVISO:** `seed.sql` es solo para una BD NUEVA. No lo ejecutes sobre una BD con datos reales: si se ha borrado desde el panel alguna de las 4 categorías por defecto, la volvería a crear. Una BD que ya existía recibe las categorías con las migraciones `007_categories.sql` y `008_category_name_key.sql`, no con el seed (y tampoco esas migraciones se vuelven a aplicar).
 
-- `seed.sql` es idempotente (`ON CONFLICT DO NOTHING`): ejecutarlo dos veces no duplica nada ni cambia lo que ya exista.
+- `seed.sql` es idempotente (`ON CONFLICT DO NOTHING`): ejecutarlo dos veces no duplica nada ni cambia lo que ya exista. Renombrar una categoría por defecto no es problema: su slug no cambia y el seed la deja como esté.
+- `seed.sql` inserta `name_key` (migración 008): necesita un `schema.sql` regenerado después de aplicar la 008.
 - Con Docker (`docker-compose.yml`), `schema.sql` y `seed.sql` se montan como `001-schema.sql` y `002-seed.sql` en `/docker-entrypoint-initdb.d/` y se ejecutan solos, en ese orden, **solo con el volumen vacío** (primera vez o tras `docker compose down -v`).
 - Las 4 categorías iniciales están en dos sitios: `seed.sql` y la migración 007. Si cambian, en los dos.
 
@@ -52,6 +53,13 @@ Crea la tabla `categories` (`slug` único, `name`, `position`) con las 4 categor
 
 - **Orden de despliegue:** aplicarla ANTES de desplegar el backend que lee `categories`. El backend anterior funciona igual con ella aplicada.
 - Después, regenerar `schema.sql` (abajo).
+
+### 008_category_name_key.sql
+
+Añade `categories.name_key`: el nombre NORMALIZADO (minúsculas, sin tildes, con guiones; lo calcula el servidor), `NOT NULL` y `UNIQUE`. Las existentes se rellenan con `name_key = slug`. Hace falta porque renombrar solo cambia el nombre (el slug no, lo usan `products.category` y las URL): sin `name_key`, renombrar «Mochilas» a «Gorras» y luego crear «Gorras» daría dos categorías con el mismo nombre.
+
+- **Orden de despliegue:** aplicarla ANTES del backend que escribe `name_key` (crear y renombrar categorías), y desplegar ese backend justo después. Entre medias, crear una categoría con el backend anterior falla (no envía `name_key`); leer y borrar no se ven afectados.
+- Después, regenerar `schema.sql`: el `seed.sql` actual ya inserta `name_key` y no funcionaría con el `schema.sql` antiguo.
 
 No hay herramienta de migraciones ni tabla de control: hay que llevar la cuenta de cuál es la última aplicada en cada entorno.
 

@@ -31,6 +31,13 @@ export class OrderService {
     });
   }
 
+  // Solo pedidos sin pagar ('pending') del propio usuario; el backend cierra antes la sesión de Stripe
+  cancelOrder(orderId: number): Observable<OrderResponse> {
+    return this.http.post<OrderResponse>(`${this.apiUrl}/${orderId}/cancel`, {}, {
+      withCredentials: true,
+    });
+  }
+
   getMyOrders(): Observable<OrderSummary[]> {
     return this.http.get<OrderSummary[]>(this.apiUrl, {
       withCredentials: true,

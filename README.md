@@ -116,7 +116,7 @@ docker compose exec db psql -U totebag -d totebag_db -c "UPDATE users SET role =
 
 - Antes de levantarlo, para el backend local (`npm run dev`): los dos usan el puerto 3000.
 - PostgreSQL del compose: `127.0.0.1:5433` (no choca con un PostgreSQL local en el 5432).
-- Stripe CLI funciona igual: `stripe listen --forward-to localhost:3000/api/payments/webhook`.
+- Stripe CLI funciona igual: `stripe listen --events checkout.session.completed,checkout.session.expired --forward-to localhost:3000/api/payments/webhook`.
 - `schema.sql` solo se carga la primera vez (volumen vacío). Para empezar de cero: `docker compose down -v`.
 
 ### Imágenes en MinIO (compatible con S3)

@@ -21,6 +21,11 @@
       @if (paymentNotice && paymentNotice.kind !== 'processing') {
         <p class="payment-notice payment-notice--{{ paymentNotice.kind }}">{{ paymentNotice.text }}</p>
       }
+      @if (isCancelling()) {
+        <p class="payment-notice payment-notice--confirming">Cancelando el pedido…</p>
+      } @else if (cancelNotice()) {
+        <p class="payment-notice payment-notice--success">{{ cancelNotice() }}</p>
+      }
     </div>
     @if (paymentNotice?.kind === 'processing') {
       <p class="payment-notice payment-notice--processing" role="alert">{{ paymentNotice?.text }}</p>
@@ -29,13 +34,24 @@
     @if (order.status === 'pending' && paymentNotice?.kind !== 'confirming') {
       <div class="order-detail-pay">
         <p>Este pedido está pendiente de pago. El pago se hace en la página segura de Stripe.</p>
-        <button #payButton class="order-detail-pay__button" type="button" [disabled]="isStartingPayment" (click)="payNow()">
-          {{ isStartingPayment ? 'Redirigiendo al pago…' : 'Pagar ahora' }}
-        </button>
+        <div class="order-detail-pay__actions">
+          <button #payButton class="order-detail-pay__button" type="button" [disabled]="isStartingPayment || isCancelling()" (click)="payNow()">
+            {{ isStartingPayment ? 'Redirigiendo al pago…' : 'Pagar ahora' }}
+          </button>
+          <button #cancelButton class="order-detail-cancel" type="button" [disabled]="isCancelling() || isStartingPayment" (click)="askCancel()">
+            {{ isCancelling() ? 'Cancelando…' : 'Cancelar pedido' }}
+          </button>
+        </div>
         @if (payErrorMessage) {
           <p class="order-detail-error" role="alert">{{ payErrorMessage }}</p>
         }
       </div>
+    }
+
+    <!-- Fuera del bloque de pago: si el pedido dejó de estar pendiente (409), el bloque
+         desaparece, pero el motivo debe seguir visible -->
+    @if (cancelErrorMessage()) {
+      <p class="order-detail-error" role="alert">{{ cancelErrorMessage() }}</p>
     }
 
     <ul class="order-detail-items">
@@ -68,4 +84,13 @@
       <p>{{ order.shipping.phone }}</p>
     </section>
   }
+
+  <app-confirm-dialog
+    title="¿Cancelar este pedido?"
+    message="El pedido se cancelará y ya no podrás pagarlo. No se te cobrará nada."
+    confirmLabel="Sí, cancelar pedido"
+    cancelLabel="Volver"
+    [danger]="true"
+    (confirmed)="cancelOrder()"
+  />
 </section>

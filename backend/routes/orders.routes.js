@@ -3,8 +3,13 @@ const express = require('express');
 const pool = require('../db');
 const { SHIPPING_COST, TERMS_VERSION } = require('../config/constants');
 const { requireAuth } = require('../middleware/auth');
-const { createCheckoutSession, isStripeError, retrieveCheckoutSession } = require('../services/payments/stripe');
-const { OrderError, formatOrder } = require('../utils/orders');
+const {
+  closeCheckoutSessionForCancel,
+  createCheckoutSession,
+  isStripeError,
+  retrieveCheckoutSession,
+} = require('../services/payments/stripe');
+const { OrderError, cancelOrderAndRestock, formatOrder } = require('../utils/orders');
 const { stockLeftText } = require('../utils/products');
 
 const router = express.Router();
@@ -339,5 +344,127 @@ router.post('/:id/checkout-session', async (request, response) => {
     client.release();
   }
 });
+
+// El cliente cancela su pedido SIN PAGAR ('pending'). Los pagados no se cancelan aquí.
+// Orden: 1) lectura y comprobación; 2) cerrar la sesión de Stripe FUERA de la transacción (la
+// llamada puede tardar y no debe retener la fila ni una conexión del pool), para que ya no se
+// pueda pagar; 3) transacción con la fila bloqueada, volviendo a comprobar que sigue 'pending'
+// y con la misma sesión; 4) cancelOrderAndRestock (devuelve el stock).
+// Idempotente: una segunda cancelación (o dos a la vez) encuentra el pedido ya cancelado con la
+// fila bloqueada y responde 409 sin tocar el stock.
+// El evento checkout.session.expired que Stripe envía después encuentra el pedido 'cancelled'
+// y no hace nada (cancelExpiredOrder solo actúa sobre 'pending').
+router.post('/:id/cancel', async (request, response) => {
+  const orderId = Number(request.params.id);
+  const userId = request.authenticatedUserId;
+
+  if (!Number.isInteger(orderId) || orderId <= 0) {
+    return response.status(400).json({
+      message: 'El pedido no es válido',
+    });
+  }
+
+  let sessionId;
+
+  // 1) El pedido es del usuario (si no, 404 como si no existiera) y sigue pendiente de pago
+  try {
+    const current = await pool.query(
+      'SELECT status, stripe_checkout_session_id FROM orders WHERE id = $1 AND user_id = $2',
+      [orderId, userId]
+    );
+
+    if (current.rows.length === 0) {
+      return response.status(404).json({ message: 'No se encontró el pedido' });
+    }
+
+    if (current.rows[0].status !== 'pending') {
+      return response.status(409).json({ message: notPendingMessage(current.rows[0].status) });
+    }
+
+    sessionId = current.rows[0].stripe_checkout_session_id;
+  } catch (error) {
+    console.error(`Error al leer el pedido #${orderId} para cancelarlo:`, error.message);
+    return response.status(500).json({ message: 'No se pudo cancelar el pedido' });
+  }
+
+  // 2) Con sesión de Stripe: cerrarla antes de tocar la BD
+  if (sessionId) {
+    try {
+      const sessionStatus = await closeCheckoutSessionForCancel(sessionId);
+
+      if (sessionStatus === 'complete') {
+        // El cliente ya ha pagado: el webhook (o la reconciliación) lo marcará como pagado
+        return response.status(409).json({
+          message: 'El pago de este pedido se está procesando: no se puede cancelar',
+        });
+      }
+    } catch (error) {
+      // Sin la sesión cerrada no se cancela: el cliente aún podría pagar un pedido cancelado
+      console.error(`Error de Stripe al cancelar el pedido #${orderId}:`, error.type ?? '', error.message);
+      return response.status(502).json({
+        message: 'No se pudo conectar con la pasarela de pago. Inténtalo de nuevo en unos minutos.',
+      });
+    }
+  }
+
+  // 3) y 4) Transacción con la fila bloqueada
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const locked = await client.query(
+      `SELECT status, stripe_checkout_session_id
+       FROM orders
+       WHERE id = $1 AND user_id = $2
+       FOR UPDATE`,
+      [orderId, userId]
+    );
+
+    const order = locked.rows[0];
+
+    if (!order) {
+      throw new OrderError(404, 'No se encontró el pedido');
+    }
+
+    // Entre medias pudo pagarse (webhook), cancelarse (otra petición, el admin, un job)…
+    if (order.status !== 'pending') {
+      throw new OrderError(409, notPendingMessage(order.status));
+    }
+
+    // …o abrirse una sesión nueva en otra pestaña: esa sí se podría pagar
+    if (order.stripe_checkout_session_id !== sessionId) {
+      throw new OrderError(409, 'El pedido ha cambiado mientras se cancelaba. Vuelve a intentarlo.');
+    }
+
+    const cancelled = await cancelOrderAndRestock(client, orderId);
+
+    await client.query('COMMIT');
+
+    // Solo el nº de pedido: ni datos personales ni ids de pago
+    console.log(`Pedido #${orderId} cancelado por el cliente (sin pagar); stock devuelto`);
+
+    return response.json(formatOrder(cancelled));
+  } catch (error) {
+    await client.query('ROLLBACK');
+
+    if (error instanceof OrderError) {
+      return response.status(error.status).json({ message: error.message });
+    }
+
+    console.error(`Error al cancelar el pedido #${orderId}:`, error.message);
+    return response.status(500).json({ message: 'No se pudo cancelar el pedido' });
+  } finally {
+    client.release();
+  }
+});
+
+function notPendingMessage(status) {
+  if (status === 'cancelled') {
+    return 'Este pedido ya está cancelado';
+  }
+
+  return 'Este pedido ya está pagado y no se puede cancelar desde aquí';
+}
 
 module.exports = router;

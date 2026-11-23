@@ -147,6 +147,31 @@
   outline-offset: 3px;
 }
 
+.order-detail-pay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+/* Secundario: borde y texto en rojo oscuro (#a12a20 sobre blanco, 7,32:1) */
+.order-detail-cancel {
+  min-height: 48px;
+  padding: 0 1.2rem;
+  border: 1px solid #a12a20;
+  border-radius: 12px;
+  background: #fff;
+  color: #a12a20;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.order-detail-cancel:focus-visible {
+  outline: 3px solid #111827;
+  outline-offset: 3px;
+}
+
+.order-detail-cancel:disabled,
 .order-detail-pay__button:disabled {
   cursor: wait;
   opacity: 0.6;

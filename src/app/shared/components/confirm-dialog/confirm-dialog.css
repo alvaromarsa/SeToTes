@@ -1,4 +1,7 @@
+/* margin: auto centra el diálogo modal (el preflight de Tailwind pone margin: 0 a todo y lo
+   dejaba pegado arriba a la izquierda) */
 .confirm-dialog {
+  margin: auto;
   width: min(28rem, calc(100vw - 2rem));
   padding: 1.5rem;
   border: 0;

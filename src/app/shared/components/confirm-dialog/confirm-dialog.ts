@@ -23,6 +23,9 @@ export class ConfirmDialog {
   readonly title = input.required<string>();
   readonly message = input.required<string>();
   readonly confirmLabel = input('Confirmar');
+  // Texto del botón seguro (cierra sin hacer nada). Cambiarlo si "Cancelar" se confunde con la
+  // acción, p. ej. al confirmar "Cancelar pedido"
+  readonly cancelLabel = input('Cancelar');
   // Acción peligrosa o difícil de deshacer: botón de confirmar en rojo
   readonly danger = input(false);
 

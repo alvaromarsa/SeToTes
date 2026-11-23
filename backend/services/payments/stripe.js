@@ -95,6 +95,31 @@ async function expireCheckoutSessionIfOpen(sessionId, orderId) {
   }
 }
 
+// Cancelación por el cliente: cierra la sesión ANTES de tocar la BD, para que ya no se pueda
+// pagar un pedido que se va a cancelar. Devuelve el estado final de la sesión:
+// 'expired' (ya no se puede pagar: se puede cancelar) o 'complete' (el cliente ya ha pagado).
+// A diferencia de expireCheckoutSessionIfOpen (admin, mejor esfuerzo), un fallo de Stripe se lanza.
+async function closeCheckoutSessionForCancel(sessionId) {
+  const session = await retrieveCheckoutSession(sessionId);
+
+  if (session.status !== 'open') {
+    return session.status;
+  }
+
+  try {
+    return (await stripeClient.checkout.sessions.expire(sessionId)).status;
+  } catch (error) {
+    // Entre la consulta y la expiración el cliente pudo pagar (o la sesión caducar sola)
+    const latest = await retrieveCheckoutSession(sessionId);
+
+    if (latest.status !== 'open') {
+      return latest.status;
+    }
+
+    throw error;
+  }
+}
+
 // Verifica la firma: lanza un error si el cuerpo no viene de Stripe o se ha modificado
 function constructWebhookEvent(rawBody, signature) {
   return stripeClient.webhooks.constructEvent(rawBody, signature, stripeConfig.webhookSecret);
@@ -106,5 +131,6 @@ module.exports = {
   retrieveCheckoutSession,
   expireCheckoutSession,
   expireCheckoutSessionIfOpen,
+  closeCheckoutSessionForCancel,
   constructWebhookEvent,
 };

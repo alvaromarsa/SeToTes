@@ -9,6 +9,7 @@ import {
   inject,
   Injector,
   OnInit,
+  signal,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -21,6 +22,7 @@ import {
 } from '@core/models/order.models';
 import { OrderService } from '@core/services/order.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
+import { ConfirmDialog } from '@shared/components/confirm-dialog/confirm-dialog';
 import { focusAfterRender } from '@shared/utils/focus-after-render';
 
 // Tras volver de Stripe: se consulta el pedido cada 3 s durante 30 s como máximo
@@ -34,7 +36,7 @@ type PaymentNotice =
 @Component({
   selector: 'app-order-detail',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, RouterLink],
+  imports: [CurrencyPipe, DatePipe, RouterLink, ConfirmDialog],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,6 +50,8 @@ export class OrderDetailPage implements OnInit {
   private readonly injector = inject(Injector);
 
   private readonly payButton = viewChild<ElementRef<HTMLButtonElement>>('payButton');
+  private readonly cancelButton = viewChild<ElementRef<HTMLButtonElement>>('cancelButton');
+  private readonly cancelDialog = viewChild.required(ConfirmDialog);
 
   readonly statusLabels = ORDER_STATUS_LABELS;
 
@@ -57,6 +61,11 @@ export class OrderDetailPage implements OnInit {
   paymentNotice: PaymentNotice = null;
   isStartingPayment = false;
   payErrorMessage = '';
+
+  // Cancelación de un pedido sin pagar (estado con signals: OnPush los repinta solo)
+  readonly isCancelling = signal(false);
+  readonly cancelNotice = signal('');
+  readonly cancelErrorMessage = signal('');
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -120,6 +129,57 @@ export class OrderDetailPage implements OnInit {
         this.isStartingPayment = false;
         this.cdr.markForCheck();
         focusAfterRender(this.injector, () => this.payButton()?.nativeElement);
+      },
+    });
+  }
+
+  // Pide confirmación con el <dialog> común; al cerrarse, el foco vuelve al botón
+  askCancel(): void {
+    if (this.order?.status !== 'pending' || this.isCancelling()) {
+      return;
+    }
+
+    this.cancelDialog().open(this.cancelButton()?.nativeElement);
+  }
+
+  // El backend cierra antes la sesión de Stripe (si la hay) y devuelve el stock
+  cancelOrder(): void {
+    const order = this.order;
+
+    if (order?.status !== 'pending' || this.isCancelling()) {
+      return;
+    }
+
+    this.isCancelling.set(true);
+    this.cancelErrorMessage.set('');
+    this.payErrorMessage = '';
+
+    this.orderService.cancelOrder(order.id).subscribe({
+      next: ({ status }) => {
+        this.order = { ...order, status };
+        this.paymentNotice = null;
+        this.isCancelling.set(false);
+        this.cancelNotice.set('Has cancelado el pedido. No se te ha cobrado nada.');
+        this.cdr.markForCheck();
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('No se pudo cancelar el pedido', error.status, error);
+        // 409: ya pagado, pago en curso o ya cancelado; 502: Stripe no responde
+        this.cancelErrorMessage.set(getErrorMessage(error, 'No se pudo cancelar el pedido. Inténtalo de nuevo.'));
+        this.isCancelling.set(false);
+        this.cdr.markForCheck();
+        focusAfterRender(this.injector, () => this.cancelButton()?.nativeElement);
+
+        // El estado cambió entre medias (p. ej., ya está pagado): se muestra el actual
+        if (error.status === 409) {
+          this.orderService.getOrder(order.id).subscribe({
+            next: (latest) => {
+              this.order = latest;
+              this.cdr.markForCheck();
+            },
+            error: () => undefined,
+          });
+        }
       },
     });
   }

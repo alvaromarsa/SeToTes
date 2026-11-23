@@ -11,7 +11,7 @@
   <!-- method="dialog": cada botón cierra el diálogo y deja su value en returnValue -->
   <form class="confirm-dialog__actions" method="dialog">
     <!-- El foco empieza en Cancelar: la opción segura -->
-    <button class="confirm-dialog__button" type="submit" value="cancel" autofocus>Cancelar</button>
+    <button class="confirm-dialog__button" type="submit" value="cancel" autofocus>{{ cancelLabel() }}</button>
     <button
       class="confirm-dialog__button confirm-dialog__button--confirm"
       [class.confirm-dialog__button--danger]="danger()"

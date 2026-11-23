@@ -4,7 +4,7 @@ const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 const { formatCategory, parseCategoryName } = require('../utils/categories');
 
-// Montado en /api/admin/categories: listar con contadores, crear y renombrar.
+// Montado en /api/admin/categories: listar con contadores, crear, renombrar y borrar.
 // La lista pública está en /api/categories.
 //
 // Dos columnas únicas (migración 008):
@@ -152,6 +152,55 @@ router.patch('/:id', async (request, response) => {
     console.error('Error al renombrar la categoría:', error.message);
     return response.status(500).json({
       message: 'No se pudo renombrar la categoría',
+    });
+  }
+});
+
+// Borrar: solo una categoría SIN productos (contando también los ocultos). Sin carrera: no se
+// cuenta antes; se intenta el DELETE y, si la categoría tiene productos, la clave ajena
+// products_category_fkey (ON DELETE RESTRICT) lo impide con un 23503, que se traduce a 409. Así
+// también se rechaza si alguien crea un producto en ella justo en ese momento. Los pedidos no se
+// ven afectados: guardan el producto, no la categoría. Las posiciones quedan con huecos (el orden
+// es position, id). 204 sin cuerpo.
+router.delete('/:id', async (request, response) => {
+  const categoryId = parseCategoryId(request.params.id);
+
+  if (categoryId === null) {
+    return response.status(400).json({ message: 'La categoría no es válida' });
+  }
+
+  try {
+    const deleted = await pool.query('DELETE FROM categories WHERE id = $1 RETURNING slug', [categoryId]);
+
+    if (deleted.rows.length === 0) {
+      return response.status(404).json({ message: 'No se encontró la categoría' });
+    }
+
+    console.log(`Categoría borrada: ${deleted.rows[0].slug}`);
+
+    return response.status(204).send();
+  } catch (error) {
+    if (error.code === '23503' && error.constraint === 'products_category_fkey') {
+      // El número solo es para el mensaje: lo que decide es la clave ajena
+      const count = await pool.query(
+        `SELECT count(p.id)::int AS product_count
+         FROM categories c
+         JOIN products p ON p.category = c.slug
+         WHERE c.id = $1`,
+        [categoryId]
+      );
+      const productCount = count.rows[0]?.product_count ?? 0;
+      const products = productCount === 1 ? '1 producto' : `${productCount} productos`;
+
+      return response.status(409).json({
+        message: `No se puede eliminar: tiene ${products}. Muévelos a otra categoría o elimínalos antes.`,
+        productCount,
+      });
+    }
+
+    console.error('Error al borrar la categoría:', error.message);
+    return response.status(500).json({
+      message: 'No se pudo borrar la categoría',
     });
   }
 });

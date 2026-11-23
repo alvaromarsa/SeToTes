@@ -54,13 +54,21 @@ export class ShoppingCart {
     );
   }
 
+  // Si la cantidad supera el stock (el admin lo bajó después), "−" la deja directamente en el
+  // máximo disponible; si no, quita una unidad. Con stock 0 no hay "−" (solo "Quitar")
+  decreaseTarget(item: CartItem): number {
+    return Math.min(item.quantity - 1, item.stock);
+  }
+
   decrease(item: CartItem): void {
-    if (item.quantity <= 1) {
+    const quantity = this.decreaseTarget(item);
+
+    if (quantity < 1) {
       return;
     }
 
     this.run(
-      this.cartService.updateQuantity(item.productId, item.quantity - 1),
+      this.cartService.updateQuantity(item.productId, quantity),
       'No se pudo cambiar la cantidad',
     );
   }

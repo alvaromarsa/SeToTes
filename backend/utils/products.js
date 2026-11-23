@@ -85,6 +85,16 @@ function parseDescription(value) {
   return { provided: true, value: text === '' ? null : text };
 }
 
+// Unidades que quedan, para los mensajes de stock insuficiente (carrito y pedido):
+// "quedan 3 unidades", "queda 1 unidad", "no queda ninguna unidad"
+function stockLeftText(stock) {
+  if (stock === 0) {
+    return 'no queda ninguna unidad';
+  }
+
+  return stock === 1 ? 'queda 1 unidad' : `quedan ${stock} unidades`;
+}
+
 module.exports = {
   PRODUCT_IMAGES_SQL,
   formatImage,
@@ -92,4 +102,5 @@ module.exports = {
   formatProductDetail,
   formatAdminProduct,
   parseDescription,
+  stockLeftText,
 };

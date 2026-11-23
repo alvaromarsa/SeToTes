@@ -4,6 +4,7 @@ const pool = require('../db');
 const { SHIPPING_COST } = require('../config/constants');
 const { requireAuth } = require('../middleware/auth');
 const storage = require('../storage');
+const { stockLeftText } = require('../utils/products');
 
 const router = express.Router();
 
@@ -94,7 +95,7 @@ router.post('/items', async (request, response) => {
 
     if (in_cart + quantity > stock) {
       return response.status(409).json({
-        message: `No hay stock suficiente: quedan ${stock} unidades`,
+        message: `No hay stock suficiente: ${stockLeftText(stock)}`,
       });
     }
 
@@ -161,9 +162,14 @@ router.patch('/items/:productId', async (request, response) => {
       });
     }
 
-    if (quantity > stock) {
+    // Bajar la cantidad siempre se permite, aunque siga por encima del stock (el admin pudo
+    // bajarlo después de añadir el producto): si no, el usuario no podría salir de ahí.
+    // Subir (o dejarla igual) sigue limitado por el stock
+    const isDecrease = in_cart !== null && quantity < in_cart;
+
+    if (!isDecrease && quantity > stock) {
       return response.status(409).json({
-        message: `No hay stock suficiente: quedan ${stock} unidades`,
+        message: `No hay stock suficiente: ${stockLeftText(stock)}`,
       });
     }
 

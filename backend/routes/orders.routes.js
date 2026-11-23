@@ -5,6 +5,7 @@ const { SHIPPING_COST, TERMS_VERSION } = require('../config/constants');
 const { requireAuth } = require('../middleware/auth');
 const { createCheckoutSession, isStripeError, retrieveCheckoutSession } = require('../services/payments/stripe');
 const { OrderError, formatOrder } = require('../utils/orders');
+const { stockLeftText } = require('../utils/products');
 
 const router = express.Router();
 
@@ -70,7 +71,7 @@ router.post('/', async (request, response) => {
       if (line.quantity > line.stock) {
         throw new OrderError(
           409,
-          `No hay stock suficiente de "${line.name}": quedan ${line.stock} unidades`
+          `No hay stock suficiente de "${line.name}": ${stockLeftText(line.stock)}`
         );
       }
     }

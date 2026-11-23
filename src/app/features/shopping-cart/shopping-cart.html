@@ -54,19 +54,24 @@
               </h3>
               @if (!item.isAvailable) {
                 <span class="cart-panel__unavailable">No disponible</span>
+              } @else if (item.stock === 0) {
+                <span class="cart-panel__unavailable">Agotado</span>
               }
 
               <div class="cart-panel__quantity">
-                <button
-                  type="button"
-                  aria-label="Quitar una unidad"
-                  [disabled]="isUpdating || item.quantity <= 1"
-                  (click)="decrease(item)"
-                >
-                  −
-                </button>
+                <!-- Agotado: sin "−" ni "+", solo "Quitar" -->
+                @if (item.stock > 0) {
+                  <button
+                    type="button"
+                    [attr.aria-label]="item.quantity > item.stock ? 'Bajar a ' + item.stock + (item.stock === 1 ? ' unidad' : ' unidades') + ', el máximo disponible' : 'Quitar una unidad'"
+                    [disabled]="isUpdating || decreaseTarget(item) < 1"
+                    (click)="decrease(item)"
+                  >
+                    −
+                  </button>
+                }
                 <span>{{ item.quantity }}</span>
-                @if (item.isAvailable) {
+                @if (item.isAvailable && item.stock > 0) {
                   <button
                     type="button"
                     aria-label="Añadir una unidad"
@@ -87,10 +92,14 @@
                 </button>
               </div>
 
-              <!-- Explica por qué el botón + está desactivado -->
-              @if (item.isAvailable && item.quantity >= item.stock) {
+              <!-- Explica por qué el botón + está desactivado; se recalcula al ajustar la cantidad -->
+              @if (item.isAvailable && item.stock > 0 && item.quantity >= item.stock) {
                 <p class="cart-panel__max" [id]="'cart-max-' + item.productId">
-                  Máximo disponible: {{ item.stock }} {{ item.stock === 1 ? 'ud.' : 'uds.' }}
+                  @if (item.quantity > item.stock) {
+                    Solo {{ item.stock === 1 ? 'queda 1 ud.' : 'quedan ' + item.stock + ' uds.' }} Pulsa − para ajustar la cantidad.
+                  } @else {
+                    Máximo disponible: {{ item.stock }} {{ item.stock === 1 ? 'ud.' : 'uds.' }}
+                  }
                 </p>
               }
 

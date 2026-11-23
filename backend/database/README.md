@@ -5,6 +5,7 @@ PostgreSQL, base de datos `totebag_db`. El backend usa SQL escrito a mano con `p
 ```
 backend/database/
 ├── schema.sql      # Esquema completo actual (solo estructura, sin datos)
+├── seed.sql        # Datos imprescindibles para arrancar una BD NUEVA (las 4 categorías iniciales)
 └── migrations/     # Cambios de esquema, numerados y en orden
 ```
 
@@ -13,9 +14,16 @@ backend/database/
 ```bash
 createdb -U <usuario> totebag_db
 psql -U <usuario> -d totebag_db -f backend/database/schema.sql
+psql -v ON_ERROR_STOP=1 -U <usuario> -d totebag_db -f backend/database/seed.sql
 ```
 
-`schema.sql` refleja el estado actual del esquema, así que ya incluye todas las migraciones existentes.
+`schema.sql` refleja el estado actual del esquema, así que ya incluye todas las migraciones existentes. Como es solo estructura, no trae datos: sin `seed.sql`, la tabla `categories` estaría vacía y no se podría crear ningún producto.
+
+> **AVISO:** `seed.sql` es solo para una BD NUEVA. No lo ejecutes sobre una BD con datos reales: cuando exista el borrado de categorías, volvería a crear las que hayas borrado. Una BD que ya existía recibe las categorías con la migración `007_categories.sql`, no con el seed.
+
+- `seed.sql` es idempotente (`ON CONFLICT DO NOTHING`): ejecutarlo dos veces no duplica nada ni cambia lo que ya exista.
+- Con Docker (`docker-compose.yml`), `schema.sql` y `seed.sql` se montan como `001-schema.sql` y `002-seed.sql` en `/docker-entrypoint-initdb.d/` y se ejecutan solos, en ese orden, **solo con el volumen vacío** (primera vez o tras `docker compose down -v`).
+- Las 4 categorías iniciales están en dos sitios: `seed.sql` y la migración 007. Si cambian, en los dos.
 
 ## Migraciones
 

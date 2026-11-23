@@ -1,8 +1,8 @@
 const express = require('express');
 
 const pool = require('../db');
-const { CATEGORIES } = require('../config/constants');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { categoryExists, isValidSlug } = require('../utils/categories');
 const {
   PRODUCT_IMAGES_SQL,
   formatAdminProduct,
@@ -13,10 +13,18 @@ const {
 
 const router = express.Router();
 
+const CATEGORY_NOT_FOUND_MESSAGE = 'La categoría no existe';
+
+// 23503: violación de clave ajena (products_category_fkey)
+function isCategoryForeignKeyError(error) {
+  return error.code === '23503' && error.constraint === 'products_category_fkey';
+}
+
 router.get('/', async (request, response) => {
   const { category } = request.query;
 
-  if (category !== undefined && !CATEGORIES.includes(category)) {
+  // Formato de slug inválido: 400. Una categoría que no existe devuelve [] (como una vacía)
+  if (category !== undefined && !isValidSlug(category)) {
     return response.status(400).json({
       message: 'La categoría no es válida',
     });
@@ -87,7 +95,7 @@ router.post('/', requireAuth, requireAdmin, async (request, response) => {
   if (
     typeof name !== 'string' ||
     name.trim() === '' ||
-    !CATEGORIES.includes(category) ||
+    !isValidSlug(category) ||
     typeof price !== 'number' ||
     !Number.isFinite(price) ||
     price < 0 ||
@@ -105,6 +113,10 @@ router.post('/', requireAuth, requireAdmin, async (request, response) => {
   }
 
   try {
+    if (!(await categoryExists(pool, category))) {
+      return response.status(400).json({ message: CATEGORY_NOT_FOUND_MESSAGE });
+    }
+
     const result = await pool.query(
       `INSERT INTO products (name, price, stock, color, category, description, is_visible)
        VALUES ($1, $2, $3, $4, $5, $6, false)
@@ -115,6 +127,11 @@ router.post('/', requireAuth, requireAdmin, async (request, response) => {
     // Solo lo usa el admin: formato de administración. Recién creado: oculto y sin imágenes
     return response.status(201).json(formatAdminProduct({ ...result.rows[0], images: [] }));
   } catch (error) {
+    // La categoría se borró entre la comprobación y el INSERT (clave ajena)
+    if (isCategoryForeignKeyError(error)) {
+      return response.status(400).json({ message: CATEGORY_NOT_FOUND_MESSAGE });
+    }
+
     console.error('Error al crear el producto:', error.message);
     return response.status(500).json({
       message: 'No se pudo crear el producto',
@@ -130,7 +147,7 @@ router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
   if (
     !Number.isInteger(productId) ||
     productId <= 0 ||
-    !CATEGORIES.includes(category) ||
+    !isValidSlug(category) ||
     typeof name !== 'string' ||
     name.trim() === '' ||
     typeof price !== 'number' ||
@@ -150,6 +167,10 @@ router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
   }
 
   try {
+    if (!(await categoryExists(pool, category))) {
+      return response.status(400).json({ message: CATEGORY_NOT_FOUND_MESSAGE });
+    }
+
     // Si no se envía description, se conserva la que había ($8 = false)
     const result = await pool.query(
       `UPDATE products AS p
@@ -169,6 +190,10 @@ router.put('/:id', requireAuth, requireAdmin, async (request, response) => {
     // Solo lo usa el admin: formato de administración (la visibilidad no cambia aquí)
     return response.json(formatAdminProduct(result.rows[0]));
   } catch (error) {
+    if (isCategoryForeignKeyError(error)) {
+      return response.status(400).json({ message: CATEGORY_NOT_FOUND_MESSAGE });
+    }
+
     console.error('Error al actualizar el producto:', error.message);
     return response.status(500).json({
       message: 'No se pudo actualizar el producto',

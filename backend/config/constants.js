@@ -1,7 +1,7 @@
 // Nombre de la tienda en los emails (el frontend lo tiene en core/config/legal.config.ts)
 const STORE_NAME = 'SeToTes';
 
-const CATEGORIES = ['bolsas', 'neceseres', 'fundas', 'telas'];
+// Las categorías de producto ya no están aquí: tabla categories (migración 007, utils/categories.js)
 
 const SHIPPING_COST = 7.5;
 
@@ -90,7 +90,6 @@ const ORDER_TRANSITIONS = {
 
 module.exports = {
   STORE_NAME,
-  CATEGORIES,
   SHIPPING_COST,
   MAX_PRODUCT_IMAGES,
   PRODUCT_DESCRIPTION_MAX_LENGTH,

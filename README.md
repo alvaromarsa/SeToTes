@@ -34,9 +34,10 @@ Requisitos: Node.js, npm, Angular CLI y PostgreSQL.
 ```bash
 createdb -U <usuario> totebag_db
 psql -U <usuario> -d totebag_db -f backend/database/schema.sql
+psql -v ON_ERROR_STOP=1 -U <usuario> -d totebag_db -f backend/database/seed.sql
 ```
 
-Más detalles sobre migraciones y cómo regenerar el esquema en [backend/database/README.md](backend/database/README.md).
+`seed.sql` crea las 4 categorías iniciales y es **solo para una BD nueva** (nunca sobre una con datos reales). Más detalles sobre migraciones y cómo regenerar el esquema en [backend/database/README.md](backend/database/README.md).
 
 ### 2. Backend (http://localhost:3000)
 
@@ -117,7 +118,7 @@ docker compose exec db psql -U totebag -d totebag_db -c "UPDATE users SET role =
 - Antes de levantarlo, para el backend local (`npm run dev`): los dos usan el puerto 3000.
 - PostgreSQL del compose: `127.0.0.1:5433` (no choca con un PostgreSQL local en el 5432).
 - Stripe CLI funciona igual: `stripe listen --events checkout.session.completed,checkout.session.expired --forward-to localhost:3000/api/payments/webhook`.
-- `schema.sql` solo se carga la primera vez (volumen vacío). Para empezar de cero: `docker compose down -v`.
+- `schema.sql` y `seed.sql` solo se cargan la primera vez (volumen vacío). Para empezar de cero: `docker compose down -v`.
 
 ### Imágenes en MinIO (compatible con S3)
 

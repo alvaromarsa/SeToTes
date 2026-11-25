@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict DcFc7ByZfnsBUdOUheUwZrCyffyVHEEkCicN1vFltKrOUtwJmGKLVPHNzm3g4wQ
+\restrict rf8zRaehkVg7ndTqgQgnFjXEqF56mxBLUHue1K6lvbA74j8OcD20iUCkH1GXq8q
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -17,6 +17,20 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: register_category_slug(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.register_category_slug() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    INSERT INTO public.category_slugs (slug, category_id) VALUES (NEW.slug, NEW.id);
+    RETURN NULL;
+END;
+$$;
+
 
 SET default_tablespace = '';
 
@@ -92,6 +106,18 @@ ALTER TABLE public.categories ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
+);
+
+
+--
+-- Name: category_slugs; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.category_slugs (
+    slug text NOT NULL,
+    category_id integer NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT category_slugs_slug_format_check CHECK (((slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text) AND (char_length(slug) <= 60)))
 );
 
 
@@ -358,6 +384,14 @@ ALTER TABLE ONLY public.categories
 
 
 --
+-- Name: category_slugs category_slugs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.category_slugs
+    ADD CONSTRAINT category_slugs_pkey PRIMARY KEY (slug);
+
+
+--
 -- Name: order_items order_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -461,6 +495,13 @@ CREATE INDEX admin_audit_log_target_user_id_idx ON public.admin_audit_log USING 
 
 
 --
+-- Name: category_slugs_category_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX category_slugs_category_id_idx ON public.category_slugs USING btree (category_id);
+
+
+--
 -- Name: order_items_order_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -496,6 +537,13 @@ CREATE INDEX products_category_idx ON public.products USING btree (category);
 
 
 --
+-- Name: categories categories_register_slug; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER categories_register_slug AFTER INSERT ON public.categories FOR EACH ROW EXECUTE FUNCTION public.register_category_slug();
+
+
+--
 -- Name: cart_items cart_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -509,6 +557,14 @@ ALTER TABLE ONLY public.cart_items
 
 ALTER TABLE ONLY public.cart_items
     ADD CONSTRAINT cart_items_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: category_slugs category_slugs_category_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.category_slugs
+    ADD CONSTRAINT category_slugs_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id) ON DELETE CASCADE;
 
 
 --
@@ -556,12 +612,12 @@ ALTER TABLE ONLY public.product_images
 --
 
 ALTER TABLE ONLY public.products
-    ADD CONSTRAINT products_category_fkey FOREIGN KEY (category) REFERENCES public.categories(slug) ON DELETE RESTRICT;
+    ADD CONSTRAINT products_category_fkey FOREIGN KEY (category) REFERENCES public.categories(slug) ON UPDATE CASCADE ON DELETE RESTRICT;
 
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict DcFc7ByZfnsBUdOUheUwZrCyffyVHEEkCicN1vFltKrOUtwJmGKLVPHNzm3g4wQ
+\unrestrict rf8zRaehkVg7ndTqgQgnFjXEqF56mxBLUHue1K6lvbA74j8OcD20iUCkH1GXq8q
 

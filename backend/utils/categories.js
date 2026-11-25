@@ -2,7 +2,8 @@ const { countCharacters, normalizePlainText } = require('./plain-text');
 
 // Categorías de producto (tabla categories, migración 007).
 // El slug es la parte de la URL (/categoria/<slug>) y lo que guarda products.category.
-// Lo genera SIEMPRE el servidor desde el nombre: el cliente nunca lo envía.
+// Lo genera SIEMPRE el servidor desde el nombre: el cliente nunca lo envía. Cambia al renombrar
+// (migración 009): los anteriores quedan en category_slugs y redirigen al actual.
 
 // Mismo formato que el CHECK categories_slug_format_check de la BD
 const SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -59,12 +60,23 @@ function isReservedSlug(slug) {
   return RESERVED_SLUGS.has(slug);
 }
 
+// Columna previous_slugs para un SELECT/RETURNING sobre categories con alias c: los slugs
+// antiguos de la categoría (los de category_slugs que no son el actual), del más reciente al más
+// antiguo. El frontend los usa para redirigir /categoria/<antiguo> a la dirección actual
+const PREVIOUS_SLUGS_COLUMN = `COALESCE(
+    (SELECT array_agg(s.slug ORDER BY s.created_at DESC, s.slug)
+     FROM category_slugs s
+     WHERE s.category_id = c.id AND s.slug <> c.slug),
+    '{}'
+  ) AS previous_slugs`;
+
 function formatCategory(row) {
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     position: row.position,
+    previousSlugs: row.previous_slugs ?? [],
   };
 }
 
@@ -79,7 +91,7 @@ async function categoryExists(db, slug) {
   return result.rows.length > 0;
 }
 
-// Nombre que escribe el admin al crear una categoría: texto plano de una línea, recortado y con
+// Nombre que escribe el admin al crear o renombrar una categoría: texto plano de una línea, recortado y con
 // los espacios repetidos reducidos a uno; de 2 a 40 caracteres. Genera el slug y lo valida.
 // Devuelve { name, slug, nameKey } o { error } con un mensaje para el usuario.
 function parseCategoryName(value) {
@@ -110,8 +122,9 @@ function parseCategoryName(value) {
     return { error: 'Ese nombre no se puede usar para una categoría' };
   }
 
-  // nameKey (columna name_key, migración 008): el nombre normalizado, único entre categorías. Al
-  // crear coincide con el slug; al renombrar cambia el nameKey pero NUNCA el slug de la categoría
+  // nameKey (columna name_key, migración 008): el nombre normalizado, único entre categorías. Es
+  // igual al slug; solo difiere en las categorías renombradas antes de la 009 (nombre y slug
+  // desfasados) hasta que se vuelven a guardar
   return { name: text, slug, nameKey: slug };
 }
 
@@ -124,6 +137,7 @@ module.exports = {
   slugify,
   isValidSlug,
   isReservedSlug,
+  PREVIOUS_SLUGS_COLUMN,
   formatCategory,
   categoryExists,
 };

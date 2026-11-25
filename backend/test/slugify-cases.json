@@ -1,0 +1,28 @@
+[
+  { "name": "Bolsas", "slug": "bolsas", "why": "mayúsculas" },
+  { "name": "TOTE BAGS", "slug": "tote-bags", "why": "todo en mayúsculas y un espacio" },
+  { "name": "Neceseres de viaje", "slug": "neceseres-de-viaje", "why": "varias palabras" },
+  { "name": "Bolsás", "slug": "bolsas", "why": "tilde" },
+  { "name": "Ámbar, Él, Índigo, Óleo, Úrsula", "slug": "ambar-el-indigo-oleo-ursula", "why": "tildes en mayúscula y comas" },
+  { "name": "Pingüino", "slug": "pinguino", "why": "diéresis" },
+  { "name": "Ñandú", "slug": "nandu", "why": "ñ" },
+  { "name": "Ñandú & Co.", "slug": "nandu-co", "why": "ñ, & y punto final" },
+  { "name": "Fundas & Telas", "slug": "fundas-telas", "why": "& entre espacios" },
+  { "name": "Lona  y   algodón", "slug": "lona-y-algodon", "why": "espacios dobles y triples" },
+  { "name": "  Telas  ", "slug": "telas", "why": "espacios en los extremos" },
+  { "name": "¡Ofertas!", "slug": "ofertas", "why": "signos de exclamación" },
+  { "name": "¿Qué hay de nuevo?", "slug": "que-hay-de-nuevo", "why": "signos de interrogación y tilde" },
+  { "name": "Bolsos (grandes)", "slug": "bolsos-grandes", "why": "paréntesis" },
+  { "name": "Tote-bags", "slug": "tote-bags", "why": "guion" },
+  { "name": "Tote -- bags", "slug": "tote-bags", "why": "guiones y espacios seguidos" },
+  { "name": "Garçon d'été", "slug": "garcon-d-ete", "why": "ç, apóstrofo y tildes" },
+  { "name": "Colección 2026", "slug": "coleccion-2026", "why": "números" },
+  { "name": "Bolsas ♥ hechas a mano", "slug": "bolsas-hechas-a-mano", "why": "símbolo fuera del alfabeto" },
+  { "name": "Bolsas 🌿", "slug": "bolsas", "why": "emoji al final" },
+  { "name": "@#$%", "slug": "", "why": "solo símbolos: vacío (el servidor lo rechaza con un 400)" },
+  {
+    "name": "Una categoría con un nombre larguísimo que pasa de bastante largo",
+    "slug": "una-categoria-con-un-nombre-larguisimo-que-pasa-de-bastante",
+    "why": "más de 60 caracteres: se corta en 60 y no termina en guion (solo con nombres de fuera: el máximo es 40)"
+  }
+]

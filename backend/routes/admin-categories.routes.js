@@ -2,17 +2,21 @@ const express = require('express');
 
 const pool = require('../db');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-const { formatCategory, parseCategoryName } = require('../utils/categories');
+const { PREVIOUS_SLUGS_COLUMN, formatCategory, parseCategoryName } = require('../utils/categories');
 
 // Montado en /api/admin/categories: listar con contadores, crear, renombrar y borrar.
 // La lista pública está en /api/categories.
 //
-// Dos columnas únicas (migración 008):
-// - slug: la URL (/categoria/<slug>) y lo que guarda products.category. Se fija al crear y NUNCA
-//   cambia (ni al renombrar).
-// - name_key: el nombre normalizado (slugify). Al crear coincide con el slug; al renombrar cambia.
-// Un nombre nuevo choca con otra categoría si su forma normalizada coincide con su name_key (dos
-// nombres "iguales": «Gorras», «GORRAS», «gorras!») o con su slug (su URL). En los dos casos, 409.
+// Unicidad (migraciones 008 y 009):
+// - slug: la URL (/categoria/<slug>) y lo que guarda products.category. Sale del nombre al crear
+//   y al renombrar; products.category lo sigue solo (clave ajena ON UPDATE CASCADE).
+// - category_slugs: todos los slugs de cada categoría, el actual y los antiguos (el historial).
+//   Un slug, actual o antiguo, no lo usa otra categoría mientras exista la suya (clave primaria).
+//   Al borrar la categoría, sus slugs se borran con ella (CASCADE) y quedan libres.
+// - name_key: el nombre normalizado (slugify), único. Coincide con el slug salvo en categorías
+//   renombradas antes de la 009, hasta que se vuelven a guardar.
+// Un nombre nuevo choca con otra categoría si su forma normalizada es su nombre (name_key), su
+// dirección actual o una antigua suya. En todos los casos, 409 con un mensaje que lo explica.
 const router = express.Router();
 
 router.use(requireAuth, requireAdmin);
@@ -22,25 +26,41 @@ function parseCategoryId(value) {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-// Mensaje del 409: dice con qué categoría choca y por qué (mismo nombre o su dirección web)
-async function conflictMessage(nameKey, excludeId) {
-  const result = await pool.query(
-    `SELECT name, slug, name_key
-     FROM categories
-     WHERE (name_key = $1 OR slug = $1) AND id <> $2
-     ORDER BY (name_key = $1) DESC
-     LIMIT 1`,
-    [nameKey, excludeId ?? 0]
+// Mensaje del 409: dice con qué categoría choca y por qué (mismo nombre, su dirección actual o una
+// dirección antigua suya). parsed: { slug, nameKey } de parseCategoryName
+async function conflictMessage(parsed, excludeId) {
+  const sameName = await pool.query('SELECT name FROM categories WHERE name_key = $1 AND id <> $2', [
+    parsed.nameKey,
+    excludeId ?? 0,
+  ]);
+
+  if (sameName.rows[0]) {
+    return `Ya existe una categoría con ese nombre: «${sameName.rows[0].name}»`;
+  }
+
+  const owner = await pool.query(
+    `SELECT c.name, c.slug
+     FROM category_slugs s
+     JOIN categories c ON c.id = s.category_id
+     WHERE s.slug = $1 AND c.id <> $2`,
+    [parsed.slug, excludeId ?? 0]
   );
-  const other = result.rows[0];
+  const other = owner.rows[0];
 
   if (!other) {
     return 'Ya existe una categoría con ese nombre';
   }
 
-  return other.name_key === nameKey
-    ? `Ya existe una categoría con ese nombre: «${other.name}»`
-    : `Ese nombre corresponde a la dirección /categoria/${other.slug}, que ya usa la categoría «${other.name}»`;
+  return other.slug === parsed.slug
+    ? `Ese nombre corresponde a la dirección /categoria/${parsed.slug}, que ya usa la categoría «${other.name}»`
+    : `Ese nombre corresponde a la dirección /categoria/${parsed.slug}, una dirección antigua de la categoría «${other.name}» que sigue llevando a ella`;
+}
+
+// Errores de unicidad que se traducen a 409 (también los de dos peticiones simultáneas)
+const UNIQUE_CONSTRAINTS = new Set(['categories_slug_key', 'categories_name_key_key', 'category_slugs_pkey']);
+
+function isUniqueViolation(error) {
+  return error.code === '23505' && UNIQUE_CONSTRAINTS.has(error.constraint);
 }
 
 // Todas las categorías con el número de productos de cada una, contando también los ocultos
@@ -48,10 +68,9 @@ async function conflictMessage(nameKey, excludeId) {
 router.get('/', async (request, response) => {
   try {
     const result = await pool.query(
-      `SELECT c.id, c.slug, c.name, c.position, count(p.id)::int AS product_count
+      `SELECT c.id, c.slug, c.name, c.position, ${PREVIOUS_SLUGS_COLUMN},
+              (SELECT count(*)::int FROM products p WHERE p.category = c.slug) AS product_count
        FROM categories c
-       LEFT JOIN products p ON p.category = c.slug
-       GROUP BY c.id
        ORDER BY c.position, c.id`
     );
 
@@ -69,6 +88,10 @@ router.get('/', async (request, response) => {
 // Solo se lee { name }: el slug lo genera el servidor (cualquier otro campo se ignora).
 // La nueva va al final (MAX(position) + 1). Dos altas simultáneas de nombres distintos podrían
 // quedar con la misma posición; no es un problema: el listado desempata por id.
+// Su slug lo registra en category_slugs el trigger categories_register_slug (migración 009), no
+// esta ruta: así lo registra también cualquier otro INSERT (seed.sql, un backend anterior, uno a
+// mano). Si el slug es una dirección antigua de otra categoría, el trigger choca con la clave
+// primaria (23505 category_slugs_pkey) y el alta entera se deshace → 409.
 router.post('/', async (request, response) => {
   const parsed = parseCategoryName(request.body?.name);
 
@@ -77,8 +100,8 @@ router.post('/', async (request, response) => {
   }
 
   try {
-    // ON CONFLICT DO NOTHING (sin columna): cubre los dos únicos, slug y name_key. Dos altas a la
-    // vez del mismo nombre → una crea y la otra no devuelve fila
+    // ON CONFLICT DO NOTHING (sin columna): cubre los dos únicos de categories, slug y name_key.
+    // Dos altas a la vez del mismo nombre → una crea y la otra no devuelve fila
     const inserted = await pool.query(
       `INSERT INTO categories (slug, name, name_key, position)
        SELECT $1, $2, $3, COALESCE(MAX(position), 0) + 1 FROM categories
@@ -88,14 +111,19 @@ router.post('/', async (request, response) => {
     );
 
     if (inserted.rows.length === 0) {
-      return response.status(409).json({ message: await conflictMessage(parsed.nameKey) });
+      return response.status(409).json({ message: await conflictMessage(parsed) });
     }
 
     // Solo el slug: el nombre lo ha escrito el admin y no aporta nada al log
     console.log(`Categoría creada: ${inserted.rows[0].slug}`);
 
+    // Recién creada: sin direcciones antiguas (previousSlugs vacío)
     return response.status(201).json(formatCategory(inserted.rows[0]));
   } catch (error) {
+    if (isUniqueViolation(error)) {
+      return response.status(409).json({ message: await conflictMessage(parsed) });
+    }
+
     console.error('Error al crear la categoría:', error.message);
     return response.status(500).json({
       message: 'No se pudo crear la categoría',
@@ -103,9 +131,12 @@ router.post('/', async (request, response) => {
   }
 });
 
-// Renombrar: SOLO cambia el nombre (y su name_key). El slug no cambia nunca: lo usan la clave
-// ajena de products y las URL. Mismas reglas que al crear (longitud, caracteres, reservados).
-// Cambiar mayúsculas o tildes de la propia categoría vale (su propio name_key/slug no cuenta).
+// Renombrar: cambia el nombre, su name_key y el slug, que sale del nombre nuevo con las mismas
+// reglas que al crear (longitud, caracteres, reservados). Si el slug cambia, el anterior queda en
+// category_slugs como dirección antigua (redirige a la nueva) y products.category se actualiza
+// solo (ON UPDATE CASCADE). Si no cambia (solo mayúsculas o tildes), el historial no se toca.
+// Guardar el mismo nombre también vale: sincroniza el slug de una categoría renombrada antes de
+// la 009 (nombre y slug desfasados).
 router.patch('/:id', async (request, response) => {
   const categoryId = parseCategoryId(request.params.id);
 
@@ -119,44 +150,79 @@ router.patch('/:id', async (request, response) => {
     return response.status(400).json({ message: parsed.error });
   }
 
+  const client = await pool.connect();
+
   try {
-    // Choque con el slug (la URL) de OTRA categoría: se comprueba en la misma sentencia. El choque
-    // con el name_key de otra lo resuelve el UNIQUE (23505), también con dos renombrados a la vez
-    const updated = await pool.query(
-      `UPDATE categories AS c
-       SET name = $1, name_key = $2
-       WHERE c.id = $3
-         AND NOT EXISTS (SELECT 1 FROM categories o WHERE o.slug = $2 AND o.id <> $3)
-       RETURNING c.id, c.slug, c.name, c.position`,
-      [parsed.name, parsed.nameKey, categoryId]
-    );
+    await client.query('BEGIN');
 
-    if (updated.rows.length === 0) {
-      const exists = await pool.query('SELECT 1 FROM categories WHERE id = $1', [categoryId]);
+    // Bloquea la categoría: dos renombrados de la MISMA categoría van uno detrás de otro
+    const current = await client.query('SELECT slug FROM categories WHERE id = $1 FOR UPDATE', [categoryId]);
 
-      if (exists.rows.length === 0) {
-        return response.status(404).json({ message: 'No se encontró la categoría' });
-      }
-
-      return response.status(409).json({ message: await conflictMessage(parsed.nameKey, categoryId) });
+    if (current.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return response.status(404).json({ message: 'No se encontró la categoría' });
     }
 
-    console.log(`Categoría renombrada: ${updated.rows[0].slug}`);
+    const previousSlug = current.rows[0].slug;
+
+    if (parsed.slug !== previousSlug) {
+      // Registra el slug nuevo. Si ya existe (DO NOTHING), solo vale si es de esta misma
+      // categoría (vuelve a una dirección suya antigua, que deja de ser antigua). Si es de otra
+      // (su dirección actual o una antigua), 409. Dos renombrados de categorías distintas al mismo
+      // slug a la vez: el segundo espera al primero en la clave primaria y después ve su fila
+      const registered = await client.query(
+        `INSERT INTO category_slugs (slug, category_id) VALUES ($1, $2)
+         ON CONFLICT (slug) DO NOTHING
+         RETURNING slug`,
+        [parsed.slug, categoryId]
+      );
+
+      if (registered.rows.length === 0) {
+        const owner = await client.query('SELECT category_id FROM category_slugs WHERE slug = $1', [parsed.slug]);
+
+        // Sin fila: su categoría se acaba de borrar (caso rarísimo); también 409, y basta reintentar
+        if (owner.rows[0]?.category_id !== categoryId) {
+          await client.query('ROLLBACK');
+          return response.status(409).json({ message: await conflictMessage(parsed, categoryId) });
+        }
+      }
+    }
+
+    // El choque de name_key con otra categoría lo resuelve el UNIQUE (23505 → 409). Cambiar el
+    // slug arrastra a products.category (ON UPDATE CASCADE): los productos siguen en su categoría
+    const updated = await client.query(
+      `UPDATE categories AS c
+       SET name = $1, name_key = $2, slug = $3
+       WHERE c.id = $4
+       RETURNING c.id, c.slug, c.name, c.position, ${PREVIOUS_SLUGS_COLUMN}`,
+      [parsed.name, parsed.nameKey, parsed.slug, categoryId]
+    );
+
+    await client.query('COMMIT');
+
+    const slugChange = previousSlug === parsed.slug ? previousSlug : `${previousSlug} → ${parsed.slug}`;
+    console.log(`Categoría renombrada: ${slugChange}`);
 
     return response.json(formatCategory(updated.rows[0]));
   } catch (error) {
-    if (error.code === '23505' && error.constraint === 'categories_name_key_key') {
-      return response.status(409).json({ message: await conflictMessage(parsed.nameKey, categoryId) });
+    await client.query('ROLLBACK').catch(() => {});
+
+    if (isUniqueViolation(error)) {
+      return response.status(409).json({ message: await conflictMessage(parsed, categoryId) });
     }
 
     console.error('Error al renombrar la categoría:', error.message);
     return response.status(500).json({
       message: 'No se pudo renombrar la categoría',
     });
+  } finally {
+    client.release();
   }
 });
 
-// Borrar: solo una categoría SIN productos (contando también los ocultos). Sin carrera: no se
+// Borrar: solo una categoría SIN productos (contando también los ocultos). Sus slugs (el actual y
+// los antiguos) se borran con ella (category_slugs ON DELETE CASCADE) y quedan libres para otra
+// categoría: sus enlaces antiguos pasan a «Categoría no encontrada». Sin carrera: no se
 // cuenta antes; se intenta el DELETE y, si la categoría tiene productos, la clave ajena
 // products_category_fkey (ON DELETE RESTRICT) lo impide con un 23503, que se traduce a 409. Así
 // también se rechaza si alguien crea un producto en ella justo en ese momento. Los pedidos no se

@@ -75,7 +75,9 @@ export class ProductManagement implements OnInit {
   saveErrorMessage = '';
 
   constructor() {
-    this.categoryService.load();
+    // reload y no load: si la lista compartida es de antes de un renombrado hecho en otra pestaña,
+    // no conocería el slug nuevo de los productos (no-cache + ETag: normalmente, un 304)
+    this.categoryService.reload();
 
     // Las categorías llegan después que el formulario: al llegar, un alta nueva sin tocar toma
     // la categoría por defecto (la primera de la lista, o la de la pestaña elegida)
@@ -132,7 +134,7 @@ export class ProductManagement implements OnInit {
   get filteredProducts(): AdminProduct[] {
     return this.selectedCategory === 'all'
       ? this.statusFilteredProducts
-      : this.statusFilteredProducts.filter((product) => product.category === this.selectedCategory);
+      : this.statusFilteredProducts.filter((product) => this.isInCategory(product, this.selectedCategory));
   }
 
   get emptyFilterMessage(): string {
@@ -155,7 +157,13 @@ export class ProductManagement implements OnInit {
   countProducts(filter: CategoryFilter): number {
     return filter === 'all'
       ? this.statusFilteredProducts.length
-      : this.statusFilteredProducts.filter((product) => product.category === filter).length;
+      : this.statusFilteredProducts.filter((product) => this.isInCategory(product, filter)).length;
+  }
+
+  // Por el slug ACTUAL: un producto con un slug antiguo (cargado antes de un renombrado) sigue en
+  // la pestaña de su categoría
+  private isInCategory(product: AdminProduct, slug: string): boolean {
+    return this.categoryService.currentSlug(product.category) === slug;
   }
 
   selectStatus(status: StatusFilter): void {
@@ -319,7 +327,8 @@ export class ProductManagement implements OnInit {
       price: product.price,
       stock: product.stock,
       color: product.color ?? '',
-      category: product.category,
+      // El slug actual: el selector solo tiene esos (y es el que acepta el servidor)
+      category: this.categoryService.currentSlug(product.category),
       description: product.description ?? '',
     });
   }

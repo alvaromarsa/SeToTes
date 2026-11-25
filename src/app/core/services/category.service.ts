@@ -35,6 +35,21 @@ export class CategoryService {
       return;
     }
 
+    this.fetch();
+  }
+
+  // Vuelve a pedir la lista (no-cache + ETag: si no cambió, 304 sin cuerpo). La usa el catálogo
+  // cuando no encuentra un slug: una pestaña abierta desde antes de un renombrado tiene la lista
+  // vieja y no conoce la dirección nueva. Mientras tanto, status vuelve a 'loading'
+  reload(): void {
+    if (this.statusState() === 'loading') {
+      return;
+    }
+
+    this.fetch();
+  }
+
+  private fetch(): void {
     this.statusState.set('loading');
 
     this.http
@@ -73,8 +88,9 @@ export class CategoryService {
     return this.http.get<AdminCategory[]>(this.adminApiUrl);
   }
 
-  // Solo admin (PATCH). Cambia SOLO el nombre: el slug (la URL) no cambia nunca. Al terminar bien,
-  // la lista compartida se actualiza y la navbar, el catálogo y los selectores ven el nombre nuevo
+  // Solo admin (PATCH). Cambia el nombre y, con él, el slug (la URL); el anterior queda en
+  // previousSlugs. La respuesta sustituye a la categoría en la lista compartida: la navbar, el
+  // catálogo (y su redirección desde la dirección antigua) y los selectores la ven sin recargar
   renameCategory(id: number, name: string): Observable<Category> {
     return this.http.patch<Category>(`${this.adminApiUrl}/${id}`, { name }).pipe(
       tap((renamed) => {
@@ -95,13 +111,25 @@ export class CategoryService {
     );
   }
 
+  // Por su slug actual o por uno antiguo (previousSlugs): un producto o un enlace guardados antes
+  // de un renombrado siguen encontrando su categoría. Un slug pertenece a una sola categoría
+  // (garantizado por la BD), así que no hay ambigüedad
   findBySlug(slug: string): Category | undefined {
-    return this.categoriesState().find((category) => category.slug === slug);
+    return this.categoriesState().find(
+      (category) => category.slug === slug || category.previousSlugs.includes(slug),
+    );
+  }
+
+  // Slug actual de la categoría de un slug quizá antiguo (para enlaces y comparaciones). Si no se
+  // encuentra, el mismo
+  currentSlug(slug: string): string {
+    return this.findBySlug(slug)?.slug ?? slug;
   }
 
   // Sufijo de clase del recuadro sin foto: los 4 tonos se repiten según la posición en la lista
   placeholderTone(slug: string): (typeof PLACEHOLDER_TONES)[number] {
-    const index = this.categoriesState().findIndex((category) => category.slug === slug);
+    const current = this.currentSlug(slug);
+    const index = this.categoriesState().findIndex((category) => category.slug === current);
     return PLACEHOLDER_TONES[Math.max(index, 0) % PLACEHOLDER_TONES.length];
   }
 }

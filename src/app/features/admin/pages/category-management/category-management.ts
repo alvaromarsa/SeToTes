@@ -21,6 +21,7 @@ import { getErrorMessage } from '@core/utils/http-error-message';
 import { focusAfterRender } from '@shared/utils/focus-after-render';
 import { FormUtils } from '@shared/utils/form-utils';
 import { plainTextLength } from '@shared/utils/plain-text';
+import { slugify } from '@shared/utils/slugify';
 
 // Mismos límites que el backend (utils/categories.js), que es quien manda y vuelve a validarlo
 const NAME_MIN_LENGTH = 2;
@@ -92,6 +93,21 @@ export class CategoryManagement {
   });
   private readonly renameControl = this.renameForm.controls.name;
   readonly isRenaming = signal(false);
+  // Valor del campo, como signal, para la vista previa de la dirección
+  private readonly renameValue = signal('');
+  // Vista previa de la dirección que resultará (la genera el servidor con el mismo slugify)
+  readonly renamePreview = computed(() => {
+    const category = this.categoryService.categories().find((item) => item.id === this.editingId());
+    const slug = slugify(normalizeName(this.renameValue()));
+
+    if (!category || slug === '') {
+      return 'La dirección (URL) se genera a partir del nombre.';
+    }
+
+    return slug === category.slug
+      ? `La dirección no cambia: /categoria/${slug}.`
+      : `Nueva dirección: /categoria/${slug}. Los enlaces antiguos seguirán funcionando.`;
+  });
   // Error junto a la fila en edición (del formulario o de la API: 400/409, mensajes en español)
   readonly renameError = signal('');
   // Éxito de renombrar o borrar, en la zona role="status" de la lista
@@ -115,7 +131,10 @@ export class CategoryManagement {
     this.categoryForm.controls.name.valueChanges
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.serverError.set(''));
-    this.renameControl.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.renameError.set(''));
+    this.renameControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((value) => {
+      this.renameError.set('');
+      this.renameValue.set(value);
+    });
   }
 
   productCountLabel(count: number): string {
@@ -198,8 +217,9 @@ export class CategoryManagement {
 
     const name = normalizeName(this.renameControl.value);
 
-    // Sin cambios: no se llama al servidor
-    if (name === category.name) {
+    // Sin cambios: no se llama al servidor. Salvo si la dirección no corresponde al nombre (categoría
+    // renombrada antes de que el slug siguiera al nombre): guardar el mismo nombre la sincroniza
+    if (name === category.name && slugify(name) === category.slug) {
       this.finishRename(category.id);
       return;
     }
@@ -210,7 +230,11 @@ export class CategoryManagement {
     this.categoryService.renameCategory(category.id, name).subscribe({
       next: (renamed) => {
         this.isRenaming.set(false);
-        this.listMessage.set(`Categoría renombrada a «${renamed.name}». Su dirección no cambia.`);
+        this.listMessage.set(
+          renamed.slug === category.slug
+            ? `Categoría renombrada a «${renamed.name}». Su dirección no cambia.`
+            : `Categoría renombrada a «${renamed.name}». Nueva dirección: /categoria/${renamed.slug}.`,
+        );
         this.finishRename(category.id);
       },
       error: (error: unknown) => {

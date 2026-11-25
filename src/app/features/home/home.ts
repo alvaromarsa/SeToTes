@@ -31,9 +31,11 @@ export class HomeComponent implements OnInit {
     const latestByCategory = new Map<string, Product>();
 
     for (const product of this.products()) {
-      const current = latestByCategory.get(product.category);
+      // Por el slug actual (uno antiguo, de antes de un renombrado, cuenta como su categoría)
+      const key = this.categoryService.currentSlug(product.category);
+      const current = latestByCategory.get(key);
       if (!current || product.id > current.id) {
-        latestByCategory.set(product.category, product);
+        latestByCategory.set(key, product);
       }
     }
 

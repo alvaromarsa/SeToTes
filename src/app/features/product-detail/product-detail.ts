@@ -237,6 +237,12 @@ export class ProductDetail implements OnInit, OnDestroy {
     this.addSuccessMessage = '';
   }
 
+  // Enlace a la categoría por su slug ACTUAL (si el producto se cargó antes de un renombrado, el
+  // suyo puede ser antiguo; el catálogo también redirigiría, pero así no hace falta)
+  categoryLink(slug: string): string {
+    return categoryPath(this.categoryService.currentSlug(slug));
+  }
+
   // Nombre para mostrar (la BD guarda el slug); mientras cargan las categorías, el slug
   categoryName(slug: string): string {
     return this.categoryService.findBySlug(slug)?.name ?? slug;

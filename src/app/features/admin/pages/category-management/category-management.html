@@ -4,7 +4,7 @@
       <span aria-hidden="true">←</span> Volver al panel
     </a>
     <h1>Categorías</h1>
-    <p>Crea, renombra y borra categorías: los cambios aparecen al momento en la navbar, en el catálogo y en el formulario de productos.</p>
+    <p>Crea, renombra y borra categorías: los cambios aparecen al momento en la navbar, en el catálogo y en el formulario de productos. Al renombrar, la dirección cambia y la antigua sigue llevando a la nueva.</p>
   </header>
 
   <form class="category-admin__card" [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
@@ -78,7 +78,7 @@
                   [attr.aria-invalid]="renameError() ? 'true' : null"
                   [attr.aria-describedby]="'rename-hint-' + category.id + (renameError() ? ' rename-error-' + category.id : '')"
                 >
-                <small [id]="'rename-hint-' + category.id">La dirección (URL) no cambia aunque cambies el nombre.</small>
+                <small [id]="'rename-hint-' + category.id">{{ renamePreview() }}</small>
                 @if (renameError()) {
                   <p class="category-admin__error" role="alert" [id]="'rename-error-' + category.id">{{ renameError() }}</p>
                 }

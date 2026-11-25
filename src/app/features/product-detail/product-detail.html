@@ -32,7 +32,7 @@
         <nav class="breadcrumbs" aria-label="Migas de pan">
           <ol>
             <li><a routerLink="/home">Inicio</a></li>
-            <li><a [routerLink]="categoryPath(product.category)">{{ categoryName(product.category) }}</a></li>
+            <li><a [routerLink]="categoryLink(product.category)">{{ categoryName(product.category) }}</a></li>
             <li><span aria-current="page">{{ product.name }}</span></li>
           </ol>
         </nav>
@@ -89,7 +89,7 @@
             <dl class="product-info__details">
               <div>
                 <dt>Categoría</dt>
-                <dd><a [routerLink]="categoryPath(product.category)">{{ categoryName(product.category) }}</a></dd>
+                <dd><a [routerLink]="categoryLink(product.category)">{{ categoryName(product.category) }}</a></dd>
               </div>
               <div>
                 <dt>Color</dt>

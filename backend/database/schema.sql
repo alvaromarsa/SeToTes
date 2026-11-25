@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict rf8zRaehkVg7ndTqgQgnFjXEqF56mxBLUHue1K6lvbA74j8OcD20iUCkH1GXq8q
+\restrict 1gh8mAJe24vVYk734pxhjFNKAbbZlXJQkceNAdqKb4eNKk0DDZ85ZJbB8ZeoBqx
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -262,6 +262,7 @@ CREATE TABLE public.products (
     category text NOT NULL,
     is_visible boolean DEFAULT false NOT NULL,
     description text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT products_description_length_check CHECK ((char_length(description) <= 2000)),
     CONSTRAINT products_price_check CHECK ((price >= (0)::numeric)),
     CONSTRAINT products_stock_check CHECK ((stock >= 0))
@@ -537,6 +538,13 @@ CREATE INDEX products_category_idx ON public.products USING btree (category);
 
 
 --
+-- Name: products_created_at_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX products_created_at_id_idx ON public.products USING btree (created_at DESC, id DESC);
+
+
+--
 -- Name: categories categories_register_slug; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -619,5 +627,5 @@ ALTER TABLE ONLY public.products
 -- PostgreSQL database dump complete
 --
 
-\unrestrict rf8zRaehkVg7ndTqgQgnFjXEqF56mxBLUHue1K6lvbA74j8OcD20iUCkH1GXq8q
+\unrestrict 1gh8mAJe24vVYk734pxhjFNKAbbZlXJQkceNAdqKb4eNKk0DDZ85ZJbB8ZeoBqx
 

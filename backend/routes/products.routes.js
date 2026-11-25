@@ -20,44 +20,93 @@ function isCategoryForeignKeyError(error) {
   return error.code === '23503' && error.constraint === 'products_category_fkey';
 }
 
-router.get('/', async (request, response) => {
-  const { category } = request.query;
+// Orden del listado público (lista blanca: nunca se mete en el SQL lo que envía el cliente).
+// Sin ?sort, por id (el orden de siempre). newest: los más recientes primero (migración 010); a
+// igual fecha, el id más alto, para que el orden sea estable
+const PRODUCT_SORTS = {
+  newest: 'p.created_at DESC, p.id DESC',
+};
+const DEFAULT_PRODUCT_ORDER = 'p.id';
 
-  // Formato de slug inválido: 400. Una categoría que no existe devuelve [] (como una vacía).
-  // Acepta también un slug ANTIGUO (migración 009): devuelve los productos de la categoría a la que
-  // pertenece ahora (una pestaña abierta desde antes de un renombrado sigue viéndolos)
+// ?limit: entero de 1 a 24 (la portada pide 4). Sin él, todos, como siempre
+const PRODUCT_LIST_MAX_LIMIT = 24;
+
+// Un parámetro repetido (?limit=1&limit=2) llega como array: no es válido
+function parseListLimit(value) {
+  if (typeof value !== 'string' || !/^\d{1,3}$/.test(value)) {
+    return null;
+  }
+
+  const limit = Number(value);
+  return limit >= 1 && limit <= PRODUCT_LIST_MAX_LIMIT ? limit : null;
+}
+
+// GET /api/products: productos VISIBLES. Parámetros opcionales y combinables:
+// - category: formato de slug inválido → 400; una categoría que no existe → [] (como una vacía).
+//   Acepta también un slug ANTIGUO (migración 009): devuelve los de la categoría a la que
+//   pertenece ahora (una pestaña abierta desde antes de un renombrado sigue viéndolos).
+// - sort: solo «newest»; otro valor → 400.
+// - limit: de 1 a 24; otro valor → 400.
+// Sin parámetros, exactamente como antes: todos los visibles, por id.
+router.get('/', async (request, response) => {
+  const { category, sort } = request.query;
+
   if (category !== undefined && !isValidSlug(category)) {
     return response.status(400).json({
       message: 'La categoría no es válida',
     });
   }
 
-  try {
-    const result =
-      category === undefined
-        ? await pool.query(
-            `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
-             FROM products p
-             WHERE p.is_visible
-             ORDER BY p.id`
-          )
-        : // El slug actual sale de category_slugs (clave primaria) en una subconsulta que se evalúa
-          // UNA vez; después, el índice products_category_idx como antes. COALESCE: si el slug no
-          // está en category_slugs (p. ej. un UPDATE manual del slug), se busca tal cual, como antes
-          await pool.query(
-            `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
-             FROM products p
-             WHERE p.is_visible
-               AND p.category = COALESCE(
+  // typeof: un ?sort repetido llega como array (y ['newest'] se convertiría en la clave 'newest')
+  if (sort !== undefined && (typeof sort !== 'string' || !Object.hasOwn(PRODUCT_SORTS, sort))) {
+    return response.status(400).json({
+      message: 'El orden no es válido',
+    });
+  }
+
+  const limit = request.query.limit === undefined ? undefined : parseListLimit(request.query.limit);
+
+  if (limit === null) {
+    return response.status(400).json({
+      message: `El límite debe ser un número entre 1 y ${PRODUCT_LIST_MAX_LIMIT}`,
+    });
+  }
+
+  const params = [];
+  let categoryFilter = '';
+
+  if (category !== undefined) {
+    params.push(category);
+    // El slug actual sale de category_slugs (clave primaria) en una subconsulta que se evalúa
+    // UNA vez; después, el índice products_category_idx. COALESCE: si el slug no está en
+    // category_slugs (p. ej. un UPDATE manual del slug), se busca tal cual
+    categoryFilter = `AND p.category = COALESCE(
                  (SELECT c.slug
                   FROM category_slugs s
                   JOIN categories c ON c.id = s.category_id
-                  WHERE s.slug = $1),
-                 $1
-               )
-             ORDER BY p.id`,
-            [category]
-          );
+                  WHERE s.slug = $${params.length}),
+                 $${params.length}
+               )`;
+  }
+
+  let limitClause = '';
+
+  if (limit !== undefined) {
+    params.push(limit);
+    limitClause = `LIMIT $${params.length}`;
+  }
+
+  const orderBy = sort === undefined ? DEFAULT_PRODUCT_ORDER : PRODUCT_SORTS[sort];
+
+  try {
+    const result = await pool.query(
+      `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
+       FROM products p
+       WHERE p.is_visible ${categoryFilter}
+       ORDER BY ${orderBy}
+       ${limitClause}`,
+      params
+    );
 
     response.json(result.rows.map(formatProduct));
   } catch (error) {

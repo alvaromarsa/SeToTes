@@ -4,7 +4,7 @@
       <span aria-hidden="true">←</span> Volver al panel
     </a>
     <h1>Categorías</h1>
-    <p>Crea categorías nuevas: aparecen al momento en la navbar, en el catálogo y en el formulario de productos.</p>
+    <p>Crea y renombra categorías: los cambios aparecen al momento en la navbar, en el catálogo y en el formulario de productos.</p>
   </header>
 
   <form class="category-admin__card" [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
@@ -47,18 +47,78 @@
 
     @if (status() === 'loading' || status() === 'idle') {
       <p role="status">Cargando categorías…</p>
-    } @else if (status() === 'error' && categories().length === 0) {
+    } @else if (status() === 'error' && rows().length === 0) {
       <p class="category-admin__error" role="alert">No se pudieron cargar las categorías. Recarga la página.</p>
     } @else {
-      <!-- En el orden en que aparecen en la tienda -->
+      @if (countsError()) {
+        <p class="category-admin__note">No se pudo cargar el número de productos de cada categoría.</p>
+      }
+
+      <!-- En el orden en que aparecen en la tienda. Solo una fila en edición a la vez -->
       <ol class="category-admin__list">
-        @for (category of categories(); track category.slug) {
+        @for (category of rows(); track category.id) {
           <li>
-            <span class="category-admin__name">{{ category.name }}</span>
-            <code class="category-admin__slug">/categoria/{{ category.slug }}</code>
+            @if (editingId() === category.id) {
+              <!-- Enter guarda (submit); Escape cancela -->
+              <form
+                class="category-admin__rename"
+                [formGroup]="renameForm"
+                (ngSubmit)="saveRename(category)"
+                (keydown.escape)="cancelRename(category)"
+              >
+                <label class="sr-only" [for]="'rename-' + category.id">Nuevo nombre de {{ category.name }}</label>
+                <input
+                  #renameInput
+                  type="text"
+                  autocomplete="off"
+                  [id]="'rename-' + category.id"
+                  formControlName="name"
+                  [attr.maxlength]="nameMaxLength"
+                  [attr.aria-invalid]="renameError() ? 'true' : null"
+                  [attr.aria-describedby]="'rename-hint-' + category.id + (renameError() ? ' rename-error-' + category.id : '')"
+                >
+                <small [id]="'rename-hint-' + category.id">La dirección (URL) no cambia aunque cambies el nombre.</small>
+                @if (renameError()) {
+                  <p class="category-admin__error" role="alert" [id]="'rename-error-' + category.id">{{ renameError() }}</p>
+                }
+                <div class="category-admin__actions">
+                  <button type="submit" [disabled]="isRenaming()">{{ isRenaming() ? 'Guardando…' : 'Guardar' }}</button>
+                  <button
+                    class="category-admin__secondary"
+                    type="button"
+                    [disabled]="isRenaming()"
+                    (click)="cancelRename(category)"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            } @else {
+              <div class="category-admin__info">
+                <span class="category-admin__name">{{ category.name }}</span>
+                <code class="category-admin__slug">/categoria/{{ category.slug }}</code>
+                @if (category.productCount !== null) {
+                  <span class="category-admin__count">{{ productCountLabel(category.productCount) }}</span>
+                }
+              </div>
+              <button
+                #renameButton
+                class="category-admin__secondary"
+                type="button"
+                [attr.data-category-id]="category.id"
+                [attr.aria-label]="'Renombrar ' + category.name"
+                [disabled]="isRenaming()"
+                (click)="startRename(category)"
+              >
+                Renombrar
+              </button>
+            }
           </li>
         }
       </ol>
+
+      <!-- Siempre presente (aunque vacío) para que los lectores de pantalla anuncien el cambio -->
+      <p class="category-admin__success" role="status">{{ listMessage() }}</p>
     }
   </section>
 </main>

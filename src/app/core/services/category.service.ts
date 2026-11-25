@@ -3,7 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Observable, retry, tap } from 'rxjs';
 
 import { API_BASE_URL } from '@core/config/api.config';
-import type { Category } from '../models/category.models';
+import type { AdminCategory, Category } from '../models/category.models';
 
 export type CategoriesStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -63,6 +63,34 @@ export class CategoryService {
             (a, b) => a.position - b.position || a.id - b.id,
           ),
         );
+      }),
+    );
+  }
+
+  // Solo admin: la lista con el número de productos de cada categoría (no se guarda en el servicio:
+  // la pantalla de categorías la pide cada vez que se abre, para que los contadores estén al día)
+  loadAdminCategories(): Observable<AdminCategory[]> {
+    return this.http.get<AdminCategory[]>(this.adminApiUrl);
+  }
+
+  // Solo admin (PATCH). Cambia SOLO el nombre: el slug (la URL) no cambia nunca. Al terminar bien,
+  // la lista compartida se actualiza y la navbar, el catálogo y los selectores ven el nombre nuevo
+  renameCategory(id: number, name: string): Observable<Category> {
+    return this.http.patch<Category>(`${this.adminApiUrl}/${id}`, { name }).pipe(
+      tap((renamed) => {
+        this.categoriesState.update((categories) =>
+          categories.map((category) => (category.id === renamed.id ? renamed : category)),
+        );
+      }),
+    );
+  }
+
+  // Solo admin (DELETE; el servidor solo borra categorías sin productos). Al terminar bien, la
+  // categoría desaparece de la lista compartida
+  deleteCategory(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.adminApiUrl}/${id}`).pipe(
+      tap(() => {
+        this.categoriesState.update((categories) => categories.filter((category) => category.id !== id));
       }),
     );
   }

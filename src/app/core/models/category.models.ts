@@ -6,3 +6,8 @@ export interface Category {
   name: string;
   position: number;
 }
+
+// GET /api/admin/categories: con el número de productos (también los ocultos, que impiden borrar)
+export interface AdminCategory extends Category {
+  productCount: number;
+}

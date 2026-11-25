@@ -56,7 +56,8 @@
   font-weight: 600;
 }
 
-.category-admin__field input {
+.category-admin__field input,
+.category-admin__rename input {
   min-height: 44px;
   padding: 0.5rem 0.75rem;
   border: 1px solid #d1d5db;
@@ -65,7 +66,10 @@
 }
 
 /* #5c4a44 sobre blanco: 8,34:1 */
-.category-admin__field small {
+.category-admin__field small,
+.category-admin__rename small,
+.category-admin__count,
+.category-admin__note {
   color: #5c4a44;
 }
 
@@ -85,6 +89,13 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* Botón secundario (Renombrar, Cancelar): mismos colores, invertidos */
+.category-admin__card .category-admin__secondary {
+  border: 1px solid #111827;
+  background: #fff;
+  color: #111827;
 }
 
 .category-admin__card button:disabled {
@@ -108,10 +119,35 @@
 .category-admin__list li {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 0.25rem 1rem;
   padding: 0.6rem 0;
   border-bottom: 1px solid #eee;
+}
+
+.category-admin__info {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.category-admin__count,
+.category-admin__note {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Edición del nombre en la propia fila */
+.category-admin__rename {
+  display: grid;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.category-admin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .category-admin__name {

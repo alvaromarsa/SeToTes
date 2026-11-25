@@ -19,9 +19,10 @@ psql -v ON_ERROR_STOP=1 -U <usuario> -d totebag_db -f backend/database/seed.sql
 
 `schema.sql` refleja el estado actual del esquema, así que ya incluye todas las migraciones existentes. Como es solo estructura, no trae datos: sin `seed.sql`, la tabla `categories` estaría vacía y no se podría crear ningún producto.
 
-> **AVISO:** `seed.sql` es solo para una BD NUEVA. No lo ejecutes sobre una BD con datos reales: si se ha borrado desde el panel alguna de las 4 categorías por defecto, la volvería a crear. Una BD que ya existía recibe las categorías con las migraciones `007_categories.sql` y `008_category_name_key.sql`, no con el seed (y tampoco esas migraciones se vuelven a aplicar).
+> **AVISO:** `seed.sql` es solo para una BD NUEVA. No lo ejecutes sobre una BD con datos reales: si se ha borrado desde el panel alguna de las 4 categorías por defecto, la volvería a crear. Una BD que ya existía recibe las categorías con las migraciones `007_categories.sql`, `008_category_name_key.sql` y `009_category_slug_history.sql`, no con el seed (y tampoco esas migraciones se vuelven a aplicar).
 
-- `seed.sql` es idempotente (`ON CONFLICT DO NOTHING`): ejecutarlo dos veces no duplica nada ni cambia lo que ya exista. Renombrar una categoría por defecto no es problema: su slug no cambia y el seed la deja como esté.
+- `seed.sql` es idempotente (`ON CONFLICT DO NOTHING`): ejecutarlo dos veces no duplica nada ni cambia lo que ya exista. Pero si se ha RENOMBRADO una de las 4 por defecto (desde la 009 su slug cambia y el antiguo sigue siendo suyo), el seed falla entero: el trigger rechaza el slug antiguo (otro motivo para no ejecutarlo nunca sobre datos reales).
+- `category_slugs` (migración 009) no se rellena en `seed.sql`: lo hace el trigger al insertar cada categoría.
 - `seed.sql` inserta `name_key` (migración 008): necesita un `schema.sql` regenerado después de aplicar la 008.
 - Con Docker (`docker-compose.yml`), `schema.sql` y `seed.sql` se montan como `001-schema.sql` y `002-seed.sql` en `/docker-entrypoint-initdb.d/` y se ejecutan solos, en ese orden, **solo con el volumen vacío** (primera vez o tras `docker compose down -v`).
 - Las 4 categorías iniciales están en dos sitios: `seed.sql` y la migración 007. Si cambian, en los dos.
@@ -60,6 +61,17 @@ Añade `categories.name_key`: el nombre NORMALIZADO (minúsculas, sin tildes, co
 
 - **Orden de despliegue:** aplicarla ANTES del backend que escribe `name_key` (crear y renombrar categorías), y desplegar ese backend justo después. Entre medias, crear una categoría con el backend anterior falla (no envía `name_key`); leer y borrar no se ven afectados.
 - Después, regenerar `schema.sql`: el `seed.sql` actual ya inserta `name_key` y no funcionaría con el `schema.sql` antiguo.
+
+### 009_category_slug_history.sql
+
+El slug de una categoría cambia al renombrarla (sale del nombre nuevo) y sus direcciones antiguas siguen funcionando.
+
+- Tabla `category_slugs` (`slug` clave primaria con el formato de un slug, `category_id` → `categories(id)` `ON DELETE CASCADE`, `created_at`): TODOS los slugs de cada categoría, el actual y los antiguos. Se rellena con los slugs actuales.
+- Trigger `categories_register_slug` (`AFTER INSERT` en `categories`, función `register_category_slug()`): registra el slug de cada categoría nueva, la cree quien la cree. Sin `ON CONFLICT`: si el slug es una dirección antigua de OTRA categoría, la clave primaria rechaza el alta entera (23505 `category_slugs_pkey`). La función escribe `public.category_slugs` con su esquema porque `pg_dump`/`pg_restore` trabajan con `search_path` vacío.
+- `products_category_fkey` pasa a `ON UPDATE CASCADE ON DELETE RESTRICT`: cambiar el slug arrastra a los productos.
+- Un slug, actual o antiguo, no lo usa otra categoría mientras exista la suya; al borrar la categoría, sus slugs se liberan.
+- El cambio de slug al renombrar lo hace el backend (PATCH), en una transacción. Un `UPDATE categories SET slug = …` hecho a mano NO se registra en `category_slugs`: no hacerlo.
+- **Orden de entrega:** aplicar la 009 en local → regenerar `schema.sql` → commit → aplicar la 009 en Neon → push. El backend anterior funciona con ella aplicada; el nuevo SIN ella no: `GET /api/categories` da 500 (la tabla no existe).
 
 No hay herramienta de migraciones ni tabla de control: hay que llevar la cuenta de cuál es la última aplicada en cada entorno.
 

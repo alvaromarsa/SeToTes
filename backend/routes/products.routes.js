@@ -23,7 +23,9 @@ function isCategoryForeignKeyError(error) {
 router.get('/', async (request, response) => {
   const { category } = request.query;
 
-  // Formato de slug inválido: 400. Una categoría que no existe devuelve [] (como una vacía)
+  // Formato de slug inválido: 400. Una categoría que no existe devuelve [] (como una vacía).
+  // Acepta también un slug ANTIGUO (migración 009): devuelve los productos de la categoría a la que
+  // pertenece ahora (una pestaña abierta desde antes de un renombrado sigue viéndolos)
   if (category !== undefined && !isValidSlug(category)) {
     return response.status(400).json({
       message: 'La categoría no es válida',
@@ -39,10 +41,20 @@ router.get('/', async (request, response) => {
              WHERE p.is_visible
              ORDER BY p.id`
           )
-        : await pool.query(
+        : // El slug actual sale de category_slugs (clave primaria) en una subconsulta que se evalúa
+          // UNA vez; después, el índice products_category_idx como antes. COALESCE: si el slug no
+          // está en category_slugs (p. ej. un UPDATE manual del slug), se busca tal cual, como antes
+          await pool.query(
             `SELECT p.id, p.name, p.price, p.stock, p.color, p.category, ${PRODUCT_IMAGES_SQL}
              FROM products p
-             WHERE p.is_visible AND p.category = $1
+             WHERE p.is_visible
+               AND p.category = COALESCE(
+                 (SELECT c.slug
+                  FROM category_slugs s
+                  JOIN categories c ON c.id = s.category_id
+                  WHERE s.slug = $1),
+                 $1
+               )
              ORDER BY p.id`,
             [category]
           );

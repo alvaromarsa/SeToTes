@@ -22,7 +22,7 @@ Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con 
 
 **Administración** (rol `admin`)
 - Crear y editar productos (nombre, precio, stock, color y categoría).
-- Crear, renombrar y borrar categorías (`/adminpanel/categories`): los cambios aparecen al momento en la navbar, el catálogo y el formulario de productos. Renombrar no cambia la URL; solo se borran categorías sin productos.
+- Crear, renombrar y borrar categorías (`/adminpanel/categories`): los cambios aparecen al momento en la navbar, el catálogo y el formulario de productos. Al renombrar, la URL cambia y la antigua sigue llevando a la nueva; solo se borran categorías sin productos.
 - Listado de todos los pedidos con filtro por estado, y detalle con datos del cliente y del envío.
 - Cambio de estado de los pedidos según transiciones permitidas. Al cancelar un pedido se devuelve el stock.
 
@@ -49,7 +49,7 @@ cp .env.example .env   # y rellena los valores reales
 npm run dev            # node --watch: se reinicia al guardar cambios
 ```
 
-Para arrancarlo sin recarga automática: `npm start`.
+Para arrancarlo sin recarga automática: `npm start`. Pruebas: `npm test` (`node --test`; hoy, las de `slugify`).
 
 El servidor no arranca si falta `JWT_SECRET` en `backend/.env`.
 
@@ -194,21 +194,40 @@ shipped → delivered
 Todas las pantallas se cargan bajo demanda con `loadComponent`. La zona de administración es un grupo de rutas hijas (`loadChildren`) protegido con `canMatch: [adminGuard]`: el guard decide antes de descargar el código, así que un cliente o un visitante sin sesión nunca lo descarga.
 
 ### Categorías dinámicas
-Las categorías están en la tabla `categories` (migración `007_categories.sql`: `slug` único, `name`, `position`; migración `008_category_name_key.sql`: `name_key`, el nombre normalizado y único), no en el código. `products.category` guarda el slug con una clave ajena a `categories.slug` (`ON DELETE RESTRICT`). Una BD nueva recibe las 4 categorías iniciales con `seed.sql`, que es solo para BD nuevas.
+Las categorías están en la tabla `categories`, no en el código. `products.category` guarda el slug con una clave ajena a `categories.slug` (`ON UPDATE CASCADE ON DELETE RESTRICT`). Una BD nueva recibe las 4 categorías iniciales con `seed.sql`, que es solo para BD nuevas.
 
+- **Migraciones:**
+  - `007_categories.sql`: la tabla (`slug` único, `name`, `position`).
+  - `008_category_name_key.sql`: `name_key`, el nombre normalizado y único.
+  - `009_category_slug_history.sql`: el slug cambia al renombrar y las direcciones antiguas siguen funcionando.
+    - Tabla `category_slugs` (`slug` clave primaria, `category_id` con `ON DELETE CASCADE`): todos los slugs de cada categoría, el actual y los antiguos.
+    - Trigger `categories_register_slug` (`AFTER INSERT` en `categories`): toda categoría nueva registra su slug, la cree quien la cree (backend, `seed.sql` o un INSERT a mano).
+    - Clave ajena `products_category_fkey` con `ON UPDATE CASCADE`: cambiar el slug arrastra a los productos. Ninguna otra tabla guarda la categoría (el carrito y los pedidos guardan el producto).
+- **Regla de los slugs:** un slug, actual o antiguo, no lo usa otra categoría mientras exista la suya (lo garantiza la clave primaria, también con dos peticiones a la vez). Al borrar una categoría, sus slugs se borran con ella y quedan libres: sus enlaces antiguos pasan a «Categoría no encontrada».
 - **API** (las de administración, con sesión de admin: `requireAuth` + `requireAdmin`):
 
   | Endpoint | Qué hace | Respuestas |
   |---|---|---|
-  | `GET /api/categories` | Lista pública, en orden (`position, id`). `no-cache` + ETag: revalida en cada uso y responde `304` si no ha cambiado. | `200` |
+  | `GET /api/categories` | Lista pública, en orden (`position, id`), cada una con `previousSlugs` (sus direcciones antiguas, de la más reciente a la más antigua). `no-cache` + ETag: revalida en cada uso y responde `304` si no ha cambiado; un renombrado cambia la respuesta y el ETag. | `200`; `500` con `no-store` |
   | `GET /api/admin/categories` | La misma lista con `productCount` de cada una (cuenta también los productos ocultos, que también impiden borrar). | `200` |
-  | `POST /api/admin/categories` | Crea una con `{ name }` (cualquier otro campo se ignora). El servidor genera el slug (minúsculas, sin tildes, con guiones) y la posición (la última). | `201`; `400` nombre no válido o reservado (`login`, `checkout`…); `409` si choca con otra («Bolsas», «BOLSÁS» y «bolsas!» chocan) |
-  | `PATCH /api/admin/categories/:id` | Renombra con `{ name }`: cambia SOLO el nombre, nunca el slug (las URL y los productos no se tocan). | `200`; `400`; `404`; `409` si el nombre es el de otra o su URL |
-  | `DELETE /api/admin/categories/:id` | Borra solo si no tiene productos (ni ocultos); lo garantiza la clave ajena, sin carreras. Los pedidos no se ven afectados. | `204`; `400`; `404`; `409` «tiene N productos» (+ `productCount`) |
+  | `POST /api/admin/categories` | Crea una con `{ name }` (cualquier otro campo se ignora). El servidor genera el slug (minúsculas, sin tildes, con guiones) y la posición (la última). | `201`; `400` nombre no válido o reservado (`login`, `checkout`…); `409` si choca con el nombre, la dirección actual o una dirección antigua de otra («Bolsas», «BOLSÁS» y «bolsas!» chocan) |
+  | `PATCH /api/admin/categories/:id` | Renombra con `{ name }`. El slug sale del nombre nuevo; si cambia, el anterior pasa a `previousSlugs` y los productos lo siguen. Si no cambia (solo mayúsculas o tildes), el historial no se toca. Guardar el mismo nombre sincroniza una categoría con nombre y dirección desfasados. | `200` con la categoría y sus `previousSlugs`; `400`; `404`; `409` con un mensaje que dice con qué choca |
+  | `DELETE /api/admin/categories/:id` | Borra solo si no tiene productos (ni ocultos); lo garantiza la clave ajena, sin carreras. Sus slugs se liberan. Los pedidos no se ven afectados. | `204`; `400`; `404`; `409` «tiene N productos» (+ `productCount`) |
+  | `GET /api/products?category=<slug>` | Productos visibles de la categoría. Acepta también un slug antiguo y devuelve los de la categoría a la que pertenece ahora (resuelto con `category_slugs`, una sola búsqueda por clave primaria antes de usar el índice de siempre). | `200`; `[]` si el slug no existe; `400` si el formato no es válido |
 
-  Al crear o editar un producto se comprueba que su categoría existe.
-- **Orden de despliegue:** primero la migración y después el backend. La `007` va ANTES del backend que lee la tabla; la `008`, justo antes del backend que escribe `name_key` (entre medias, crear una categoría con el backend anterior falla; leer y borrar siguen funcionando). Después, regenerar `schema.sql`. Ver [backend/database/README.md](backend/database/README.md).
-- **Frontend:** `CategoryService` carga la lista una vez en una signal (con un reintento si falla) y la comparten la navbar, el catálogo, el detalle de producto, Novedades y la gestión de productos. Cada categoría vive en `/categoria/<slug>`; las URL antiguas (`/bolsas`…) redirigen. Crear, renombrar y borrar desde `/adminpanel/categories` se ve en todas partes sin recargar.
+  Al crear o editar un producto se comprueba que su categoría existe (por su slug actual).
+- **Orden de entrega de la 009:**
+  1. Aplicar la 009 en la BD local.
+  2. Regenerar `schema.sql` (con `category_slugs` y el trigger).
+  3. Commit.
+  4. Aplicar la 009 en Neon.
+  5. Push (despliegue del backend).
+
+  Con la migración aplicada y el backend anterior todo sigue funcionando (el trigger registra las categorías que se creen entre medias). Si el backend nuevo llegara ANTES que la migración, `GET /api/categories` daría `500` (la tabla `category_slugs` no existe): la tienda se quedaría sin categorías en la navbar y el catálogo, y crear o renombrar también fallaría. Por eso la migración va siempre primero. Más detalles en [backend/database/README.md](backend/database/README.md).
+- **Frontend:**
+  - `CategoryService` carga la lista una vez en una signal (con un reintento si falla) y la comparten la navbar, el catálogo, el detalle de producto, Novedades y la gestión de productos. Crear, renombrar y borrar desde `/adminpanel/categories` se ve en todas partes sin recargar.
+  - Cada categoría vive en `/categoria/<slug>`. Una dirección antigua redirige a la actual sustituyendo la entrada del historial (`replaceUrl`: «atrás» no vuelve a ella), sin pedir productos y sin mostrar «no encontrada» mientras carga la lista. Las URL de antes (`/bolsas`…) redirigen igual, encadenadas.
+  - Al renombrar, el formulario enseña la dirección que resultará («Nueva dirección: /categoria/tote-bags. Los enlaces antiguos seguirán funcionando.»).
 - **Borrar:** el botón «Borrar» de una categoría con productos no abre la confirmación: explica en la fila cuántos tiene. Sin productos, pide confirmación. Un enlace a una categoría borrada (también las URL antiguas) muestra «Categoría no encontrada» con un enlace a la portada, y la tienda funciona aunque no quede ninguna (Gestionar productos avisa de que hay que crear una antes).
 - **Muchas categorías:** la fila de la navbar se desplaza en horizontal, con un degradado en el borde por el que queda más, y el tabulador lleva la vista hasta la categoría enfocada.
 - **Pendiente:** reordenar y ocultar categorías; y, con más de 6 u 8, una página «Ver todas» o un menú desplegable.

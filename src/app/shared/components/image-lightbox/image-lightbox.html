@@ -1,0 +1,28 @@
+<!-- El foco empieza en «Cerrar» (autofocus). Clic en el fondo oscuro: cierra -->
+<dialog
+  #dialog
+  class="image-lightbox"
+  [attr.aria-label]="label()"
+  (close)="onClose()"
+  (click)="onClick($event)"
+  (keydown)="onKeydown($event)"
+>
+  <button class="image-lightbox__button image-lightbox__close" type="button" aria-label="Cerrar" autofocus (click)="close()">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+  </button>
+
+  @if (current(); as image) {
+    <img class="image-lightbox__image" [src]="image.src" [alt]="image.alt">
+  }
+
+  @if (hasSeveral()) {
+    <button class="image-lightbox__button image-lightbox__prev" type="button" aria-label="Foto anterior" (click)="previous()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+    </button>
+    <button class="image-lightbox__button image-lightbox__next" type="button" aria-label="Foto siguiente" (click)="next()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
+    </button>
+    <!-- Se anuncia al cambiar de foto -->
+    <p class="image-lightbox__position" aria-live="polite">{{ index() + 1 }} de {{ images().length }}</p>
+  }
+</dialog>

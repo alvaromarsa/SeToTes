@@ -13,7 +13,7 @@
 .product-detail a:focus-visible,
 .product-detail button:focus-visible,
 .product-detail select:focus-visible,
-.gallery__track:focus-visible {
+.gallery__track:has(:focus-visible) {
   outline: 3px solid #111827;
   outline-offset: 2px;
 }
@@ -82,7 +82,8 @@
   gap: 1.5rem;
 }
 
-/* Galería: todas las fotos con la misma proporción, sin saltos al cargar */
+/* Galería: todas las fotos con la misma proporción, sin saltos al cargar; la foto, entera (contain).
+   El foco del botón de cada foto se dibuja en la pista (:has), que no recorta el contorno */
 .gallery {
   min-width: 0;
 }
@@ -103,7 +104,7 @@
   aspect-ratio: 1;
   scroll-snap-align: start;
   border-radius: 18px;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .gallery__placeholder {

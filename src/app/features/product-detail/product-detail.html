@@ -40,24 +40,48 @@
         <div class="product-detail__layout">
           <section class="gallery" aria-label="Fotos del producto">
             @if (product.images.length > 0) {
-              <!-- Pista con scroll-snap: en móvil se desliza con el dedo; las flechas cambian de foto -->
+              <!-- Pista con scroll-snap: en móvil se desliza con el dedo; las flechas cambian de foto.
+                   Cada foto es un botón que abre el visor; solo el de la foto visible está en el
+                   orden de tabulación. Utilidades de Tailwind: product-detail.css está al límite -->
               <div
                 #galleryTrack
                 class="gallery__track"
-                tabindex="0"
+                role="group"
                 [attr.aria-label]="product.images.length > 1 ? 'Fotos de ' + product.name + '. Usa las flechas para cambiar de foto' : 'Foto de ' + product.name"
                 (scroll)="onTrackScroll()"
                 (keydown)="onGalleryKeydown($event, false)"
               >
                 @for (image of product.images; track image.id; let index = $index) {
-                  <img
-                    class="gallery__image"
-                    [src]="image.largeUrl"
-                    [alt]="product.name + ', foto ' + (index + 1) + ' de ' + product.images.length"
-                    [attr.loading]="index === 0 ? null : 'lazy'"
+                  <button
+                    #slide
+                    class="relative shrink-0 basis-full snap-start cursor-zoom-in"
+                    type="button"
+                    [attr.aria-label]="'Ampliar foto ' + (product.images.length > 1 ? index + 1 + ' de ' + product.images.length + ' ' : '') + 'de ' + product.name"
+                    [attr.tabindex]="index === activeImageIndex ? null : -1"
+                    (click)="lightbox.open(index, slide)"
                   >
+                    <img
+                      class="gallery__image block"
+                      [src]="image.largeUrl"
+                      [alt]="product.name + ', foto ' + (index + 1) + ' de ' + product.images.length"
+                      [attr.loading]="index === 0 ? null : 'lazy'"
+                    >
+                    <!-- Lupa visible: indica que la foto se puede ampliar -->
+                    <span
+                      class="absolute right-3 bottom-3 grid size-10 place-items-center rounded-full bg-(--color-cream) text-(--color-text) shadow"
+                      aria-hidden="true"
+                    >
+                      <svg class="size-5 fill-none stroke-current stroke-[2.5]" viewBox="0 0 24 24" stroke-linecap="round">
+                        <circle cx="10.5" cy="10.5" r="6.5" />
+                        <path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6" />
+                      </svg>
+                    </span>
+                  </button>
                 }
               </div>
+
+              <!-- Versión «large» (la mayor que guarda el backend: 1600 px de ancho) -->
+              <app-image-lightbox #lightbox [images]="lightboxImages" [label]="'Fotos de ' + product.name" />
 
               @if (product.images.length > 1) {
                 <div class="gallery__thumbnails" role="group" aria-label="Miniaturas" (keydown)="onGalleryKeydown($event, true)">

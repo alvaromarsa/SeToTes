@@ -86,3 +86,10 @@ app-navbar {
 .navbar__categories--more-before.navbar__categories--more-after {
   mask-image: linear-gradient(to right, transparent, #000 2rem calc(100% - 2rem), transparent);
 }
+/* Visor de fotos (shared/components/image-lightbox) abierto: el fondo no se desplaza. Sin JS:
+   la posición se conserva al cerrar, y scrollbar-gutter evita que la página salte de lado al
+   desaparecer la barra de desplazamiento */
+:root:has(.image-lightbox[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}

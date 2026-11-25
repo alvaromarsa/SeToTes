@@ -23,6 +23,7 @@ import { CartService } from '@core/services/cart.service';
 import { CategoryService } from '@core/services/category.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { loginUrlTree } from '@core/utils/return-url';
+import { ImageLightbox, type LightboxImage } from '@shared/components/image-lightbox/image-lightbox';
 import { ShippingInfo } from '@shared/components/shipping-info/shipping-info';
 import { DetailedProduct, ProductService } from '@core/services/product.service';
 
@@ -40,7 +41,7 @@ const MAX_QUANTITY = 99;
 
 @Component({
   selector: 'app-product-detail',
-  imports: [CurrencyPipe, ReactiveFormsModule, RouterLink, ShippingInfo],
+  imports: [CurrencyPipe, ImageLightbox, ReactiveFormsModule, RouterLink, ShippingInfo],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,6 +59,8 @@ export class ProductDetail implements OnInit, OnDestroy {
 
   private readonly galleryTrack = viewChild<ElementRef<HTMLElement>>('galleryTrack');
   private readonly thumbnails = viewChildren<ElementRef<HTMLButtonElement>>('thumbnail');
+  // Botón de cada foto de la pista (abre el visor)
+  private readonly slides = viewChildren<ElementRef<HTMLButtonElement>>('slide');
 
   // Ninguna otra ruta fija su título: al salir se restaura el original
   private readonly originalTitle = this.titleService.getTitle();
@@ -69,6 +72,8 @@ export class ProductDetail implements OnInit, OnDestroy {
 
   viewState: ViewState = 'loading';
   product: DetailedProduct | null = null;
+  // Fotos del visor ampliado: la versión «large» (la mayor que guarda el backend) y su alt
+  lightboxImages: LightboxImage[] = [];
   activeImageIndex = 0;
   quantityOptions: number[] = [];
   isAdding = false;
@@ -92,6 +97,7 @@ export class ProductDetail implements OnInit, OnDestroy {
       .subscribe((result) => {
         this.viewState = result.state;
         this.product = result.state === 'loaded' ? result.product : null;
+        this.lightboxImages = this.buildLightboxImages(this.product);
         this.resetPurchase();
 
         if (result.state === 'loaded') {
@@ -126,7 +132,8 @@ export class ProductDetail implements OnInit, OnDestroy {
     return { label: 'Disponible', tone: 'ok' };
   }
 
-  selectImage(index: number, focusThumbnail = false): void {
+  // focus: qué recibe el foco tras cambiar de foto (la miniatura o el botón de la foto en la pista)
+  selectImage(index: number, focus: 'thumbnail' | 'slide' | null = null): void {
     const imageCount = this.product?.images.length ?? 0;
 
     if (index < 0 || index >= imageCount) {
@@ -144,8 +151,11 @@ export class ProductDetail implements OnInit, OnDestroy {
       });
     }
 
-    if (focusThumbnail) {
+    if (focus === 'thumbnail') {
       this.thumbnails()[index]?.nativeElement.focus();
+    } else if (focus === 'slide') {
+      // preventScroll: el desplazamiento suave de la pista ya la lleva a la vista
+      this.slides()[index]?.nativeElement.focus({ preventScroll: true });
     }
   }
 
@@ -166,7 +176,7 @@ export class ProductDetail implements OnInit, OnDestroy {
 
     event.preventDefault();
     const offset = event.key === 'ArrowLeft' ? -1 : 1;
-    this.selectImage(this.activeImageIndex + offset, fromThumbnails);
+    this.selectImage(this.activeImageIndex + offset, fromThumbnails ? 'thumbnail' : 'slide');
   }
 
   addToCart(): void {
@@ -205,6 +215,18 @@ export class ProductDetail implements OnInit, OnDestroy {
         this.cdr.markForCheck();
       },
     });
+  }
+
+  // Mismo alt que la foto de la pista: «<nombre>, foto N de M»
+  private buildLightboxImages(product: DetailedProduct | null): LightboxImage[] {
+    if (!product) {
+      return [];
+    }
+
+    return product.images.map((image, index) => ({
+      src: image.largeUrl,
+      alt: `${product.name}, foto ${index + 1} de ${product.images.length}`,
+    }));
   }
 
   // catchError dentro del switchMap: un error no corta el flujo de paramMap

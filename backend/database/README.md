@@ -73,6 +73,14 @@ El slug de una categoría cambia al renombrarla (sale del nombre nuevo) y sus di
 - El cambio de slug al renombrar lo hace el backend (PATCH), en una transacción. Un `UPDATE categories SET slug = …` hecho a mano NO se registra en `category_slugs`: no hacerlo.
 - **Orden de entrega:** aplicar la 009 en local → regenerar `schema.sql` → commit → aplicar la 009 en Neon → push. El backend anterior funciona con ella aplicada; el nuevo SIN ella no: `GET /api/categories` da 500 (la tabla no existe).
 
+### 010_product_created_at.sql
+
+Añade `products.created_at` (`timestamptz NOT NULL DEFAULT now()`) y el índice `products_created_at_id_idx (created_at DESC, id DESC)`, para «Novedades» (`GET /api/products?sort=newest&limit=N`). No toca nada más de `products`.
+
+- La rellena SOLO la base de datos con el valor por defecto: el backend no la escribe al crear ni al editar. Los productos que ya existen reciben todos la misma fecha (la de la migración); entre ellos desempata el id descendente.
+- `seed.sql` no inserta productos: no le afecta.
+- **Orden de entrega:** aplicar la 010 en local → regenerar `schema.sql` → commit → aplicar la 010 en Neon → push. El backend anterior funciona con ella aplicada; el nuevo SIN ella da 500 solo en `?sort=newest` (la portada se queda sin «Novedades»).
+
 No hay herramienta de migraciones ni tabla de control: hay que llevar la cuenta de cuál es la última aplicada en cada entorno.
 
 ## Regenerar `schema.sql`

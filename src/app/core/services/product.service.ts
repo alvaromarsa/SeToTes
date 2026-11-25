@@ -45,6 +45,14 @@ export class ProductService {
     });
   }
 
+  // Los N productos visibles más recientes de toda la tienda (created_at DESC, id DESC; el
+  // servidor admite un límite de 1 a 24). Para «Novedades» de la portada
+  getNewestProducts(limit: number) {
+    return this.http.get<Product[]>(this.apiUrl, {
+      params: { sort: 'newest', limit },
+    });
+  }
+
   getProduct(id: number) {
     return this.http.get<DetailedProduct>(`${this.apiUrl}/${id}`);
   }

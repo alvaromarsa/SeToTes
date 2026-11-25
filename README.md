@@ -19,6 +19,7 @@ Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con 
 - Carrito guardado en la base de datos: añadir productos, cambiar cantidades y quitarlos, con comprobación de stock.
 - Checkout con datos de envío y gastos de envío fijos.
 - Historial de pedidos y detalle de cada pedido.
+- Portada con «Novedades»: los 4 productos más recientes de la tienda.
 
 **Administración** (rol `admin`)
 - Crear y editar productos (nombre, precio, stock, color y categoría).
@@ -214,6 +215,7 @@ Las categorías están en la tabla `categories`, no en el código. `products.cat
   | `PATCH /api/admin/categories/:id` | Renombra con `{ name }`. El slug sale del nombre nuevo; si cambia, el anterior pasa a `previousSlugs` y los productos lo siguen. Si no cambia (solo mayúsculas o tildes), el historial no se toca. Guardar el mismo nombre sincroniza una categoría con nombre y dirección desfasados. | `200` con la categoría y sus `previousSlugs`; `400`; `404`; `409` con un mensaje que dice con qué choca |
   | `DELETE /api/admin/categories/:id` | Borra solo si no tiene productos (ni ocultos); lo garantiza la clave ajena, sin carreras. Sus slugs se liberan. Los pedidos no se ven afectados. | `204`; `400`; `404`; `409` «tiene N productos» (+ `productCount`) |
   | `GET /api/products?category=<slug>` | Productos visibles de la categoría. Acepta también un slug antiguo y devuelve los de la categoría a la que pertenece ahora (resuelto con `category_slugs`, una sola búsqueda por clave primaria antes de usar el índice de siempre). | `200`; `[]` si el slug no existe; `400` si el formato no es válido |
+  | `GET /api/products?sort=newest&limit=4` | Los productos visibles más recientes (`created_at DESC, id DESC`; migración 010). `sort` solo admite `newest`; `limit`, de 1 a 24; se combinan con `category`. Sin parámetros, todos los visibles por id, como siempre. Lo usa «Novedades» de la portada. | `200`; `400` si `sort` o `limit` no son válidos |
 
   Al crear o editar un producto se comprueba que su categoría existe (por su slug actual).
 - **Orden de entrega de la 009:**
@@ -231,6 +233,19 @@ Las categorías están en la tabla `categories`, no en el código. `products.cat
 - **Borrar:** el botón «Borrar» de una categoría con productos no abre la confirmación: explica en la fila cuántos tiene. Sin productos, pide confirmación. Un enlace a una categoría borrada (también las URL antiguas) muestra «Categoría no encontrada» con un enlace a la portada, y la tienda funciona aunque no quede ninguna (Gestionar productos avisa de que hay que crear una antes).
 - **Muchas categorías:** la fila de la navbar se desplaza en horizontal, con un degradado en el borde por el que queda más, y el tabulador lleva la vista hasta la categoría enfocada.
 - **Pendiente:** reordenar y ocultar categorías; y, con más de 6 u 8, una página «Ver todas» o un menú desplegable.
+
+### Novedades de la portada
+«Novedades» muestra los 4 productos visibles más recientes de toda la tienda, sin agrupar por categoría (dos de la misma pueden salir juntos). Los elige el servidor: `GET /api/products?sort=newest&limit=4`, ordenado por fecha de creación y, a igual fecha, por id descendente, para que el orden sea estable. La portada no descarga el catálogo entero ni espera a la lista de categorías (solo la usa para el nombre de la etiqueta). Sin ningún producto visible, la sección no aparece.
+
+- **Migración `010_product_created_at.sql`:** `products.created_at` (`timestamptz NOT NULL DEFAULT now()`) y el índice `(created_at DESC, id DESC)`, con el que la consulta lee solo las primeras filas. La fecha la pone siempre la base de datos: crear o editar un producto no la cambia y el cliente no puede enviarla. Los productos que ya existían quedan con la misma fecha; entre ellos manda el id.
+- **Orden de entrega:**
+  1. Aplicar la 010 en la BD local.
+  2. Regenerar `schema.sql`.
+  3. Commit.
+  4. Aplicar la 010 en Neon.
+  5. Push (despliegue).
+
+  El backend anterior funciona con la columna añadida. El nuevo SIN ella sigue sirviendo el catálogo, pero `?sort=newest` da `500` y la portada se queda sin «Novedades»: por eso la migración va primero.
 
 ### Interceptor de sesión
 Hay dos interceptores funcionales. `credentialsInterceptor` añade `withCredentials` solo a las peticiones dirigidas a la API, para que viaje la cookie. `authErrorInterceptor` detecta un `401` cuando el usuario tenía sesión (sesión caducada), limpia el estado del usuario y redirige a `/login`. Excluye el propio login, para que unas credenciales incorrectas no se traten como sesión caducada.

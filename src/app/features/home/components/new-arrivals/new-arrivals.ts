@@ -4,7 +4,8 @@ import { RouterLink } from '@angular/router';
 
 import type { Product } from '@core/services/product.service';
 
-// Último producto de una categoría (lo elige la portada); puede no tener imagen.
+// Uno de los productos más recientes de la tienda (los elige el servidor); puede no tener imagen.
+// categoryTitle: nombre de su categoría (el slug mientras cargan las categorías).
 // placeholderTone: sufijo de la clase del recuadro sin foto (CategoryService.placeholderTone)
 export interface NewArrival {
   product: Product;

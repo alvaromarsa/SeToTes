@@ -21,40 +21,27 @@ export class HomeComponent implements OnInit {
   private readonly categoryService = inject(CategoryService);
   private readonly destroyRef = inject(DestroyRef);
 
-  // Una sola petición: todos los productos visibles
+  // Una sola petición: los NEW_ARRIVALS_LIMIT productos visibles más recientes de toda la tienda,
+  // ya ordenados por el servidor (created_at DESC, id DESC). Sin agrupar por categoría: dos de la
+  // misma pueden salir juntos
   private readonly products = signal<Product[]>([]);
 
-  // Novedades: el último producto creado (id más alto) de cada categoría, y de esas, como mucho
-  // las 4 categorías con el producto más reciente, de la más nueva a la más antigua. Sin imagen,
-  // la tarjeta muestra el color plano de su categoría (placeholderTone)
-  readonly newArrivals = computed<NewArrival[]>(() => {
-    const latestByCategory = new Map<string, Product>();
-
-    for (const product of this.products()) {
-      // Por el slug actual (uno antiguo, de antes de un renombrado, cuenta como su categoría)
-      const key = this.categoryService.currentSlug(product.category);
-      const current = latestByCategory.get(key);
-      if (!current || product.id > current.id) {
-        latestByCategory.set(key, product);
-      }
-    }
-
-    return [...latestByCategory.values()]
-      .sort((a, b) => b.id - a.id)
-      .slice(0, NEW_ARRIVALS_LIMIT)
-      .map((product) => ({
-        product,
-        // Mientras cargan las categorías (o si fallan), el slug
-        categoryTitle: this.categoryService.findBySlug(product.category)?.name ?? product.category,
-        placeholderTone: this.categoryService.placeholderTone(product.category),
-      }));
-  });
+  // Novedades: los productos tal como llegan. La lista de categorías solo pone la etiqueta y el
+  // tono del recuadro sin foto (placeholderTone): no hace falta esperarla; mientras carga (o si
+  // falla), la etiqueta muestra el slug y se actualiza sola al llegar
+  readonly newArrivals = computed<NewArrival[]>(() =>
+    this.products().map((product) => ({
+      product,
+      categoryTitle: this.categoryService.findBySlug(product.category)?.name ?? product.category,
+      placeholderTone: this.categoryService.placeholderTone(product.category),
+    })),
+  );
 
   ngOnInit(): void {
     this.categoryService.load();
 
     this.productService
-      .getProducts()
+      .getNewestProducts(NEW_ARRIVALS_LIMIT)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (products) => this.products.set(products),

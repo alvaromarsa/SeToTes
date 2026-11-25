@@ -4,7 +4,7 @@
       <span aria-hidden="true">←</span> Volver al panel
     </a>
     <h1>Categorías</h1>
-    <p>Crea y renombra categorías: los cambios aparecen al momento en la navbar, en el catálogo y en el formulario de productos.</p>
+    <p>Crea, renombra y borra categorías: los cambios aparecen al momento en la navbar, en el catálogo y en el formulario de productos.</p>
   </header>
 
   <form class="category-admin__card" [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
@@ -43,7 +43,8 @@
   </form>
 
   <section class="category-admin__card" aria-labelledby="category-list-title">
-    <h2 id="category-list-title">Categorías actuales</h2>
+    <!-- tabindex="-1": recibe el foco al borrar la última categoría -->
+    <h2 #listHeading id="category-list-title" tabindex="-1">Categorías actuales</h2>
 
     @if (status() === 'loading' || status() === 'idle') {
       <p role="status">Cargando categorías…</p>
@@ -101,24 +102,62 @@
                   <span class="category-admin__count">{{ productCountLabel(category.productCount) }}</span>
                 }
               </div>
-              <button
-                #renameButton
-                class="category-admin__secondary"
-                type="button"
-                [attr.data-category-id]="category.id"
-                [attr.aria-label]="'Renombrar ' + category.name"
-                [disabled]="isRenaming()"
-                (click)="startRename(category)"
-              >
-                Renombrar
-              </button>
+              <div class="category-admin__actions">
+                <button
+                  #renameButton
+                  class="category-admin__secondary"
+                  type="button"
+                  [attr.data-category-id]="category.id"
+                  [attr.aria-label]="'Renombrar ' + category.name"
+                  [disabled]="isRenaming() || isDeleting()"
+                  (click)="startRename(category)"
+                >
+                  Renombrar
+                </button>
+                <!-- Con productos no borra: aria-disabled (sigue enfocable) y, al pulsarlo, el motivo
+                     en la fila, enlazado con aria-describedby -->
+                <button
+                  #deleteButton
+                  class="category-admin__secondary"
+                  type="button"
+                  [attr.data-category-id]="category.id"
+                  [attr.aria-label]="'Borrar ' + category.name"
+                  [attr.aria-disabled]="category.productCount ? 'true' : null"
+                  [attr.aria-describedby]="deleteNotice()?.categoryId === category.id ? 'delete-notice-' + category.id : null"
+                  [disabled]="isRenaming() || isDeleting()"
+                  (click)="askDelete(category, deleteButton)"
+                >
+                  {{ deletingId() === category.id ? 'Borrando…' : 'Borrar' }}
+                </button>
+              </div>
+            }
+            @if (deleteNotice(); as notice) {
+              @if (notice.categoryId === category.id) {
+                <p class="category-admin__error category-admin__notice" role="alert" [id]="'delete-notice-' + category.id">
+                  {{ notice.message }}
+                </p>
+              }
             }
           </li>
         }
       </ol>
 
+      @if (rows().length === 0) {
+        <p class="category-admin__note">No hay categorías. Crea una para poder añadir productos.</p>
+      }
+
       <!-- Siempre presente (aunque vacío) para que los lectores de pantalla anuncien el cambio -->
       <p class="category-admin__success" role="status">{{ listMessage() }}</p>
     }
   </section>
+
+  <app-confirm-dialog
+    [title]="deleteDialogTitle()"
+    message="Esta acción no se puede deshacer."
+    confirmLabel="Eliminar"
+    cancelLabel="Cancelar"
+    [danger]="true"
+    (confirmed)="onDeleteConfirmed()"
+    (cancelled)="onDeleteCancelled()"
+  />
 </main>

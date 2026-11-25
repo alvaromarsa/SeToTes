@@ -53,6 +53,10 @@ export class ProductManagement implements OnInit {
   // Selector, pestañas y contadores salen de las categorías de la BD (CategoryService)
   readonly categories = this.categoryService.categories;
   readonly categoriesFailed = computed(() => this.categoryService.status() === 'error');
+  // Cargadas pero ninguna (p. ej. se borraron todas): hay que crear una antes de crear productos
+  readonly noCategories = computed(
+    () => this.categoryService.status() === 'loaded' && this.categories().length === 0,
+  );
   readonly descriptionMaxLength = PRODUCT_DESCRIPTION_MAX_LENGTH;
   readonly categoryFilters = computed<CategoryFilter[]>(() => ['all', ...this.categories().map((category) => category.slug)]);
   selectedCategory: CategoryFilter = 'all';

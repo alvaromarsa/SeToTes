@@ -1,4 +1,5 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
@@ -15,6 +16,7 @@ import { RouterLink } from '@angular/router';
 
 import type { Category } from '@core/models/category.models';
 import { CategoryService } from '@core/services/category.service';
+import { ConfirmDialog } from '@shared/components/confirm-dialog/confirm-dialog';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { focusAfterRender } from '@shared/utils/focus-after-render';
 import { FormUtils } from '@shared/utils/form-utils';
@@ -34,10 +36,10 @@ function normalizeName(value: string): string {
   return value.replace(/ {2,}/g, ' ').trim();
 }
 
-// /adminpanel/categories: crear y renombrar categorías (borrar llegará en el paso siguiente)
+// /adminpanel/categories: crear, renombrar y borrar categorías
 @Component({
   selector: 'app-category-management',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, ConfirmDialog],
   templateUrl: './category-management.html',
   styleUrl: './category-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,6 +52,9 @@ export class CategoryManagement {
   private readonly nameInput = viewChild.required<ElementRef<HTMLInputElement>>('nameInput');
   private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
   private readonly renameButtons = viewChildren<ElementRef<HTMLButtonElement>>('renameButton');
+  private readonly deleteButtons = viewChildren<ElementRef<HTMLButtonElement>>('deleteButton');
+  private readonly listHeading = viewChild<ElementRef<HTMLElement>>('listHeading');
+  private readonly deleteDialog = viewChild.required(ConfirmDialog);
 
   readonly formUtils = FormUtils;
   readonly status = this.categoryService.status;
@@ -89,8 +94,18 @@ export class CategoryManagement {
   readonly isRenaming = signal(false);
   // Error junto a la fila en edición (del formulario o de la API: 400/409, mensajes en español)
   readonly renameError = signal('');
-  // Éxito de renombrar, en la zona role="status" de la lista
+  // Éxito de renombrar o borrar, en la zona role="status" de la lista
   readonly listMessage = signal('');
+
+  // --- Borrar ---
+  // Categoría pendiente de confirmar en el diálogo
+  readonly pendingDelete = signal<CategoryRow | null>(null);
+  // Categoría que se está borrando (botones de la lista desactivados mientras tanto)
+  readonly deletingId = signal<number | null>(null);
+  readonly isDeleting = computed(() => this.deletingId() !== null);
+  // Aviso en la fila: «tiene N productos» (sin llamar al servidor) o el error del servidor (409…)
+  readonly deleteNotice = signal<{ categoryId: number; message: string } | null>(null);
+  readonly deleteDialogTitle = computed(() => `¿Eliminar la categoría «${this.pendingDelete()?.name ?? ''}»?`);
 
   constructor() {
     this.categoryService.load();
@@ -144,7 +159,7 @@ export class CategoryManagement {
   }
 
   startRename(category: Category): void {
-    if (this.isRenaming()) {
+    if (this.isRenaming() || this.isDeleting()) {
       return;
     }
 
@@ -153,6 +168,7 @@ export class CategoryManagement {
     this.renameControl.reset(category.name);
     this.renameError.set('');
     this.listMessage.set('');
+    this.deleteNotice.set(null);
     focusAfterRender(this.injector, () => {
       const input = this.renameInput()?.nativeElement;
       input?.select();
@@ -211,11 +227,91 @@ export class CategoryManagement {
   private finishRename(categoryId: number): void {
     this.editingId.set(null);
     this.renameError.set('');
-    focusAfterRender(this.injector, () =>
-      this.renameButtons()
-        .map((button) => button.nativeElement)
-        .find((button) => button.dataset['categoryId'] === String(categoryId)),
-    );
+    focusAfterRender(this.injector, () => this.rowButton(this.renameButtons(), categoryId));
+  }
+
+  // --- Borrar ---
+
+  // Con productos: no se borra ni se abre el diálogo; se explica en la fila (el botón lleva
+  // aria-disabled). Sin productos (o si no se pudo saber): confirmación con el diálogo común
+  askDelete(category: CategoryRow, origin: HTMLElement): void {
+    if (this.isDeleting() || this.isRenaming()) {
+      return;
+    }
+
+    this.listMessage.set('');
+
+    if (category.productCount !== null && category.productCount > 0) {
+      this.deleteNotice.set({ categoryId: category.id, message: this.blockedMessage(category.productCount) });
+      return;
+    }
+
+    this.deleteNotice.set(null);
+    this.pendingDelete.set(category);
+    // Tras pintar el título y el mensaje del diálogo. Al cerrarse (Cancelar o Escape), el
+    // propio diálogo devuelve el foco a este botón
+    afterNextRender(() => this.deleteDialog().open(origin), { injector: this.injector });
+  }
+
+  onDeleteCancelled(): void {
+    this.pendingDelete.set(null);
+  }
+
+  onDeleteConfirmed(): void {
+    const category = this.pendingDelete();
+    this.pendingDelete.set(null);
+
+    if (!category || this.isDeleting()) {
+      return;
+    }
+
+    // Para llevar el foco a la fila siguiente (o la anterior, si era la última)
+    const index = this.rows().findIndex((row) => row.id === category.id);
+    this.deletingId.set(category.id);
+
+    this.categoryService.deleteCategory(category.id).subscribe({
+      next: () => {
+        this.deletingId.set(null);
+        this.productCounts.update((counts) => {
+          if (!counts) {
+            return counts;
+          }
+          const next = new Map(counts);
+          next.delete(category.id);
+          return next;
+        });
+        this.listMessage.set(`Categoría «${category.name}» eliminada.`);
+
+        focusAfterRender(this.injector, () => {
+          const rows = this.rows();
+          const neighbour = rows[index] ?? rows[index - 1];
+          return neighbour ? this.rowButton(this.deleteButtons(), neighbour.id) : this.listHeading()?.nativeElement;
+        });
+      },
+      error: (error: unknown) => {
+        console.error('No se pudo borrar la categoría:', error);
+        // 409: alguien añadió un producto justo antes (el servidor decide); se muestra su mensaje
+        // y se actualizan los contadores
+        this.deleteNotice.set({
+          categoryId: category.id,
+          message: getErrorMessage(error, 'No se pudo borrar la categoría.'),
+        });
+        this.deletingId.set(null);
+        this.loadCounts();
+        focusAfterRender(this.injector, () => this.rowButton(this.deleteButtons(), category.id));
+      },
+    });
+  }
+
+  private blockedMessage(productCount: number): string {
+    return `No se puede borrar: tiene ${this.productCountLabel(productCount)}. Muévelos a otra categoría o elimínalos antes.`;
+  }
+
+  // Botón de una fila concreta (por data-category-id)
+  private rowButton(buttons: readonly ElementRef<HTMLButtonElement>[], categoryId: number): HTMLButtonElement | undefined {
+    return buttons
+      .map((button) => button.nativeElement)
+      .find((button) => button.dataset['categoryId'] === String(categoryId));
   }
 
   private clientRenameError(): string {

@@ -113,13 +113,27 @@
 
         <div class="product-form__field">
           <label for="category">Categoría</label>
-          <select class="product-form__input" id="category" formControlName="category">
+          <select
+            class="product-form__input"
+            id="category"
+            formControlName="category"
+            [attr.aria-describedby]="noCategories() ? 'category-empty' : null"
+          >
             @for (category of categories(); track category.slug) {
               <option [value]="category.slug">{{ category.name }}</option>
             }
           </select>
           @if (categoriesFailed()) {
             <small class="product-form__error">No se pudieron cargar las categorías. Recarga la página para crear o editar productos.</small>
+          } @else if (noCategories()) {
+            <!-- Utilidades de Tailwind: product-management.css está al límite del presupuesto -->
+            <small id="category-empty" class="product-form__counter">
+              Todavía no hay categorías. Para crear productos, antes
+              <a
+                class="underline underline-offset-3 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#111827]"
+                routerLink="/adminpanel/categories"
+              >crea una categoría</a>.
+            </small>
           }
         </div>
 

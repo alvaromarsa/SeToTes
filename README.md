@@ -22,7 +22,7 @@ Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con 
 
 **Administración** (rol `admin`)
 - Crear y editar productos (nombre, precio, stock, color y categoría).
-- Crear categorías nuevas (`/adminpanel/categories`): aparecen al momento en la navbar, el catálogo y el formulario de productos.
+- Crear, renombrar y borrar categorías (`/adminpanel/categories`): los cambios aparecen al momento en la navbar, el catálogo y el formulario de productos. Renombrar no cambia la URL; solo se borran categorías sin productos.
 - Listado de todos los pedidos con filtro por estado, y detalle con datos del cliente y del envío.
 - Cambio de estado de los pedidos según transiciones permitidas. Al cancelar un pedido se devuelve el stock.
 
@@ -194,12 +194,24 @@ shipped → delivered
 Todas las pantallas se cargan bajo demanda con `loadComponent`. La zona de administración es un grupo de rutas hijas (`loadChildren`) protegido con `canMatch: [adminGuard]`: el guard decide antes de descargar el código, así que un cliente o un visitante sin sesión nunca lo descarga.
 
 ### Categorías dinámicas
-Las categorías están en la tabla `categories` (migración `007_categories.sql`: `slug` único, `name`, `position`), no en el código. `products.category` guarda el slug con una clave ajena a `categories.slug` (`ON DELETE RESTRICT`). Una BD nueva recibe las 4 categorías iniciales con `seed.sql`, que es solo para BD nuevas.
+Las categorías están en la tabla `categories` (migración `007_categories.sql`: `slug` único, `name`, `position`; migración `008_category_name_key.sql`: `name_key`, el nombre normalizado y único), no en el código. `products.category` guarda el slug con una clave ajena a `categories.slug` (`ON DELETE RESTRICT`). Una BD nueva recibe las 4 categorías iniciales con `seed.sql`, que es solo para BD nuevas.
 
-- **API:** `GET /api/categories` es público (`no-cache` + ETag: revalida en cada uso y responde `304` si no ha cambiado). `POST /api/admin/categories` (solo admin) recibe únicamente el nombre; el servidor genera el slug (minúsculas, sin tildes, con guiones), rechaza los reservados (`login`, `checkout`…) y responde `409` si ya existe uno equivalente («Bolsas», «BOLSÁS» y «bolsas!» chocan). Al crear o editar un producto se comprueba que su categoría existe.
-- **Frontend:** `CategoryService` carga la lista una vez en una signal (con un reintento si falla) y la comparten la navbar, el catálogo, el detalle de producto, Novedades y la gestión de productos. Cada categoría vive en `/categoria/<slug>`; las URL antiguas (`/bolsas`…) redirigen. Al crear una categoría desde `/adminpanel/categories`, aparece en todas partes sin recargar.
+- **API** (las de administración, con sesión de admin: `requireAuth` + `requireAdmin`):
+
+  | Endpoint | Qué hace | Respuestas |
+  |---|---|---|
+  | `GET /api/categories` | Lista pública, en orden (`position, id`). `no-cache` + ETag: revalida en cada uso y responde `304` si no ha cambiado. | `200` |
+  | `GET /api/admin/categories` | La misma lista con `productCount` de cada una (cuenta también los productos ocultos, que también impiden borrar). | `200` |
+  | `POST /api/admin/categories` | Crea una con `{ name }` (cualquier otro campo se ignora). El servidor genera el slug (minúsculas, sin tildes, con guiones) y la posición (la última). | `201`; `400` nombre no válido o reservado (`login`, `checkout`…); `409` si choca con otra («Bolsas», «BOLSÁS» y «bolsas!» chocan) |
+  | `PATCH /api/admin/categories/:id` | Renombra con `{ name }`: cambia SOLO el nombre, nunca el slug (las URL y los productos no se tocan). | `200`; `400`; `404`; `409` si el nombre es el de otra o su URL |
+  | `DELETE /api/admin/categories/:id` | Borra solo si no tiene productos (ni ocultos); lo garantiza la clave ajena, sin carreras. Los pedidos no se ven afectados. | `204`; `400`; `404`; `409` «tiene N productos» (+ `productCount`) |
+
+  Al crear o editar un producto se comprueba que su categoría existe.
+- **Orden de despliegue:** primero la migración y después el backend. La `007` va ANTES del backend que lee la tabla; la `008`, justo antes del backend que escribe `name_key` (entre medias, crear una categoría con el backend anterior falla; leer y borrar siguen funcionando). Después, regenerar `schema.sql`. Ver [backend/database/README.md](backend/database/README.md).
+- **Frontend:** `CategoryService` carga la lista una vez en una signal (con un reintento si falla) y la comparten la navbar, el catálogo, el detalle de producto, Novedades y la gestión de productos. Cada categoría vive en `/categoria/<slug>`; las URL antiguas (`/bolsas`…) redirigen. Crear, renombrar y borrar desde `/adminpanel/categories` se ve en todas partes sin recargar.
+- **Borrar:** el botón «Borrar» de una categoría con productos no abre la confirmación: explica en la fila cuántos tiene. Sin productos, pide confirmación. Un enlace a una categoría borrada (también las URL antiguas) muestra «Categoría no encontrada» con un enlace a la portada, y la tienda funciona aunque no quede ninguna (Gestionar productos avisa de que hay que crear una antes).
 - **Muchas categorías:** la fila de la navbar se desplaza en horizontal, con un degradado en el borde por el que queda más, y el tabulador lleva la vista hasta la categoría enfocada.
-- **Pendiente:** renombrar, reordenar, ocultar y borrar categorías; y, con más de 6 u 8, una página «Ver todas» o un menú desplegable.
+- **Pendiente:** reordenar y ocultar categorías; y, con más de 6 u 8, una página «Ver todas» o un menú desplegable.
 
 ### Interceptor de sesión
 Hay dos interceptores funcionales. `credentialsInterceptor` añade `withCredentials` solo a las peticiones dirigidas a la API, para que viaje la cookie. `authErrorInterceptor` detecta un `401` cuando el usuario tenía sesión (sesión caducada), limpia el estado del usuario y redirige a `/login`. Excluye el propio login, para que unas credenciales incorrectas no se traten como sesión caducada.

@@ -2,7 +2,6 @@ import { inject } from '@angular/core';
 import { CanMatchFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 
-import { categoryPath } from '../config/categories.config';
 import { AuthService } from '../services/auth.service';
 import { loginUrlTree } from '../utils/return-url';
 
@@ -11,7 +10,7 @@ import { loginUrlTree } from '../utils/return-url';
 // UrlTree (nunca false): con false la ruta no coincidiría y caería en '**' (portada).
 // Es solo experiencia de usuario: la seguridad real es requireAdmin en el backend.
 //   - admin: entra.
-//   - sesión sin rol admin: a la categoría Bolsas (/categoria/bolsas).
+//   - sesión sin rol admin: a la portada (/home; no a una categoría concreta, que se puede borrar).
 //   - sin sesión (o error al consultar /me): a /login?returnUrl=<la URL pedida> (loginUrlTree
 //     solo la añade si pasa isSafeReturnUrl).
 export const adminGuard: CanMatchFn = (_route, segments) => {
@@ -29,7 +28,7 @@ export const adminGuard: CanMatchFn = (_route, segments) => {
     map(({ user }) =>
       user.role === 'admin'
         ? true
-        : router.createUrlTree([categoryPath('bolsas')])
+        : router.createUrlTree(['/home'])
     ),
     catchError(() => of(loginUrlTree(router, requestedUrl)))
   );

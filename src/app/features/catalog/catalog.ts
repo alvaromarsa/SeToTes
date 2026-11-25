@@ -5,7 +5,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
 
-import { categoryPath } from '@core/config/categories.config';
+import { categoryPath, isValidCategorySlug } from '@core/config/categories.config';
 import { CartService } from '@core/services/cart.service';
 import { CategoryService } from '@core/services/category.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
@@ -38,8 +38,12 @@ export class Catalog {
   );
 
   readonly category = computed(() => this.categoryService.findBySlug(this.slug()));
-  // Solo se sabe que no existe cuando las categorías ya han cargado (no mientras cargan)
-  readonly notFound = computed(() => this.categoryService.status() === 'loaded' && !this.category());
+  // Un slug con formato inválido no existe nunca. Si es válido, solo se sabe que no existe cuando
+  // las categorías ya han cargado (no mientras cargan): p. ej. una categoría borrada
+  readonly notFound = computed(
+    () =>
+      !isValidCategorySlug(this.slug()) || (this.categoryService.status() === 'loaded' && !this.category()),
+  );
   // Si fallara la carga de categorías, los productos se muestran igual con un título genérico
   readonly title = computed(() => this.category()?.name ?? 'Productos');
   readonly placeholderTone = computed(() => this.categoryService.placeholderTone(this.slug()));
@@ -61,14 +65,19 @@ export class Catalog {
           this.errorMessage.set('');
           this.products.set([]);
         }),
+        // Formato inválido: sin petición (el servidor respondería 400) y sin error en consola
         switchMap((slug) =>
-          this.productService.getProducts(slug).pipe(
-            catchError((error: unknown) => {
-              console.error('No se pudieron cargar los productos', error);
-              this.errorMessage.set(getErrorMessage(error, 'No se pudieron cargar los productos. Recarga la página.'));
-              return of([] as Product[]);
-            }),
-          ),
+          !isValidCategorySlug(slug)
+            ? of([] as Product[])
+            : this.productService.getProducts(slug).pipe(
+                catchError((error: unknown) => {
+                  console.error('No se pudieron cargar los productos', error);
+                  this.errorMessage.set(
+                    getErrorMessage(error, 'No se pudieron cargar los productos. Recarga la página.'),
+                  );
+                  return of([] as Product[]);
+                }),
+              ),
         ),
         takeUntilDestroyed(),
       )

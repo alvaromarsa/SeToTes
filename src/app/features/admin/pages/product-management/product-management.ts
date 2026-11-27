@@ -20,6 +20,7 @@ import type { ProductImage } from '@core/models/product-image.models';
 import { CategoryService } from '@core/services/category.service';
 import { PRODUCT_DESCRIPTION_MAX_LENGTH, ProductService } from '@core/services/product.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
+import { CategoryPicker } from '@features/admin/components/category-picker/category-picker';
 import { ProductImageManager } from '@features/admin/components/product-image-manager/product-image-manager';
 import { VisibilitySwitch } from '@features/admin/components/visibility-switch/visibility-switch';
 import { FormUtils } from '@shared/utils/form-utils';
@@ -31,7 +32,7 @@ type StatusFilter = 'all' | 'visible' | 'hidden';
 
 @Component({
   selector: 'app-product-management',
-  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, ProductImageManager, VisibilitySwitch],
+  imports: [ReactiveFormsModule, RouterLink, CurrencyPipe, CategoryPicker, ProductImageManager, VisibilitySwitch],
   templateUrl: './product-management.html',
   styleUrl: './product-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,13 +51,10 @@ export class ProductManagement implements OnInit {
   errorMessage = '';
   isLoading = true;
   readonly formUtils = FormUtils;
-  // Selector, pestañas y contadores salen de las categorías de la BD (CategoryService)
-  readonly categories = this.categoryService.categories;
-  readonly categoriesFailed = computed(() => this.categoryService.status() === 'error');
-  // Cargadas pero ninguna (p. ej. se borraron todas): hay que crear una antes de crear productos
-  readonly noCategories = computed(
-    () => this.categoryService.status() === 'loaded' && this.categories().length === 0,
-  );
+  // Pestañas y contadores: solo las categorías de PRIMER NIVEL (CategoryService). La de una
+  // categoría con subcategorías reúne los productos de todas ellas. El selector de categoría (con
+  // su aviso si no hay ninguna) es el componente category-picker
+  readonly categories = this.categoryService.topLevelCategories;
   readonly descriptionMaxLength = PRODUCT_DESCRIPTION_MAX_LENGTH;
   readonly categoryFilters = computed<CategoryFilter[]>(() => ['all', ...this.categories().map((category) => category.slug)]);
   selectedCategory: CategoryFilter = 'all';
@@ -160,10 +158,24 @@ export class ProductManagement implements OnInit {
       : this.statusFilteredProducts.filter((product) => this.isInCategory(product, filter)).length;
   }
 
+  // «Padre › Sub» para un producto en una subcategoría; el nombre, en las demás
+  categoryLabel(slug: string): string {
+    const category = this.categoryService.findBySlug(slug);
+    const parent = category ? this.categoryService.parentOf(category) : undefined;
+
+    return parent && category ? `${parent.name} › ${category.name}` : this.categoryName(slug);
+  }
+
   // Por el slug ACTUAL: un producto con un slug antiguo (cargado antes de un renombrado) sigue en
-  // la pestaña de su categoría
+  // la pestaña de su categoría. La pestaña de un padre incluye los de sus subcategorías
   private isInCategory(product: AdminProduct, slug: string): boolean {
-    return this.categoryService.currentSlug(product.category) === slug;
+    const category = this.categoryService.findBySlug(product.category);
+
+    if (!category) {
+      return product.category === slug;
+    }
+
+    return category.slug === slug || this.categoryService.parentOf(category)?.slug === slug;
   }
 
   selectStatus(status: StatusFilter): void {

@@ -10,6 +10,8 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -27,9 +29,24 @@ import { slugify } from '@shared/utils/slugify';
 const NAME_MIN_LENGTH = 2;
 const NAME_MAX_LENGTH = 40;
 
-// Fila de la lista: la categoría (de la lista compartida) con su número de productos
+// Fila de la lista: la categoría (de la lista compartida) con su número de productos, el de sus
+// subcategorías (de la lista compartida: se actualiza al momento) y su padre si es subcategoría
 interface CategoryRow extends Category {
   productCount: number | null;
+  subcategoryCount: number;
+  parent: Category | null;
+}
+
+// Grupo de la lista: una categoría de primer nivel y sus subcategorías debajo
+interface CategoryGroup {
+  category: CategoryRow;
+  children: CategoryRow[];
+}
+
+// Alta de una subcategoría en un padre con productos, pendiente de confirmar en el diálogo
+interface PendingMove {
+  name: string;
+  parent: CategoryRow;
 }
 
 // Mismo recorte que el servidor (parseCategoryName): extremos y espacios repetidos
@@ -37,10 +54,11 @@ function normalizeName(value: string): string {
   return value.replace(/ {2,}/g, ' ').trim();
 }
 
-// /adminpanel/categories: crear, renombrar y borrar categorías
+// /adminpanel/categories: crear (también subcategorías de un nivel, migración 011), renombrar y
+// borrar categorías
 @Component({
   selector: 'app-category-management',
-  imports: [ReactiveFormsModule, RouterLink, ConfirmDialog],
+  imports: [ReactiveFormsModule, RouterLink, ConfirmDialog, NgTemplateOutlet],
   templateUrl: './category-management.html',
   styleUrl: './category-management.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -55,7 +73,9 @@ export class CategoryManagement {
   private readonly renameButtons = viewChildren<ElementRef<HTMLButtonElement>>('renameButton');
   private readonly deleteButtons = viewChildren<ElementRef<HTMLButtonElement>>('deleteButton');
   private readonly listHeading = viewChild<ElementRef<HTMLElement>>('listHeading');
-  private readonly deleteDialog = viewChild.required(ConfirmDialog);
+  private readonly deleteDialog = viewChild.required<ConfirmDialog>('deleteDialog');
+  private readonly moveDialog = viewChild.required<ConfirmDialog>('moveDialog');
+  private readonly submitButton = viewChild.required<ElementRef<HTMLButtonElement>>('submitButton');
 
   readonly formUtils = FormUtils;
   readonly status = this.categoryService.status;
@@ -68,15 +88,52 @@ export class CategoryManagement {
 
   readonly rows = computed<CategoryRow[]>(() => {
     const counts = this.productCounts();
-    return this.categoryService
-      .categories()
-      .map((category) => ({ ...category, productCount: counts?.get(category.id) ?? (counts ? 0 : null) }));
+    const categories = this.categoryService.categories();
+
+    return categories.map((category) => ({
+      ...category,
+      productCount: counts?.get(category.id) ?? (counts ? 0 : null),
+      subcategoryCount: categories.filter((item) => item.parentId === category.id).length,
+      parent: category.parentId === null ? null : (categories.find((item) => item.id === category.parentId) ?? null),
+    }));
   });
+
+  // Lista agrupada: cada categoría de primer nivel con sus subcategorías debajo
+  readonly groups = computed<CategoryGroup[]>(() => {
+    const rows = this.rows();
+
+    return rows
+      .filter((row) => row.parentId === null)
+      .map((category) => ({ category, children: rows.filter((row) => row.parentId === category.id) }));
+  });
+
+  // Las filas en el orden en que se ven (padre y, debajo, sus hijas): para mover el foco al borrar
+  private readonly visibleRows = computed(() =>
+    this.groups().flatMap((group) => [group.category, ...group.children]),
+  );
+
+  // Opciones de «Dentro de»: solo las de primer nivel (un solo nivel de subcategorías)
+  readonly parentOptions = this.categoryService.topLevelCategories;
 
   // --- Crear ---
   // Texto plano de una línea: el servidor lo vuelve a validar y lo guarda recortado
   readonly categoryForm = this.fb.nonNullable.group({
     name: ['', [plainTextLength({ min: NAME_MIN_LENGTH, max: NAME_MAX_LENGTH })]],
+    // null = categoría de primer nivel; un id = subcategoría de esa categoría
+    parentId: [null as number | null],
+  });
+
+  // Subcategoría en un padre con productos: se confirma antes de enviar (se moverán todos)
+  readonly pendingMove = signal<PendingMove | null>(null);
+  readonly moveDialogMessage = computed(() => {
+    const move = this.pendingMove();
+
+    if (!move) {
+      return '';
+    }
+
+    const count = move.parent.productCount ?? 0;
+    return `«${move.parent.name}» tiene ${this.productCountLabel(count)}. Se moverán todos a la nueva subcategoría «${move.name}». ¿Continuar?`;
   });
 
   readonly isSaving = signal(false);
@@ -121,7 +178,10 @@ export class CategoryManagement {
   readonly isDeleting = computed(() => this.deletingId() !== null);
   // Aviso en la fila: «tiene N productos» (sin llamar al servidor) o el error del servidor (409…)
   readonly deleteNotice = signal<{ categoryId: number; message: string } | null>(null);
-  readonly deleteDialogTitle = computed(() => `¿Eliminar la categoría «${this.pendingDelete()?.name ?? ''}»?`);
+  readonly deleteDialogTitle = computed(() => {
+    const category = this.pendingDelete();
+    return `¿Eliminar la ${category?.parent ? 'subcategoría' : 'categoría'} «${category?.name ?? ''}»?`;
+  });
 
   constructor() {
     this.categoryService.load();
@@ -141,6 +201,15 @@ export class CategoryManagement {
     return count === 1 ? '1 producto' : `${count} productos`;
   }
 
+  subcategoryCountLabel(count: number): string {
+    return count === 1 ? '1 subcategoría' : `${count} subcategorías`;
+  }
+
+  // Nombre con contexto para los aria-label: «Mochilas (dentro de Bolsas)»
+  rowLabel(row: CategoryRow): string {
+    return row.parent ? `${row.name} (dentro de ${row.parent.name})` : row.name;
+  }
+
   onSubmit(): void {
     if (this.isSaving()) {
       return;
@@ -152,18 +221,56 @@ export class CategoryManagement {
       return;
     }
 
+    const parentId = this.categoryForm.controls.parentId.value;
+    const parent = parentId === null ? undefined : this.rows().find((row) => row.id === parentId);
+
+    // Primera subcategoría de un padre con productos: antes de enviar, se confirma que se moverán
+    // todos a ella. Al cancelar, el diálogo devuelve el foco al botón de crear
+    if (parent && parent.subcategoryCount === 0 && (parent.productCount ?? 0) > 0) {
+      this.pendingMove.set({ name: normalizeName(this.categoryForm.controls.name.value), parent });
+      afterNextRender(() => this.moveDialog().open(this.submitButton().nativeElement), { injector: this.injector });
+      return;
+    }
+
+    this.createCategory(false);
+  }
+
+  onMoveConfirmed(): void {
+    this.pendingMove.set(null);
+    this.createCategory(true);
+  }
+
+  onMoveCancelled(): void {
+    this.pendingMove.set(null);
+  }
+
+  private createCategory(moveProducts: boolean): void {
+    const { name, parentId } = this.categoryForm.getRawValue();
+    const parent = parentId === null ? undefined : this.rows().find((row) => row.id === parentId);
+
     this.isSaving.set(true);
     this.successMessage.set('');
     this.serverError.set('');
 
-    this.categoryService.create(this.categoryForm.controls.name.value).subscribe({
+    this.categoryService.create(name, { parentId, moveProducts }).subscribe({
       next: (created) => {
         this.categoryForm.reset();
         this.isSaving.set(false);
-        // Recién creada: 0 productos
-        this.productCounts.update((counts) => (counts ? new Map(counts).set(created.id, 0) : counts));
+        // Recién creada: 0 productos, o los que se movieron desde el padre (que se queda sin ninguno)
+        this.productCounts.update((counts) => {
+          if (!counts) {
+            return counts;
+          }
+          const next = new Map(counts).set(created.id, created.movedProductCount);
+          return parent ? next.set(parent.id, 0) : next;
+        });
+
+        const moved =
+          created.movedProductCount > 0 ? ` Se han movido a ella ${this.productCountLabel(created.movedProductCount)}.` : '';
         this.successMessage.set(
-          `Categoría «${created.name}» creada. Ya aparece en la navbar y en el formulario de productos.`,
+          parent
+            ? `Subcategoría «${created.name}» creada dentro de «${parent.name}».${moved}`
+            : `Categoría «${created.name}» creada. Ya aparece en la navbar y en el formulario de productos.`,
         );
       },
       error: (error: unknown) => {
@@ -171,6 +278,13 @@ export class CategoryManagement {
         // 400 (nombre no válido o reservado) y 409 (ya existe) traen un mensaje claro de la API
         this.serverError.set(getErrorMessage(error, 'No se pudo crear la categoría.'));
         this.isSaving.set(false);
+
+        // 409 PARENT_HAS_PRODUCTS: alguien añadió productos al padre entre medias. Con los
+        // contadores al día, el siguiente intento pedirá confirmación para moverlos
+        if (error instanceof HttpErrorResponse && error.error?.code === 'PARENT_HAS_PRODUCTS') {
+          this.loadCounts();
+        }
+
         // El foco vuelve al campo, para corregir el nombre y reintentar
         focusAfterRender(this.injector, () => this.nameInput().nativeElement);
       },
@@ -265,6 +379,14 @@ export class CategoryManagement {
 
     this.listMessage.set('');
 
+    if (category.subcategoryCount > 0) {
+      this.deleteNotice.set({
+        categoryId: category.id,
+        message: `No se puede borrar: tiene ${this.subcategoryCountLabel(category.subcategoryCount)}. Bórralas antes.`,
+      });
+      return;
+    }
+
     if (category.productCount !== null && category.productCount > 0) {
       this.deleteNotice.set({ categoryId: category.id, message: this.blockedMessage(category.productCount) });
       return;
@@ -289,8 +411,8 @@ export class CategoryManagement {
       return;
     }
 
-    // Para llevar el foco a la fila siguiente (o la anterior, si era la última)
-    const index = this.rows().findIndex((row) => row.id === category.id);
+    // Para llevar el foco a la fila siguiente (o la anterior, si era la última), en el orden visible
+    const index = this.visibleRows().findIndex((row) => row.id === category.id);
     this.deletingId.set(category.id);
 
     this.categoryService.deleteCategory(category.id).subscribe({
@@ -306,8 +428,10 @@ export class CategoryManagement {
         });
         this.listMessage.set(`Categoría «${category.name}» eliminada.`);
 
+        // Si era la última subcategoría, el padre vuelve a ser una categoría normal (subcategoryCount
+        // sale de la lista compartida, que ya no la tiene)
         focusAfterRender(this.injector, () => {
-          const rows = this.rows();
+          const rows = this.visibleRows();
           const neighbour = rows[index] ?? rows[index - 1];
           return neighbour ? this.rowButton(this.deleteButtons(), neighbour.id) : this.listHeading()?.nativeElement;
         });

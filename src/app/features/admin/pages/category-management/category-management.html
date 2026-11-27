@@ -4,7 +4,7 @@
       <span aria-hidden="true">←</span> Volver al panel
     </a>
     <h1>Categorías</h1>
-    <p>Crea, renombra y borra categorías: los cambios aparecen al momento en la navbar, en el catálogo y en el formulario de productos. Al renombrar, la dirección cambia y la antigua sigue llevando a la nueva.</p>
+    <p>Crea categorías y subcategorías, renómbralas y bórralas: los cambios aparecen al momento en la navbar, en el catálogo y en el formulario de productos. Al renombrar, la dirección cambia y la antigua sigue llevando a la nueva.</p>
   </header>
 
   <form class="category-admin__card" [formGroup]="categoryForm" (ngSubmit)="onSubmit()">
@@ -34,7 +34,19 @@
       }
     </div>
 
-    <button type="submit" [disabled]="isSaving()">
+    <div class="category-admin__field">
+      <label for="category-parent">Dentro de (opcional)</label>
+      <!-- Solo las de primer nivel: las subcategorías no pueden tener subcategorías -->
+      <select id="category-parent" formControlName="parentId" aria-describedby="category-parent-hint">
+        <option [ngValue]="null">Ninguna (categoría principal)</option>
+        @for (option of parentOptions(); track option.id) {
+          <option [ngValue]="option.id">{{ option.name }}</option>
+        }
+      </select>
+      <small id="category-parent-hint">Para crear una subcategoría, elige su categoría.</small>
+    </div>
+
+    <button #submitButton type="submit" [disabled]="isSaving()">
       {{ isSaving() ? 'Creando…' : 'Crear categoría' }}
     </button>
 
@@ -55,92 +67,112 @@
         <p class="category-admin__note">No se pudo cargar el número de productos de cada categoría.</p>
       }
 
-      <!-- En el orden en que aparecen en la tienda. Solo una fila en edición a la vez -->
+      <!-- En el orden en que aparecen en la tienda: cada categoría con sus subcategorías debajo, en
+           una lista anidada. Solo una fila en edición a la vez -->
       <ol class="category-admin__list">
-        @for (category of rows(); track category.id) {
+        @for (group of groups(); track group.category.id) {
           <li>
-            @if (editingId() === category.id) {
-              <!-- Enter guarda (submit); Escape cancela -->
-              <form
-                class="category-admin__rename"
-                [formGroup]="renameForm"
-                (ngSubmit)="saveRename(category)"
-                (keydown.escape)="cancelRename(category)"
-              >
-                <label class="sr-only" [for]="'rename-' + category.id">Nuevo nombre de {{ category.name }}</label>
-                <input
-                  #renameInput
-                  type="text"
-                  autocomplete="off"
-                  [id]="'rename-' + category.id"
-                  formControlName="name"
-                  [attr.maxlength]="nameMaxLength"
-                  [attr.aria-invalid]="renameError() ? 'true' : null"
-                  [attr.aria-describedby]="'rename-hint-' + category.id + (renameError() ? ' rename-error-' + category.id : '')"
-                >
-                <small [id]="'rename-hint-' + category.id">{{ renamePreview() }}</small>
-                @if (renameError()) {
-                  <p class="category-admin__error" role="alert" [id]="'rename-error-' + category.id">{{ renameError() }}</p>
+            <ng-container *ngTemplateOutlet="row; context: { $implicit: group.category }" />
+            @if (group.children.length > 0) {
+              <ul class="category-admin__sublist" [attr.aria-label]="'Subcategorías de ' + group.category.name">
+                @for (child of group.children; track child.id) {
+                  <li>
+                    <ng-container *ngTemplateOutlet="row; context: { $implicit: child }" />
+                  </li>
                 }
-                <div class="category-admin__actions">
-                  <button type="submit" [disabled]="isRenaming()">{{ isRenaming() ? 'Guardando…' : 'Guardar' }}</button>
-                  <button
-                    class="category-admin__secondary"
-                    type="button"
-                    [disabled]="isRenaming()"
-                    (click)="cancelRename(category)"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            } @else {
-              <div class="category-admin__info">
-                <span class="category-admin__name">{{ category.name }}</span>
-                <code class="category-admin__slug">/categoria/{{ category.slug }}</code>
-                @if (category.productCount !== null) {
-                  <span class="category-admin__count">{{ productCountLabel(category.productCount) }}</span>
-                }
-              </div>
-              <div class="category-admin__actions">
-                <button
-                  #renameButton
-                  class="category-admin__secondary"
-                  type="button"
-                  [attr.data-category-id]="category.id"
-                  [attr.aria-label]="'Renombrar ' + category.name"
-                  [disabled]="isRenaming() || isDeleting()"
-                  (click)="startRename(category)"
-                >
-                  Renombrar
-                </button>
-                <!-- Con productos no borra: aria-disabled (sigue enfocable) y, al pulsarlo, el motivo
-                     en la fila, enlazado con aria-describedby -->
-                <button
-                  #deleteButton
-                  class="category-admin__secondary"
-                  type="button"
-                  [attr.data-category-id]="category.id"
-                  [attr.aria-label]="'Borrar ' + category.name"
-                  [attr.aria-disabled]="category.productCount ? 'true' : null"
-                  [attr.aria-describedby]="deleteNotice()?.categoryId === category.id ? 'delete-notice-' + category.id : null"
-                  [disabled]="isRenaming() || isDeleting()"
-                  (click)="askDelete(category, deleteButton)"
-                >
-                  {{ deletingId() === category.id ? 'Borrando…' : 'Borrar' }}
-                </button>
-              </div>
-            }
-            @if (deleteNotice(); as notice) {
-              @if (notice.categoryId === category.id) {
-                <p class="category-admin__error category-admin__notice" role="alert" [id]="'delete-notice-' + category.id">
-                  {{ notice.message }}
-                </p>
-              }
+              </ul>
             }
           </li>
         }
       </ol>
+
+      <!-- Una fila (categoría o subcategoría): nombre, dirección, contador, Renombrar y Borrar -->
+      <ng-template #row let-category>
+        <div class="category-admin__row">
+          @if (editingId() === category.id) {
+            <!-- Enter guarda (submit); Escape cancela -->
+            <form
+              class="category-admin__rename"
+              [formGroup]="renameForm"
+              (ngSubmit)="saveRename(category)"
+              (keydown.escape)="cancelRename(category)"
+            >
+              <label class="sr-only" [for]="'rename-' + category.id">Nuevo nombre de {{ rowLabel(category) }}</label>
+              <input
+                #renameInput
+                type="text"
+                autocomplete="off"
+                [id]="'rename-' + category.id"
+                formControlName="name"
+                [attr.maxlength]="nameMaxLength"
+                [attr.aria-invalid]="renameError() ? 'true' : null"
+                [attr.aria-describedby]="'rename-hint-' + category.id + (renameError() ? ' rename-error-' + category.id : '')"
+              >
+              <small [id]="'rename-hint-' + category.id">{{ renamePreview() }}</small>
+              @if (renameError()) {
+                <p class="category-admin__error" role="alert" [id]="'rename-error-' + category.id">{{ renameError() }}</p>
+              }
+              <div class="category-admin__actions">
+                <button type="submit" [disabled]="isRenaming()">{{ isRenaming() ? 'Guardando…' : 'Guardar' }}</button>
+                <button
+                  class="category-admin__secondary"
+                  type="button"
+                  [disabled]="isRenaming()"
+                  (click)="cancelRename(category)"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          } @else {
+            <div class="category-admin__info">
+              <span class="category-admin__name">{{ category.name }}</span>
+              <code class="category-admin__slug">/categoria/{{ category.slug }}</code>
+              <!-- Un padre no tiene productos propios: se cuentan sus subcategorías -->
+              @if (category.subcategoryCount > 0) {
+                <span class="category-admin__count">{{ subcategoryCountLabel(category.subcategoryCount) }}</span>
+              } @else if (category.productCount !== null) {
+                <span class="category-admin__count">{{ productCountLabel(category.productCount) }}</span>
+              }
+            </div>
+            <div class="category-admin__actions">
+              <button
+                #renameButton
+                class="category-admin__secondary"
+                type="button"
+                [attr.data-category-id]="category.id"
+                [attr.aria-label]="'Renombrar ' + rowLabel(category)"
+                [disabled]="isRenaming() || isDeleting()"
+                (click)="startRename(category)"
+              >
+                Renombrar
+              </button>
+              <!-- Con productos o subcategorías no borra: aria-disabled (sigue enfocable) y, al
+                   pulsarlo, el motivo en la fila, enlazado con aria-describedby -->
+              <button
+                #deleteButton
+                class="category-admin__secondary"
+                type="button"
+                [attr.data-category-id]="category.id"
+                [attr.aria-label]="'Borrar ' + rowLabel(category)"
+                [attr.aria-disabled]="category.productCount || category.subcategoryCount ? 'true' : null"
+                [attr.aria-describedby]="deleteNotice()?.categoryId === category.id ? 'delete-notice-' + category.id : null"
+                [disabled]="isRenaming() || isDeleting()"
+                (click)="askDelete(category, deleteButton)"
+              >
+                {{ deletingId() === category.id ? 'Borrando…' : 'Borrar' }}
+              </button>
+            </div>
+          }
+          @if (deleteNotice(); as notice) {
+            @if (notice.categoryId === category.id) {
+              <p class="category-admin__error category-admin__notice" role="alert" [id]="'delete-notice-' + category.id">
+                {{ notice.message }}
+              </p>
+            }
+          }
+        </div>
+      </ng-template>
 
       @if (rows().length === 0) {
         <p class="category-admin__note">No hay categorías. Crea una para poder añadir productos.</p>
@@ -152,6 +184,7 @@
   </section>
 
   <app-confirm-dialog
+    #deleteDialog
     [title]="deleteDialogTitle()"
     message="Esta acción no se puede deshacer."
     confirmLabel="Eliminar"
@@ -159,5 +192,16 @@
     [danger]="true"
     (confirmed)="onDeleteConfirmed()"
     (cancelled)="onDeleteCancelled()"
+  />
+
+  <!-- Primera subcategoría de un padre con productos: se moverán todos a ella -->
+  <app-confirm-dialog
+    #moveDialog
+    title="¿Mover los productos a la nueva subcategoría?"
+    [message]="moveDialogMessage()"
+    confirmLabel="Mover y crear"
+    cancelLabel="Cancelar"
+    (confirmed)="onMoveConfirmed()"
+    (cancelled)="onMoveCancelled()"
   />
 </main>

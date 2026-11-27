@@ -3,7 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, retry, tap } from 'rxjs';
 
 import { API_BASE_URL } from '@core/config/api.config';
-import type { AdminCategory, Category } from '../models/category.models';
+import type { AdminCategory, Category, CreateCategoryOptions, CreatedCategory } from '../models/category.models';
 
 export type CategoriesStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -74,9 +74,17 @@ export class CategoryService {
   // Solo admin (POST /api/admin/categories). El servidor genera el slug y la posición. La nueva
   // se añade a la lista compartida al momento: la navbar y el selector de productos la ven sin
   // recargar (signal)
-  create(name: string): Observable<Category> {
-    return this.http.post<Category>(this.adminApiUrl, { name }).pipe(
-      tap((created) => {
+  // Con parentId, una subcategoría; moveProducts: true mueve a ella los productos del padre (si el
+  // padre tiene productos y no se envía, el servidor responde 409 PARENT_HAS_PRODUCTS)
+  create(name: string, options: CreateCategoryOptions = {}): Observable<CreatedCategory> {
+    const body = {
+      name,
+      ...(options.parentId ? { parentId: options.parentId } : {}),
+      ...(options.moveProducts ? { moveProducts: true } : {}),
+    };
+
+    return this.http.post<CreatedCategory>(this.adminApiUrl, body).pipe(
+      tap(({ movedProductCount: _moved, ...created }) => {
         this.categoriesState.update((categories) =>
           [...categories.filter((category) => category.slug !== created.slug), created].sort(
             (a, b) => a.position - b.position || a.id - b.id,

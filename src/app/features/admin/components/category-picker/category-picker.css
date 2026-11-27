@@ -1,0 +1,60 @@
+/* Mismo aspecto que los campos del formulario de productos (product-management.css: label,
+   .product-form__input, .product-form__error, .product-form__counter). Aquí y no allí porque
+   ese archivo está al límite del presupuesto de CSS */
+:host {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.picker__field {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+}
+
+.picker__field label {
+  color: #292522;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.picker__select {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #d7cec8;
+  border-radius: 12px;
+  background: #fff;
+  color: #171717;
+  font: inherit;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.picker__select:hover {
+  border-color: #aa9486;
+}
+
+.picker__select:focus-visible {
+  border-color: #8a5a44;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(138, 90, 68, 0.15);
+}
+
+.picker__select[aria-invalid='true'] {
+  border-color: #b42318;
+}
+
+.picker__error,
+.picker__hint {
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.picker__error {
+  color: #b42318;
+}
+
+.picker__hint {
+  color: #6b625d;
+}

@@ -57,6 +57,7 @@
 }
 
 .category-admin__field input,
+.category-admin__field select,
 .category-admin__rename input {
   min-height: 44px;
   padding: 0.5rem 0.75rem;
@@ -116,7 +117,7 @@
   list-style: none;
 }
 
-.category-admin__list li {
+.category-admin__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -181,4 +182,11 @@
 .category-admin h2:focus-visible {
   outline: 3px solid #111827;
   outline-offset: 2px;
+}
+
+/* Subcategorías: lista anidada, sangrada bajo su categoría */
+.category-admin__sublist {
+  margin: 0;
+  padding: 0 0 0 1.5rem;
+  list-style: none;
 }

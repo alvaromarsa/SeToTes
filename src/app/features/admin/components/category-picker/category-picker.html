@@ -1,0 +1,58 @@
+<div class="picker__field">
+  <label for="category">Categoría</label>
+  <!-- El error va con el selector que falta: la categoría o, si la elegida tiene subcategorías, la
+       subcategoría -->
+  <select
+    id="category"
+    class="picker__select"
+    [attr.aria-invalid]="errorMessage() && subcategories().length === 0 ? 'true' : null"
+    [attr.aria-describedby]="
+      noCategories() ? 'category-empty' : errorMessage() && subcategories().length === 0 ? 'category-error' : null
+    "
+    (change)="onTopChange($any($event.target).value)"
+    (blur)="onBlur()"
+  >
+    <option value="" disabled [selected]="selectedTop() === ''">Elige una categoría</option>
+    @for (category of categories(); track category.id) {
+      <option [value]="category.slug" [selected]="category.slug === selectedTop()">{{ category.name }}</option>
+    }
+  </select>
+
+  @if (categoriesFailed()) {
+    <small class="picker__error">No se pudieron cargar las categorías. Recarga la página para crear o editar productos.</small>
+  } @else if (noCategories()) {
+    <small id="category-empty" class="picker__hint">
+      Todavía no hay categorías. Para crear productos, antes
+      <a
+        class="underline underline-offset-3 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#111827]"
+        routerLink="/adminpanel/categories"
+      >crea una categoría</a>.
+    </small>
+  } @else if (errorMessage() && subcategories().length === 0) {
+    <small id="category-error" class="picker__error">{{ errorMessage() }}</small>
+  }
+</div>
+
+@if (subcategories().length > 0) {
+  <div class="picker__field">
+    <label for="subcategory">Subcategoría</label>
+    <select
+      id="subcategory"
+      class="picker__select"
+      required
+      [attr.aria-invalid]="errorMessage() ? 'true' : null"
+      [attr.aria-describedby]="'subcategory-hint' + (errorMessage() ? ' subcategory-error' : '')"
+      (change)="onSubChange($any($event.target).value)"
+      (blur)="onBlur()"
+    >
+      <option value="" disabled [selected]="selectedSub() === ''">Elige una subcategoría</option>
+      @for (subcategory of subcategories(); track subcategory.id) {
+        <option [value]="subcategory.slug" [selected]="subcategory.slug === selectedSub()">{{ subcategory.name }}</option>
+      }
+    </select>
+    <small id="subcategory-hint" class="picker__hint">Esta categoría tiene subcategorías: el producto va en una de ellas.</small>
+    @if (errorMessage()) {
+      <small id="subcategory-error" class="picker__error">{{ errorMessage() }}</small>
+    }
+  </div>
+}

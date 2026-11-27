@@ -17,7 +17,44 @@ const { PREVIOUS_SLUGS_COLUMN, formatCategory, parseCategoryName } = require('..
 //   renombradas antes de la 009, hasta que se vuelven a guardar.
 // Un nombre nuevo choca con otra categoría si su forma normalizada es su nombre (name_key), su
 // dirección actual o una antigua suya. En todos los casos, 409 con un mensaje que lo explica.
+// name_key es GLOBAL también para las subcategorías (migración 011): las URL son planas y el slug
+// sale del nombre, así que dos subcategorías «Grandes» de padres distintos chocarían igualmente.
+//
+// Subcategorías (migración 011): un solo nivel (parent_id apunta a una categoría de primer nivel).
+// Las reglas las garantiza la base de datos (ver la migración); aquí se comprueban antes para dar
+// mensajes claros. Mover una subcategoría a otro padre, o convertir una categoría de primer nivel
+// en subcategoría (o al revés), no está soportado: el PATCH ignora parentId.
 const router = express.Router();
+
+const SUBCATEGORY_DEPTH_MESSAGE = 'Una subcategoría solo puede estar dentro de una categoría de primer nivel';
+
+function productCountText(count) {
+  return count === 1 ? '1 producto' : `${count} productos`;
+}
+
+// parentId (opcional; null o ausente = primer nivel) y moveProducts (opcional; booleano, solo con
+// parentId). Devuelve { parentId, moveProducts } o { error }
+function parseParentOptions(body) {
+  const rawParentId = body?.parentId ?? null;
+  // Solo un número entero positivo (un texto como "5" no vale)
+  const parentId = typeof rawParentId === 'number' ? parseCategoryId(rawParentId) : null;
+
+  if (rawParentId !== null && parentId === null) {
+    return { error: 'La categoría padre no es válida' };
+  }
+
+  const moveProducts = body?.moveProducts ?? false;
+
+  if (typeof moveProducts !== 'boolean') {
+    return { error: 'moveProducts debe ser true o false' };
+  }
+
+  if (moveProducts && parentId === null) {
+    return { error: 'Solo se pueden mover productos al crear una subcategoría' };
+  }
+
+  return { parentId, moveProducts };
+}
 
 router.use(requireAuth, requireAdmin);
 
@@ -64,18 +101,24 @@ function isUniqueViolation(error) {
 }
 
 // Todas las categorías con el número de productos de cada una, contando también los ocultos
-// (son los que impiden borrarla). Mismo orden que la lista pública
+// (son los que impiden borrarla), y el de subcategorías (también impiden borrarla). Mismo orden
+// que la lista pública. Un padre no tiene productos propios: productCount = 0
 router.get('/', async (request, response) => {
   try {
     const result = await pool.query(
-      `SELECT c.id, c.slug, c.name, c.position, ${PREVIOUS_SLUGS_COLUMN},
-              (SELECT count(*)::int FROM products p WHERE p.category = c.slug) AS product_count
+      `SELECT c.id, c.slug, c.name, c.position, c.parent_id, ${PREVIOUS_SLUGS_COLUMN},
+              (SELECT count(*)::int FROM products p WHERE p.category = c.slug) AS product_count,
+              (SELECT count(*)::int FROM categories child WHERE child.parent_id = c.id) AS subcategory_count
        FROM categories c
        ORDER BY c.position, c.id`
     );
 
     return response.json(
-      result.rows.map((row) => ({ ...formatCategory(row), productCount: row.product_count }))
+      result.rows.map((row) => ({
+        ...formatCategory(row),
+        productCount: row.product_count,
+        subcategoryCount: row.subcategory_count,
+      }))
     );
   } catch (error) {
     console.error('Error al consultar las categorías (admin):', error.message);
@@ -85,13 +128,20 @@ router.get('/', async (request, response) => {
   }
 });
 
-// Solo se lee { name }: el slug lo genera el servidor (cualquier otro campo se ignora).
-// La nueva va al final (MAX(position) + 1). Dos altas simultáneas de nombres distintos podrían
-// quedar con la misma posición; no es un problema: el listado desempata por id.
+// Crear: { name, parentId?, moveProducts? } (cualquier otro campo se ignora). El slug lo genera
+// el servidor. La nueva va al final (MAX(position) + 1); dos altas simultáneas de nombres
+// distintos podrían empatar, y el listado desempata por id.
 // Su slug lo registra en category_slugs el trigger categories_register_slug (migración 009), no
 // esta ruta: así lo registra también cualquier otro INSERT (seed.sql, un backend anterior, uno a
 // mano). Si el slug es una dirección antigua de otra categoría, el trigger choca con la clave
 // primaria (23505 category_slugs_pkey) y el alta entera se deshace → 409.
+//
+// Subcategoría (parentId, migración 011): el padre tiene que existir y ser de primer nivel (400).
+// Si el padre tiene productos (es su primera subcategoría), hay que moverlos a la nueva:
+// moveProducts: true los mueve en la MISMA transacción; sin él → 409 con productCount, para que el
+// admin lo confirme. El padre se bloquea (FOR UPDATE) antes de contar y mover: nadie le añade un
+// producto entre medias. La regla «un padre no tiene productos» la comprueba la base de datos al
+// COMMIT (trigger diferido categories_parent_without_products), cuando ya se han movido.
 router.post('/', async (request, response) => {
   const parsed = parseCategoryName(request.body?.name);
 
@@ -99,35 +149,117 @@ router.post('/', async (request, response) => {
     return response.status(400).json({ message: parsed.error });
   }
 
+  const options = parseParentOptions(request.body);
+
+  if (options.error) {
+    return response.status(400).json({ message: options.error });
+  }
+
+  const client = await pool.connect();
+
   try {
+    await client.query('BEGIN');
+
+    let parent = null;
+    let parentProductCount = 0;
+
+    if (options.parentId !== null) {
+      const parentResult = await client.query(
+        'SELECT id, slug, name, parent_id FROM categories WHERE id = $1 FOR UPDATE',
+        [options.parentId]
+      );
+      parent = parentResult.rows[0] ?? null;
+
+      if (!parent) {
+        await client.query('ROLLBACK');
+        return response.status(400).json({ message: 'La categoría padre no existe' });
+      }
+
+      if (parent.parent_id !== null) {
+        await client.query('ROLLBACK');
+        return response.status(400).json({ message: SUBCATEGORY_DEPTH_MESSAGE });
+      }
+
+      const count = await client.query('SELECT count(*)::int AS total FROM products WHERE category = $1', [
+        parent.slug,
+      ]);
+      parentProductCount = count.rows[0].total;
+
+      if (parentProductCount > 0 && !options.moveProducts) {
+        await client.query('ROLLBACK');
+        return response.status(409).json({
+          message: `«${parent.name}» tiene ${productCountText(parentProductCount)}. Para crear su primera subcategoría hay que moverlos a ella.`,
+          code: 'PARENT_HAS_PRODUCTS',
+          productCount: parentProductCount,
+        });
+      }
+    }
+
     // ON CONFLICT DO NOTHING (sin columna): cubre los dos únicos de categories, slug y name_key.
     // Dos altas a la vez del mismo nombre → una crea y la otra no devuelve fila
-    const inserted = await pool.query(
-      `INSERT INTO categories (slug, name, name_key, position)
-       SELECT $1, $2, $3, COALESCE(MAX(position), 0) + 1 FROM categories
+    const inserted = await client.query(
+      `INSERT INTO categories (slug, name, name_key, position, parent_id)
+       SELECT $1, $2, $3, COALESCE(MAX(position), 0) + 1, $4 FROM categories
        ON CONFLICT DO NOTHING
-       RETURNING id, slug, name, position`,
-      [parsed.slug, parsed.name, parsed.nameKey]
+       RETURNING id, slug, name, position, parent_id`,
+      [parsed.slug, parsed.name, parsed.nameKey, options.parentId]
     );
 
     if (inserted.rows.length === 0) {
+      await client.query('ROLLBACK');
       return response.status(409).json({ message: await conflictMessage(parsed) });
     }
 
-    // Solo el slug: el nombre lo ha escrito el admin y no aporta nada al log
-    console.log(`Categoría creada: ${inserted.rows[0].slug}`);
+    const created = inserted.rows[0];
+    let movedProductCount = 0;
+
+    if (parent && parentProductCount > 0) {
+      // products.category → la subcategoría nueva (también los ocultos)
+      const moved = await client.query('UPDATE products SET category = $1 WHERE category = $2', [
+        created.slug,
+        parent.slug,
+      ]);
+      movedProductCount = moved.rowCount;
+    }
+
+    // Aquí se comprueba la regla diferida (23514 si el padre aún tuviera productos)
+    await client.query('COMMIT');
+
+    // Solo slugs y números: el nombre lo ha escrito el admin y no aporta nada al log
+    console.log(
+      parent
+        ? `Subcategoría creada: ${created.slug} (en ${parent.slug}; productos movidos: ${movedProductCount})`
+        : `Categoría creada: ${created.slug}`
+    );
 
     // Recién creada: sin direcciones antiguas (previousSlugs vacío)
-    return response.status(201).json(formatCategory(inserted.rows[0]));
+    return response.status(201).json({ ...formatCategory(created), movedProductCount });
   } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+
     if (isUniqueViolation(error)) {
       return response.status(409).json({ message: await conflictMessage(parsed) });
+    }
+
+    // El padre se borró o pasó a ser subcategoría entre medias (clave ajena compuesta)
+    if (error.code === '23503' && error.constraint === 'categories_parent_fkey') {
+      return response.status(400).json({ message: SUBCATEGORY_DEPTH_MESSAGE });
+    }
+
+    // Red de seguridad: el padre seguía con productos al COMMIT
+    if (error.code === '23514' && error.constraint === 'categories_parent_without_products') {
+      return response.status(409).json({
+        message: 'La categoría padre tiene productos: vuelve a intentarlo para moverlos a la subcategoría',
+        code: 'PARENT_HAS_PRODUCTS',
+      });
     }
 
     console.error('Error al crear la categoría:', error.message);
     return response.status(500).json({
       message: 'No se pudo crear la categoría',
     });
+  } finally {
+    client.release();
   }
 });
 
@@ -136,7 +268,7 @@ router.post('/', async (request, response) => {
 // category_slugs como dirección antigua (redirige a la nueva) y products.category se actualiza
 // solo (ON UPDATE CASCADE). Si no cambia (solo mayúsculas o tildes), el historial no se toca.
 // Guardar el mismo nombre también vale: sincroniza el slug de una categoría renombrada antes de
-// la 009 (nombre y slug desfasados).
+// la 009 (nombre y slug desfasados). Igual para subcategorías; parentId se ignora (no se mueven).
 router.patch('/:id', async (request, response) => {
   const categoryId = parseCategoryId(request.params.id);
 
@@ -194,7 +326,7 @@ router.patch('/:id', async (request, response) => {
       `UPDATE categories AS c
        SET name = $1, name_key = $2, slug = $3
        WHERE c.id = $4
-       RETURNING c.id, c.slug, c.name, c.position, ${PREVIOUS_SLUGS_COLUMN}`,
+       RETURNING c.id, c.slug, c.name, c.position, c.parent_id, ${PREVIOUS_SLUGS_COLUMN}`,
       [parsed.name, parsed.nameKey, parsed.slug, categoryId]
     );
 
@@ -220,7 +352,9 @@ router.patch('/:id', async (request, response) => {
   }
 });
 
-// Borrar: solo una categoría SIN productos (contando también los ocultos). Sus slugs (el actual y
+// Borrar: solo una categoría SIN productos (contando también los ocultos) y SIN subcategorías
+// (clave ajena categories_parent_fkey, ON DELETE RESTRICT → 23503 → 409). Al borrar la última
+// subcategoría, el padre vuelve a ser una categoría normal y admite productos. Sus slugs (el actual y
 // los antiguos) se borran con ella (category_slugs ON DELETE CASCADE) y quedan libres para otra
 // categoría: sus enlaces antiguos pasan a «Categoría no encontrada». Sin carrera: no se
 // cuenta antes; se intenta el DELETE y, si la categoría tiene productos, la clave ajena
@@ -256,11 +390,22 @@ router.delete('/:id', async (request, response) => {
         [categoryId]
       );
       const productCount = count.rows[0]?.product_count ?? 0;
-      const products = productCount === 1 ? '1 producto' : `${productCount} productos`;
+      return response.status(409).json({
+        message: `No se puede eliminar: tiene ${productCountText(productCount)}. Muévelos a otra categoría o elimínalos antes.`,
+        productCount,
+      });
+    }
+
+    if (error.code === '23503' && error.constraint === 'categories_parent_fkey') {
+      const count = await pool.query('SELECT count(*)::int AS total FROM categories WHERE parent_id = $1', [
+        categoryId,
+      ]);
+      const subcategoryCount = count.rows[0]?.total ?? 0;
+      const subcategories = subcategoryCount === 1 ? '1 subcategoría' : `${subcategoryCount} subcategorías`;
 
       return response.status(409).json({
-        message: `No se puede eliminar: tiene ${products}. Muévelos a otra categoría o elimínalos antes.`,
-        productCount,
+        message: `No se puede eliminar: tiene ${subcategories}. Elimínalas antes.`,
+        subcategoryCount,
       });
     }
 

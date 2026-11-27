@@ -4,7 +4,8 @@ const pool = require('../db');
 const { PREVIOUS_SLUGS_COLUMN, formatCategory } = require('../utils/categories');
 
 // Montado en /api/categories. Lista pública (sin autenticación) de las categorías, en su orden,
-// cada una con previousSlugs (sus direcciones antiguas, que el frontend redirige a la actual).
+// cada una con previousSlugs (sus direcciones antiguas, que el frontend redirige a la actual) y
+// parentId (null en las de primer nivel; migración 011). Lista plana: el frontend la agrupa.
 // La administración está en /api/admin/categories.
 const router = express.Router();
 
@@ -16,7 +17,7 @@ const router = express.Router();
 router.get('/', async (request, response) => {
   try {
     const result = await pool.query(
-      `SELECT c.id, c.slug, c.name, c.position, ${PREVIOUS_SLUGS_COLUMN}
+      `SELECT c.id, c.slug, c.name, c.position, c.parent_id, ${PREVIOUS_SLUGS_COLUMN}
        FROM categories c
        ORDER BY c.position, c.id`
     );

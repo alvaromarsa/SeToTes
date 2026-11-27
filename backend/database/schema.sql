@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict 1gh8mAJe24vVYk734pxhjFNKAbbZlXJQkceNAdqKb4eNKk0DDZ85ZJbB8ZeoBqx
+\restrict 5qujxLvpOh3KcC2lR9PiznCg6gxEfbWAxsc91Fo2OorL9d0TQyBtZz8JDz9iMrL
 
 -- Dumped from database version 16.15
 -- Dumped by pg_dump version 16.15
@@ -17,6 +17,75 @@ SET check_function_bodies = false;
 SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: check_category_parent_without_products(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.check_category_parent_without_products() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NEW.parent_id IS NOT NULL AND EXISTS (
+        SELECT 1
+        FROM public.products p
+        JOIN public.categories parent ON parent.slug = p.category
+        WHERE parent.id = NEW.parent_id
+    ) THEN
+        RAISE EXCEPTION 'La categorÃ­a padre % tiene productos', NEW.parent_id
+            USING ERRCODE = 'check_violation', CONSTRAINT = 'categories_parent_without_products';
+    END IF;
+
+    RETURN NULL;
+END;
+$$;
+
+
+--
+-- Name: check_product_category_is_leaf(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.check_product_category_is_leaf() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF TG_OP = 'UPDATE' AND NEW.category IS NOT DISTINCT FROM OLD.category THEN
+        RETURN NEW;
+    END IF;
+
+    PERFORM 1 FROM public.categories WHERE slug = NEW.category FOR SHARE;
+
+    IF EXISTS (
+        SELECT 1
+        FROM public.categories parent
+        JOIN public.categories child ON child.parent_id = parent.id
+        WHERE parent.slug = NEW.category
+    ) THEN
+        RAISE EXCEPTION 'La categorÃ­a % tiene subcategorÃ­as: el producto debe ir en una de ellas', NEW.category
+            USING ERRCODE = 'check_violation', CONSTRAINT = 'products_category_leaf';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: lock_category_parent(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.lock_category_parent() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    IF NEW.parent_id IS NOT NULL THEN
+        PERFORM 1 FROM public.categories WHERE id = NEW.parent_id FOR UPDATE;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
 
 --
 -- Name: register_category_slug(); Type: FUNCTION; Schema: public; Owner: -
@@ -89,8 +158,20 @@ CREATE TABLE public.categories (
     "position" integer NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     name_key text NOT NULL,
+    parent_id integer,
+    depth smallint GENERATED ALWAYS AS (
+CASE
+    WHEN (parent_id IS NULL) THEN 0
+    ELSE 1
+END) STORED,
+    parent_depth smallint GENERATED ALWAYS AS (
+CASE
+    WHEN (parent_id IS NULL) THEN NULL::integer
+    ELSE 0
+END) STORED,
     CONSTRAINT categories_name_key_format_check CHECK (((name_key ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text) AND (char_length(name_key) <= 60))),
     CONSTRAINT categories_name_length_check CHECK (((char_length(name) >= 2) AND (char_length(name) <= 40))),
+    CONSTRAINT categories_parent_not_self_check CHECK ((parent_id <> id)),
     CONSTRAINT categories_slug_format_check CHECK (((slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text) AND (char_length(slug) <= 60)))
 );
 
@@ -361,6 +442,14 @@ ALTER TABLE ONLY public.cart_items
 
 
 --
+-- Name: categories categories_id_depth_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_id_depth_key UNIQUE (id, depth);
+
+
+--
 -- Name: categories categories_name_key_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -496,6 +585,13 @@ CREATE INDEX admin_audit_log_target_user_id_idx ON public.admin_audit_log USING 
 
 
 --
+-- Name: categories_parent_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX categories_parent_id_idx ON public.categories USING btree (parent_id);
+
+
+--
 -- Name: category_slugs_category_id_idx; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -545,10 +641,31 @@ CREATE INDEX products_created_at_id_idx ON public.products USING btree (created_
 
 
 --
+-- Name: categories categories_lock_parent; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER categories_lock_parent BEFORE INSERT OR UPDATE OF parent_id ON public.categories FOR EACH ROW EXECUTE FUNCTION public.lock_category_parent();
+
+
+--
+-- Name: categories categories_parent_without_products; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE CONSTRAINT TRIGGER categories_parent_without_products AFTER INSERT OR UPDATE OF parent_id ON public.categories DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.check_category_parent_without_products();
+
+
+--
 -- Name: categories categories_register_slug; Type: TRIGGER; Schema: public; Owner: -
 --
 
 CREATE TRIGGER categories_register_slug AFTER INSERT ON public.categories FOR EACH ROW EXECUTE FUNCTION public.register_category_slug();
+
+
+--
+-- Name: products products_category_leaf; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER products_category_leaf BEFORE INSERT OR UPDATE OF category ON public.products FOR EACH ROW EXECUTE FUNCTION public.check_product_category_is_leaf();
 
 
 --
@@ -565,6 +682,14 @@ ALTER TABLE ONLY public.cart_items
 
 ALTER TABLE ONLY public.cart_items
     ADD CONSTRAINT cart_items_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: categories categories_parent_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_parent_fkey FOREIGN KEY (parent_id, parent_depth) REFERENCES public.categories(id, depth) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 
 --
@@ -627,5 +752,5 @@ ALTER TABLE ONLY public.products
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 1gh8mAJe24vVYk734pxhjFNKAbbZlXJQkceNAdqKb4eNKk0DDZ85ZJbB8ZeoBqx
+\unrestrict 5qujxLvpOh3KcC2lR9PiznCg6gxEfbWAxsc91Fo2OorL9d0TQyBtZz8JDz9iMrL
 

@@ -70,25 +70,39 @@ const PREVIOUS_SLUGS_COLUMN = `COALESCE(
     '{}'
   ) AS previous_slugs`;
 
+// parentId: null en las de primer nivel; el id del padre en las subcategorías (migración 011)
 function formatCategory(row) {
   return {
     id: row.id,
     slug: row.slug,
     name: row.name,
     position: row.position,
+    parentId: row.parent_id ?? null,
     previousSlugs: row.previous_slugs ?? [],
   };
 }
 
-// ¿Existe la categoría? Para validar products.category antes de escribir (la clave ajena
-// products_category_fkey es la red de seguridad). db: el pool o el cliente de una transacción
-async function categoryExists(db, slug) {
+// ¿Puede un producto ir en esta categoría? Para validar products.category antes de escribir:
+// 'missing' (no existe), 'has-subcategories' (tiene subcategorías: el producto debe ir en una de
+// ellas, migración 011) u 'ok'. Las redes de seguridad son la clave ajena products_category_fkey
+// y el trigger products_category_leaf. db: el pool o el cliente de una transacción
+async function getProductCategoryStatus(db, slug) {
   if (!isValidSlug(slug)) {
-    return false;
+    return 'missing';
   }
 
-  const result = await db.query('SELECT 1 FROM categories WHERE slug = $1', [slug]);
-  return result.rows.length > 0;
+  const result = await db.query(
+    `SELECT EXISTS (SELECT 1 FROM categories child WHERE child.parent_id = c.id) AS has_children
+     FROM categories c
+     WHERE c.slug = $1`,
+    [slug]
+  );
+
+  if (result.rows.length === 0) {
+    return 'missing';
+  }
+
+  return result.rows[0].has_children ? 'has-subcategories' : 'ok';
 }
 
 // Nombre que escribe el admin al crear o renombrar una categoría: texto plano de una línea, recortado y con
@@ -139,5 +153,5 @@ module.exports = {
   isReservedSlug,
   PREVIOUS_SLUGS_COLUMN,
   formatCategory,
-  categoryExists,
+  getProductCategoryStatus,
 };

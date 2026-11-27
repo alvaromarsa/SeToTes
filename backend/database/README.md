@@ -19,7 +19,7 @@ psql -v ON_ERROR_STOP=1 -U <usuario> -d totebag_db -f backend/database/seed.sql
 
 `schema.sql` refleja el estado actual del esquema, así que ya incluye todas las migraciones existentes. Como es solo estructura, no trae datos: sin `seed.sql`, la tabla `categories` estaría vacía y no se podría crear ningún producto.
 
-> **AVISO:** `seed.sql` es solo para una BD NUEVA. No lo ejecutes sobre una BD con datos reales: si se ha borrado desde el panel alguna de las 4 categorías por defecto, la volvería a crear. Una BD que ya existía recibe las categorías con las migraciones `007_categories.sql`, `008_category_name_key.sql` y `009_category_slug_history.sql`, no con el seed (y tampoco esas migraciones se vuelven a aplicar).
+> **AVISO:** `seed.sql` es solo para una BD NUEVA. No lo ejecutes sobre una BD con datos reales: si se ha borrado desde el panel alguna de las 4 categorías por defecto, la volvería a crear. Una BD que ya existía recibe las categorías con las migraciones `007_categories.sql`, `008_category_name_key.sql`, `009_category_slug_history.sql` y `011_subcategories.sql`, no con el seed (y tampoco esas migraciones se vuelven a aplicar).
 
 - `seed.sql` es idempotente (`ON CONFLICT DO NOTHING`): ejecutarlo dos veces no duplica nada ni cambia lo que ya exista. Pero si se ha RENOMBRADO una de las 4 por defecto (desde la 009 su slug cambia y el antiguo sigue siendo suyo), el seed falla entero: el trigger rechaza el slug antiguo (otro motivo para no ejecutarlo nunca sobre datos reales).
 - `category_slugs` (migración 009) no se rellena en `seed.sql`: lo hace el trigger al insertar cada categoría.
@@ -80,6 +80,21 @@ Añade `products.created_at` (`timestamptz NOT NULL DEFAULT now()`) y el índice
 - La rellena SOLO la base de datos con el valor por defecto: el backend no la escribe al crear ni al editar. Los productos que ya existen reciben todos la misma fecha (la de la migración); entre ellos desempata el id descendente.
 - `seed.sql` no inserta productos: no le afecta.
 - **Orden de entrega:** aplicar la 010 en local → regenerar `schema.sql` → commit → aplicar la 010 en Neon → push. El backend anterior funciona con ella aplicada; el nuevo SIN ella da 500 solo en `?sort=newest` (la portada se queda sin «Novedades»).
+
+### 011_subcategories.sql
+
+Subcategorías de UN solo nivel. Requiere PostgreSQL ≥ 12 (columnas generadas `STORED`); el `docker-compose.yml` y la BD local usan 16.15.
+
+- `categories.parent_id` (NULL en las de primer nivel), `CHECK (parent_id <> id)` e índice `categories_parent_id_idx`.
+- **Un solo nivel, sin triggers:** columnas generadas `depth` (0 sin padre, 1 con padre) y `parent_depth` (0 con padre, NULL sin él), `UNIQUE (id, depth)` y la clave ajena compuesta `categories_parent_fkey (parent_id, parent_depth) → categories (id, depth)` (`ON UPDATE RESTRICT ON DELETE RESTRICT`). El padre debe tener `depth = 0`; una categoría con hijas no puede pasar a tener padre (su `depth` cambiaría) ni borrarse.
+- **Un producto solo en una categoría sin subcategorías (regla de hoja):**
+  - `products_category_leaf` (BEFORE INSERT/UPDATE OF category en `products`, solo si la categoría cambia): `FOR SHARE` de la categoría y comprueba que no tiene hijas.
+  - `categories_lock_parent` (BEFORE INSERT/UPDATE OF parent_id): `FOR UPDATE` del padre, inmediato y hasta el COMMIT.
+  - `categories_parent_without_products` (CONSTRAINT TRIGGER `DEFERRABLE INITIALLY DEFERRED`): al COMMIT, el padre no puede tener productos. Diferida para poder crear la primera subcategoría y mover a ella los productos del padre en la misma transacción.
+  - Los dos bloqueos sobre la misma fila son incompatibles: un alta de producto y una de subcategoría en la misma categoría van una detrás de otra, sin interbloqueos (cada transacción bloquea una sola fila de categoría para esta regla).
+- Errores: 23503 `categories_parent_fkey`; 23514 `products_category_leaf` y `categories_parent_without_products` (este, en el COMMIT).
+- `seed.sql` no cambia: las 4 categorías iniciales son de primer nivel.
+- **Orden de entrega:** aplicar la 011 en local → regenerar `schema.sql` → commit → aplicar la 011 en Neon → push. El backend anterior funciona con ella aplicada; el nuevo SIN ella no: `GET /api/categories` da 500 (falta `parent_id`).
 
 No hay herramienta de migraciones ni tabla de control: hay que llevar la cuenta de cuál es la última aplicada en cada entorno.
 

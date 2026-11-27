@@ -13,7 +13,7 @@ Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con 
 ## Funcionalidades
 
 **Clientes**
-- Catálogo con una página por categoría (`/categoria/<slug>`; las URL antiguas `/bolsas`, `/neceseres`, `/fundas` y `/telas` redirigen).
+- Catálogo con una página por categoría (`/categoria/<slug>`; las URL antiguas `/bolsas`, `/neceseres`, `/fundas` y `/telas` redirigen) y subcategorías de un nivel, con página intermedia, «Ver todo» (`/categoria/<slug>/todo`) y miga de pan.
 - Registro e inicio de sesión. Contraseñas con hash argon2.
 - Perfil de usuario editable (nombre, teléfono, email, dirección, ciudad y código postal).
 - Carrito guardado en la base de datos: añadir productos, cambiar cantidades y quitarlos, con comprobación de stock.
@@ -22,8 +22,8 @@ Tienda online de tote bags, neceseres, fundas y telas. Aplicación completa con 
 - Portada con «Novedades»: los 4 productos más recientes de la tienda.
 
 **Administración** (rol `admin`)
-- Crear y editar productos (nombre, precio, stock, color y categoría).
-- Crear, renombrar y borrar categorías (`/adminpanel/categories`): los cambios aparecen al momento en la navbar, el catálogo y el formulario de productos. Al renombrar, la URL cambia y la antigua sigue llevando a la nueva; solo se borran categorías sin productos.
+- Crear y editar productos (nombre, precio, stock, color y categoría o subcategoría).
+- Crear, renombrar y borrar categorías y subcategorías (`/adminpanel/categories`): los cambios aparecen al momento en la navbar, el catálogo y el formulario de productos. Al renombrar, la URL cambia y la antigua sigue llevando a la nueva; solo se borran categorías sin productos ni subcategorías. Crear la primera subcategoría de una categoría con productos los mueve a ella (con confirmación).
 - Listado de todos los pedidos con filtro por estado, y detalle con datos del cliente y del envío.
 - Cambio de estado de los pedidos según transiciones permitidas. Al cancelar un pedido se devuelve el stock.
 
@@ -144,7 +144,7 @@ docker compose ps                         # minio-init "Exited (0)" es lo normal
 .
 ├── src/app/
 │   ├── core/
-│   │   ├── config/          # URL base de la API, categoryPath
+│   │   ├── config/          # URL base de la API, categoryPath y categoryAllPath
 │   │   ├── guards/          # authGuard, adminGuard
 │   │   ├── interceptors/    # credenciales y sesión caducada (401)
 │   │   ├── models/          # interfaces de datos
@@ -154,7 +154,7 @@ docker compose ps                         # minio-init "Exited (0)" es lo normal
 │   │   ├── catalog/  checkout/  home/  login/  register/
 │   │   ├── orders/  order-detail/  shopping-cart/  user-profile/
 │   └── shared/
-│       ├── components/navbar/
+│       ├── components/          # navbar, breadcrumbs (miga de pan), image-lightbox, confirm-dialog…
 │       └── utils/form-utils.ts
 └── backend/
     ├── app.js               # construye la app Express y monta las rutas
@@ -209,15 +209,15 @@ Las categorías están en la tabla `categories`, no en el código. `products.cat
 
   | Endpoint | Qué hace | Respuestas |
   |---|---|---|
-  | `GET /api/categories` | Lista pública, en orden (`position, id`), cada una con `previousSlugs` (sus direcciones antiguas, de la más reciente a la más antigua). `no-cache` + ETag: revalida en cada uso y responde `304` si no ha cambiado; un renombrado cambia la respuesta y el ETag. | `200`; `500` con `no-store` |
-  | `GET /api/admin/categories` | La misma lista con `productCount` de cada una (cuenta también los productos ocultos, que también impiden borrar). | `200` |
-  | `POST /api/admin/categories` | Crea una con `{ name }` (cualquier otro campo se ignora). El servidor genera el slug (minúsculas, sin tildes, con guiones) y la posición (la última). | `201`; `400` nombre no válido o reservado (`login`, `checkout`…); `409` si choca con el nombre, la dirección actual o una dirección antigua de otra («Bolsas», «BOLSÁS» y «bolsas!» chocan) |
-  | `PATCH /api/admin/categories/:id` | Renombra con `{ name }`. El slug sale del nombre nuevo; si cambia, el anterior pasa a `previousSlugs` y los productos lo siguen. Si no cambia (solo mayúsculas o tildes), el historial no se toca. Guardar el mismo nombre sincroniza una categoría con nombre y dirección desfasados. | `200` con la categoría y sus `previousSlugs`; `400`; `404`; `409` con un mensaje que dice con qué choca |
-  | `DELETE /api/admin/categories/:id` | Borra solo si no tiene productos (ni ocultos); lo garantiza la clave ajena, sin carreras. Sus slugs se liberan. Los pedidos no se ven afectados. | `204`; `400`; `404`; `409` «tiene N productos» (+ `productCount`) |
-  | `GET /api/products?category=<slug>` | Productos visibles de la categoría. Acepta también un slug antiguo y devuelve los de la categoría a la que pertenece ahora (resuelto con `category_slugs`, una sola búsqueda por clave primaria antes de usar el índice de siempre). | `200`; `[]` si el slug no existe; `400` si el formato no es válido |
+  | `GET /api/categories` | Lista pública y PLANA, en orden (`position, id`), cada una con `parentId` (`null` en las de primer nivel) y `previousSlugs` (sus direcciones antiguas, de la más reciente a la más antigua). `no-cache` + ETag: revalida en cada uso y responde `304` si no ha cambiado; crear, renombrar o borrar cambia la respuesta y el ETag. | `200`; `500` con `no-store` |
+  | `GET /api/admin/categories` | La misma lista con `productCount` (cuenta también los productos ocultos, que también impiden borrar) y `subcategoryCount`. | `200` |
+  | `POST /api/admin/categories` | Crea una con `{ name, parentId?, moveProducts? }` (cualquier otro campo se ignora). El servidor genera el slug (minúsculas, sin tildes, con guiones) y la posición (la última). Con `parentId` (número), una subcategoría de esa categoría de primer nivel. Si esa categoría tiene productos, hace falta `moveProducts: true` para moverlos a la nueva. | `201` con la categoría y `movedProductCount`; `400` nombre no válido o reservado (`login`, `checkout`…), padre inexistente o que es subcategoría, `parentId`/`moveProducts` mal formados; `409` si choca con el nombre, la dirección actual o una antigua de otra («Bolsas», «BOLSÁS» y «bolsas!» chocan), o `409` `{ code: 'PARENT_HAS_PRODUCTS', productCount }` sin `moveProducts` |
+  | `PATCH /api/admin/categories/:id` | Renombra con `{ name }` (también subcategorías; `parentId` se ignora: no se mueven). El slug sale del nombre nuevo; si cambia, el anterior pasa a `previousSlugs` y los productos lo siguen. Si no cambia (solo mayúsculas o tildes), el historial no se toca. Guardar el mismo nombre sincroniza una categoría con nombre y dirección desfasados. | `200` con la categoría, `parentId` y `previousSlugs`; `400`; `404`; `409` con un mensaje que dice con qué choca |
+  | `DELETE /api/admin/categories/:id` | Borra solo si no tiene productos (ni ocultos) ni subcategorías; lo garantizan las claves ajenas, sin carreras. Sus slugs se liberan. Los pedidos no se ven afectados. | `204`; `400`; `404`; `409` «tiene N productos» (+ `productCount`) o «tiene N subcategorías» (+ `subcategoryCount`) |
+  | `GET /api/products?category=<slug>` | Productos visibles de la categoría; con una que tiene subcategorías, los de TODAS ellas («Ver todo»). Acepta también un slug antiguo y devuelve los de la categoría a la que pertenece ahora (resuelto con `category_slugs`, una sola búsqueda por clave primaria). | `200`; `[]` si el slug no existe; `400` si el formato no es válido |
   | `GET /api/products?sort=newest&limit=4` | Los productos visibles más recientes (`created_at DESC, id DESC`; migración 010). `sort` solo admite `newest`; `limit`, de 1 a 24; se combinan con `category`. Sin parámetros, todos los visibles por id, como siempre. Lo usa «Novedades» de la portada. | `200`; `400` si `sort` o `limit` no son válidos |
 
-  Al crear o editar un producto se comprueba que su categoría existe (por su slug actual).
+  Al crear o editar un producto (`POST /api/products`, `PUT /api/products/:id`) se comprueba que su categoría existe (por su slug actual; si no, `400`) y que no tiene subcategorías (`400` «Esa categoría tiene subcategorías: elige una de ellas»; si alguien crea una subcategoría justo a la vez, el trigger de la BD lo rechaza y la API responde `409`).
 - **Orden de entrega de la 009:**
   1. Aplicar la 009 en la BD local.
   2. Regenerar `schema.sql` (con `category_slugs` y el trigger).
@@ -233,6 +233,36 @@ Las categorías están en la tabla `categories`, no en el código. `products.cat
 - **Borrar:** el botón «Borrar» de una categoría con productos no abre la confirmación: explica en la fila cuántos tiene. Sin productos, pide confirmación. Un enlace a una categoría borrada (también las URL antiguas) muestra «Categoría no encontrada» con un enlace a la portada, y la tienda funciona aunque no quede ninguna (Gestionar productos avisa de que hay que crear una antes).
 - **Muchas categorías:** la fila de la navbar se desplaza en horizontal, con un degradado en el borde por el que queda más, y el tabulador lleva la vista hasta la categoría enfocada.
 - **Pendiente:** reordenar y ocultar categorías; y, con más de 6 u 8, una página «Ver todas» o un menú desplegable.
+
+### Subcategorías
+Las categorías pueden tener subcategorías de **un solo nivel** (categoría → subcategoría; una subcategoría no puede tener subcategorías). La URL es plana, `/categoria/<slug>`, también para las subcategorías: el slug (y el nombre) siguen siendo únicos en toda la tienda, y el historial de slugs y sus redirecciones funcionan igual.
+
+- **Regla de hoja:** un producto solo puede estar en una categoría sin subcategorías. Si una categoría tiene subcategorías, sus productos van en ellas; si no tiene, los tiene directamente.
+- **Primera subcategoría de una categoría con productos:** el admin confirma que se moverán todos a la nueva subcategoría y se mueven en la misma transacción. Sin esa confirmación, el servidor responde `409`.
+- **Borrar:** una categoría con subcategorías no se puede borrar (hay que borrar antes sus subcategorías), ni una subcategoría con productos. Al borrar la última subcategoría, la categoría vuelve a ser normal y admite productos.
+- **No soportado (decidido):** mover una subcategoría a otra categoría, o convertir una categoría de primer nivel en subcategoría o al revés.
+- **Base de datos (`011_subcategories.sql`), las reglas las garantiza la propia BD, también con peticiones simultáneas:**
+  - **Un solo nivel, sin triggers:** `categories.parent_id` y dos columnas generadas, `depth` (0 sin padre, 1 con padre) y `parent_depth` (0 con padre, NULL sin él), con la clave ajena compuesta `(parent_id, parent_depth) → (id, depth)`: el padre tiene que ser de primer nivel, y una categoría con hijas no puede pasar a tener padre ni borrarse.
+  - **Regla de hoja, con triggers y bloqueos:** un alta o cambio de categoría de un producto bloquea su categoría (`FOR SHARE`) y comprueba que no tiene hijas; un alta de subcategoría bloquea el padre (`FOR UPDATE`) y, al `COMMIT` (comprobación diferida, para poder mover los productos en la misma transacción), comprueba que el padre no tiene productos. Los dos bloqueos son incompatibles: una carrera entre crear un producto y crear una subcategoría en la misma categoría se resuelve en orden, sin interbloqueos.
+- **Rutas de la tienda:**
+
+  | Ruta | Qué muestra |
+  |---|---|
+  | `/categoria/<slug>` de una categoría con subcategorías | Página intermedia: una tarjeta por subcategoría (también las vacías) y «Ver todo». No pide productos. |
+  | `/categoria/<slug>` de una subcategoría | Sus productos, con miga de pan Inicio › Categoría › Subcategoría. |
+  | `/categoria/<slug>` de una categoría sin subcategorías | Sus productos, como siempre. |
+  | `/categoria/<slug>/todo` | «Ver todo»: los productos de todas las subcategorías, con miga Inicio › Categoría › Todo. Sobre una categoría sin subcategorías, redirige a `/categoria/<slug>`. |
+
+  El caso se decide con la lista de categorías ya cargada (mientras tanto, solo «Cargando…»). Los slugs antiguos redirigen a la dirección actual sustituyendo la entrada del historial, también con `/todo`. La navbar muestra solo las categorías de primer nivel; el detalle de producto lleva la miga Inicio › Categoría › Subcategoría › Producto, y una subcategoría usa el color del recuadro sin foto de su categoría.
+- **Administración:** en `/adminpanel/categories`, «Dentro de (opcional)» al crear, lista agrupada (subcategorías sangradas bajo su categoría) y las mismas reglas de borrado. En Gestionar productos, el selector de categoría muestra un segundo selector obligatorio de subcategoría si la elegida tiene subcategorías; las pestañas son de primer nivel (la de una categoría suma las de sus subcategorías) y la tabla muestra «Categoría › Subcategoría».
+- **Orden de entrega de la 011:**
+  1. Aplicar la 011 en la BD local.
+  2. Regenerar `schema.sql`.
+  3. Commit.
+  4. Aplicar la 011 en Neon (requiere PostgreSQL ≥ 12 por las columnas generadas).
+  5. Push (despliegue).
+
+  El backend anterior funciona con la 011 aplicada (todas sus categorías son de primer nivel y los triggers no rechazan nada). Si el backend nuevo llegara ANTES que la migración, `GET /api/categories` daría `500` (no existe `parent_id`): la tienda se quedaría sin categorías en la navbar y el catálogo. Por eso la migración va siempre primero.
 
 ### Novedades de la portada
 «Novedades» muestra los 4 productos visibles más recientes de toda la tienda, sin agrupar por categoría (dos de la misma pueden salir juntos). Los elige el servidor: `GET /api/products?sort=newest&limit=4`, ordenado por fecha de creación y, a igual fecha, por id descendente, para que el orden sea estable. La portada no descarga el catálogo entero ni espera a la lista de categorías (solo la usa para el nombre de la etiqueta). Sin ningún producto visible, la sección no aparece.

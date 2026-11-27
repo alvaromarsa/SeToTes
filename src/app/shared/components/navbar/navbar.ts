@@ -47,9 +47,10 @@ export class Navbar implements OnInit {
 
   private readonly categoryService = inject(CategoryService);
 
-  // Categorías de la BD (signal del servicio, cargado una vez). Mientras cargan, o si fallan,
-  // la fila queda vacía pero conserva su altura (min-height en navbar.css): nada salta
-  readonly categories = this.categoryService.categories;
+  // Categorías de PRIMER NIVEL de la BD (signal del servicio, cargado una vez); las subcategorías
+  // se ven en la página de su categoría. Mientras cargan, o si fallan, la fila queda vacía pero
+  // conserva su altura (min-height en navbar.css): nada salta
+  readonly categories = this.categoryService.topLevelCategories;
   readonly categoryPath = categoryPath;
 
   // Fila de categorías con desplazamiento horizontal propio: degradado en el borde de cada lado

@@ -1,0 +1,19 @@
+<!-- Cada tarjeta es UN enlace con su encabezado: se tabula una vez y el lector de pantalla lee el
+     nombre. La lista dice cuántas hay -->
+<ul class="subcategories" aria-label="Subcategorías de {{ parent().name }}">
+  @for (subcategory of subcategories(); track subcategory.id) {
+    <li>
+      <a class="subcategory-card" [routerLink]="categoryPath(subcategory.slug)">
+        <span class="subcategory-card__swatch subcategory-card__swatch--{{ tone() }}" aria-hidden="true"></span>
+        <h3>{{ subcategory.name }}</h3>
+      </a>
+    </li>
+  }
+  <li>
+    <a class="subcategory-card subcategory-card--all" [routerLink]="categoryAllPath(parent().slug)">
+      <span class="subcategory-card__swatch subcategory-card__swatch--{{ tone() }}" aria-hidden="true"></span>
+      <h3>Ver todo</h3>
+      <p>Todos los productos de {{ parent().name }}</p>
+    </a>
+  </li>
+</ul>

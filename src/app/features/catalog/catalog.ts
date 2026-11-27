@@ -5,21 +5,30 @@ import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-i
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, distinctUntilChanged, EMPTY, map, of, switchMap, tap } from 'rxjs';
 
-import { categoryPath, isValidCategorySlug } from '@core/config/categories.config';
+import { categoryAllPath, categoryPath, isValidCategorySlug } from '@core/config/categories.config';
 import { CartService } from '@core/services/cart.service';
 import { CategoryService } from '@core/services/category.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { loginUrlTree } from '@core/utils/return-url';
 import { Product, ProductService } from '@core/services/product.service';
+import { type BreadcrumbItem, Breadcrumbs } from '@shared/components/breadcrumbs/breadcrumbs';
+import { SubcategoryCards } from './components/subcategory-cards/subcategory-cards';
 
 // /categoria/:slug. Angular REUTILIZA este componente al pasar de una categoría a otra (misma
 // ruta, otro parámetro): por eso todo sale de paramMap y no de una lectura única al abrirse.
 // Los productos se piden cuando ya se conoce la lista de categorías: así una dirección antigua
 // redirige a la actual sin pedir nada y nunca se ve «no encontrada» mientras cargan.
+// Tres casos (subcategorías, migración 011), decididos solo con la lista cargada:
+// - categoría con subcategorías: página intermedia con una tarjeta por subcategoría y «Ver todo»
+//   (no pide productos);
+// - subcategoría: sus productos, con miga de pan Inicio › Padre › Sub;
+// - categoría sin subcategorías: sus productos, como siempre.
+// /categoria/<padre>/todo («Ver todo», data.all): los de todas sus subcategorías
+// (GET /api/products?category=<padre>), con miga Inicio › Padre › Todo.
 @Component({
   selector: 'app-catalog',
   standalone: true,
-  imports: [CurrencyPipe, RouterLink],
+  imports: [Breadcrumbs, CurrencyPipe, RouterLink, SubcategoryCards],
   templateUrl: './catalog.html',
   styleUrl: './catalog.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,7 +41,10 @@ export class Catalog {
   private readonly router = inject(Router);
 
   readonly categoryPath = categoryPath;
-  readonly categories = this.categoryService.categories;
+  // «No encontrada» ofrece solo las de primer nivel (las mismas que la navbar)
+  readonly categories = this.categoryService.topLevelCategories;
+  // /categoria/<slug>/todo
+  private readonly showAll = this.route.snapshot.data['all'] === true;
 
   private readonly slug = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('slug') ?? '')),
@@ -44,9 +56,71 @@ export class Catalog {
   // Solo se sabe que no existe cuando las categorías ya han cargado (nunca mientras cargan): p. ej.
   // una categoría borrada o un slug con formato inválido
   readonly notFound = computed(() => this.categoryService.status() === 'loaded' && !this.category());
+  readonly subcategories = computed(() => {
+    const category = this.category();
+    return category ? this.categoryService.subcategoriesOf(category.id) : [];
+  });
+  private readonly parentCategory = computed(() => {
+    const category = this.category();
+    return category ? this.categoryService.parentOf(category) : undefined;
+  });
+
+  // Dirección a la que hay que ir (sustituyendo la entrada del historial), o null:
+  // - slug antiguo → el actual (también con /todo);
+  // - /todo de una categoría SIN subcategorías → su página normal
+  private readonly redirectUrl = computed<string | null>(() => {
+    const category = this.category();
+
+    if (!category) {
+      return null;
+    }
+
+    if (this.showAll && this.subcategories().length === 0) {
+      return categoryPath(category.slug);
+    }
+
+    if (category.slug === this.slug()) {
+      return null;
+    }
+
+    return this.showAll ? categoryAllPath(category.slug) : categoryPath(category.slug);
+  });
+
+  // Aún no se sabe qué página es (categorías cargando) o se está redirigiendo: solo «Cargando…»,
+  // sin título ni «no encontrada» (sin parpadeo de un caso a otro)
+  readonly isResolving = computed(() => {
+    const status = this.categoryService.status();
+    const pending = status === 'idle' || status === 'loading';
+    return (pending && !this.category()) || this.redirectUrl() !== null;
+  });
+
+  // Página intermedia: categoría con subcategorías (no en /todo)
+  readonly isParentPage = computed(
+    () => !this.showAll && this.redirectUrl() === null && this.subcategories().length > 0,
+  );
+
   // Si fallara la carga de categorías, los productos se muestran igual con un título genérico
-  readonly title = computed(() => this.category()?.name ?? 'Productos');
-  readonly placeholderTone = computed(() => this.categoryService.placeholderTone(this.slug()));
+  readonly title = computed(() => {
+    const name = this.category()?.name;
+    return name ? (this.showAll ? `Todo en ${name}` : name) : 'Productos';
+  });
+  readonly parentTone = computed(() => this.categoryService.placeholderTone(this.slug()));
+
+  // Inicio › Padre › Sub (subcategoría) o Inicio › Padre › Todo («Ver todo»); nada en las demás
+  readonly breadcrumbs = computed<BreadcrumbItem[]>(() => {
+    const category = this.category();
+    const parent = this.parentCategory();
+
+    if (category && this.showAll) {
+      return [{ label: 'Inicio', link: '/home' }, { label: category.name, link: categoryPath(category.slug) }, { label: 'Todo' }];
+    }
+
+    if (category && parent) {
+      return [{ label: 'Inicio', link: '/home' }, { label: parent.name, link: categoryPath(parent.slug) }, { label: category.name }];
+    }
+
+    return [];
+  });
 
   readonly products = signal<Product[]>([]);
   readonly isLoading = signal(true);
@@ -75,13 +149,18 @@ export class Catalog {
       return slug;
     }
 
-    const category = this.category();
-
-    if (!category) {
+    if (!this.category()) {
       return null;
     }
 
-    return category.slug === slug ? slug : undefined;
+    // Redirigiendo: no se piden los de un slug antiguo
+    if (this.redirectUrl() !== null) {
+      return undefined;
+    }
+
+    // Página intermedia: solo tarjetas. En /todo y en las demás, el servidor devuelve los de la
+    // categoría (con una que tiene subcategorías, los de todas ellas)
+    return this.isParentPage() ? null : slug;
   });
 
   constructor() {
@@ -91,11 +170,10 @@ export class Catalog {
     // historial (replaceUrl), para que «atrás» no vuelva a la antigua y redirija otra vez. También
     // las URL de antes (/bolsas → /categoria/bolsas → /categoria/<actual>)
     effect(() => {
-      const category = this.category();
-      const slug = this.slug();
+      const url = this.redirectUrl();
 
-      if (category && category.slug !== slug) {
-        untracked(() => void this.router.navigate([categoryPath(category.slug)], { replaceUrl: true }));
+      if (url !== null) {
+        untracked(() => void this.router.navigateByUrl(url, { replaceUrl: true }));
       }
     });
 
@@ -143,6 +221,11 @@ export class Catalog {
         this.products.set(products);
         this.isLoading.set(false);
       });
+  }
+
+  // Recuadro sin foto: el tono de la categoría del producto (el de su padre si es subcategoría)
+  toneOf(product: Product): string {
+    return this.categoryService.placeholderTone(product.category);
   }
 
   addToCart(product: Product): void {

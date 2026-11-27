@@ -8,8 +8,10 @@ const loadCatalog = () =>
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
-  // Una sola ruta para todas las categorías (también las que cree el admin)
+  // Una sola ruta para todas las categorías (también las que cree el admin y las subcategorías:
+  // URL plana). /todo: «Ver todo» de una categoría con subcategorías (data.all)
   { path: 'categoria/:slug', loadComponent: loadCatalog },
+  { path: 'categoria/:slug/todo', loadComponent: loadCatalog, data: { all: true } },
   // URL antiguas: redirigen para no romper marcadores ni enlaces compartidos. Los enlaces
   // internos ya usan categoryPath() (/categoria/<slug>) y no pasan por aquí
   { path: 'bolsas', redirectTo: 'categoria/bolsas', pathMatch: 'full' },

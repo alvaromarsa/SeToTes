@@ -1,0 +1,16 @@
+<nav class="breadcrumbs" aria-label="Miga de pan">
+  <ol>
+    @for (item of items(); track $index; let last = $last) {
+      <li>
+        @if (item.link && !last) {
+          <a [routerLink]="item.link">{{ item.label }}</a>
+        } @else {
+          <span aria-current="page">{{ item.label }}</span>
+        }
+        @if (!last) {
+          <span class="breadcrumbs__separator" aria-hidden="true">›</span>
+        }
+      </li>
+    }
+  </ol>
+</nav>

@@ -51,31 +51,7 @@
   text-decoration: none;
 }
 
-.breadcrumbs ol {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.breadcrumbs li + li::before {
-  content: '›' / '';
-  margin: 0 0.5rem;
-  color: #6b7280;
-}
-
-.breadcrumbs a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  color: #374151;
-}
-
-.breadcrumbs [aria-current='page'] {
-  color: #111827;
-  font-weight: 600;
-}
+/* La miga de pan es shared/components/breadcrumbs (con su propio CSS) */
 
 .product-detail__layout {
   display: grid;

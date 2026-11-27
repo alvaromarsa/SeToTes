@@ -1,0 +1,45 @@
+/* Mismo aspecto que tenía la miga del detalle de producto. Enlaces de navegación: sin subrayado
+   (no son enlaces dentro de un texto), con zona táctil de 44 px y foco visible */
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.breadcrumbs li {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.breadcrumbs a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #374151;
+}
+
+.breadcrumbs a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.breadcrumbs a:focus-visible {
+  outline: 3px solid #111827;
+  outline-offset: 2px;
+}
+
+.breadcrumbs [aria-current='page'] {
+  color: #111827;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.breadcrumbs__separator {
+  margin: 0 0.5rem;
+  color: #6b7280;
+}

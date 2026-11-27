@@ -23,6 +23,7 @@ import { CartService } from '@core/services/cart.service';
 import { CategoryService } from '@core/services/category.service';
 import { getErrorMessage } from '@core/utils/http-error-message';
 import { loginUrlTree } from '@core/utils/return-url';
+import { type BreadcrumbItem, Breadcrumbs } from '@shared/components/breadcrumbs/breadcrumbs';
 import { ImageLightbox, type LightboxImage } from '@shared/components/image-lightbox/image-lightbox';
 import { ShippingInfo } from '@shared/components/shipping-info/shipping-info';
 import { DetailedProduct, ProductService } from '@core/services/product.service';
@@ -41,7 +42,7 @@ const MAX_QUANTITY = 99;
 
 @Component({
   selector: 'app-product-detail',
-  imports: [CurrencyPipe, ImageLightbox, ReactiveFormsModule, RouterLink, ShippingInfo],
+  imports: [Breadcrumbs, CurrencyPipe, ImageLightbox, ReactiveFormsModule, RouterLink, ShippingInfo],
   templateUrl: './product-detail.html',
   styleUrl: './product-detail.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -263,6 +264,20 @@ export class ProductDetail implements OnInit, OnDestroy {
   // suyo puede ser antiguo; el catálogo también redirigiría, pero así no hace falta)
   categoryLink(slug: string): string {
     return categoryPath(this.categoryService.currentSlug(slug));
+  }
+
+  // Migas: Inicio › [padre ›] categoría › producto. Con la categoría de una subcategoría, también
+  // su padre (migración 011). Mientras cargan las categorías, el slug
+  breadcrumbs(product: DetailedProduct): BreadcrumbItem[] {
+    const category = this.categoryService.findBySlug(product.category);
+    const parent = category ? this.categoryService.parentOf(category) : undefined;
+
+    return [
+      { label: 'Inicio', link: '/home' },
+      ...(parent ? [{ label: parent.name, link: categoryPath(parent.slug) }] : []),
+      { label: this.categoryName(product.category), link: this.categoryLink(product.category) },
+      { label: product.name },
+    ];
   }
 
   // Nombre para mostrar (la BD guarda el slug); mientras cargan las categorías, el slug

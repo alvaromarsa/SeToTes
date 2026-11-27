@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, retry, tap } from 'rxjs';
 
 import { API_BASE_URL } from '@core/config/api.config';
@@ -28,6 +28,10 @@ export class CategoryService {
 
   readonly categories = this.categoriesState.asReadonly();
   readonly status = this.statusState.asReadonly();
+  // Solo las de primer nivel (navbar, tonos), en el orden de la lista
+  readonly topLevelCategories = computed(() =>
+    this.categoriesState().filter((category) => category.parentId === null),
+  );
 
   // Idempotente: lo llaman la navbar y el catálogo; solo la primera llamada hace la petición
   load(): void {
@@ -120,16 +124,32 @@ export class CategoryService {
     );
   }
 
+  findById(id: number): Category | undefined {
+    return this.categoriesState().find((category) => category.id === id);
+  }
+
+  // Subcategorías de una categoría, en el orden de la lista (vacío si no tiene)
+  subcategoriesOf(categoryId: number): Category[] {
+    return this.categoriesState().filter((category) => category.parentId === categoryId);
+  }
+
+  // Padre de una subcategoría (undefined si es de primer nivel)
+  parentOf(category: Category): Category | undefined {
+    return category.parentId === null ? undefined : this.findById(category.parentId);
+  }
+
   // Slug actual de la categoría de un slug quizá antiguo (para enlaces y comparaciones). Si no se
   // encuentra, el mismo
   currentSlug(slug: string): string {
     return this.findBySlug(slug)?.slug ?? slug;
   }
 
-  // Sufijo de clase del recuadro sin foto: los 4 tonos se repiten según la posición en la lista
+  // Sufijo de clase del recuadro sin foto: los 4 tonos se repiten según la posición entre las de
+  // primer nivel. Una subcategoría usa el de su padre
   placeholderTone(slug: string): (typeof PLACEHOLDER_TONES)[number] {
-    const current = this.currentSlug(slug);
-    const index = this.categoriesState().findIndex((category) => category.slug === current);
+    const category = this.findBySlug(slug);
+    const root = category ? (this.parentOf(category) ?? category) : undefined;
+    const index = this.topLevelCategories().findIndex((item) => item.id === root?.id);
     return PLACEHOLDER_TONES[Math.max(index, 0) % PLACEHOLDER_TONES.length];
   }
 }

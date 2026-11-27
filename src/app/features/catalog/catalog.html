@@ -1,5 +1,7 @@
 <section class="feature">
-  @if (notFound()) {
+  @if (isResolving()) {
+    <p role="status">Cargando…</p>
+  } @else if (notFound()) {
     <!-- Slug que no existe (o una categoría que ya no está): se explica y se ofrecen las que sí -->
     <div class="feature__header">
       <h2>Categoría no encontrada</h2>
@@ -14,7 +16,20 @@
       </ul>
     }
     <p class="feature__home"><a routerLink="/home">Ir a la portada</a></p>
+  } @else if (isParentPage()) {
+    @if (category(); as parent) {
+      <div class="feature__header">
+        <span class="feature__tag">Colección</span>
+        <h2>{{ parent.name }}</h2>
+      </div>
+      <!-- Una tarjeta por subcategoría (también las vacías) y «Ver todo»; sin pedir productos -->
+      <app-subcategory-cards [parent]="parent" [subcategories]="subcategories()" [tone]="parentTone()" />
+    }
   } @else {
+    @if (breadcrumbs().length > 0) {
+      <app-breadcrumbs [items]="breadcrumbs()" />
+    }
+
     <div class="feature__header">
       <!-- Etiqueta genérica para todas las categorías -->
       <span class="feature__tag">Colección</span>
@@ -41,7 +56,7 @@
                   loading="lazy"
                 >
               } @else {
-                <div class="product-card__image product-card__image--{{ placeholderTone() }}">
+                <div class="product-card__image product-card__image--{{ toneOf(product) }}">
                   {{ product.color }}
                 </div>
               }

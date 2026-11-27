@@ -29,13 +29,8 @@
 
     @case ('loaded') {
       @if (product; as product) {
-        <nav class="breadcrumbs" aria-label="Migas de pan">
-          <ol>
-            <li><a routerLink="/home">Inicio</a></li>
-            <li><a [routerLink]="categoryLink(product.category)">{{ categoryName(product.category) }}</a></li>
-            <li><span aria-current="page">{{ product.name }}</span></li>
-          </ol>
-        </nav>
+        <!-- Inicio › [Categoría padre ›] Categoría › Producto -->
+        <app-breadcrumbs [items]="breadcrumbs(product)" />
 
         <div class="product-detail__layout">
           <section class="gallery" aria-label="Fotos del producto">

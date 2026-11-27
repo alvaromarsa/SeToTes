@@ -7,6 +7,11 @@ export function categoryPath(slug: string): string {
   return `/categoria/${slug}`;
 }
 
+// «Ver todo» de una categoría con subcategorías: los productos de todas ellas
+export function categoryAllPath(slug: string): string {
+  return `${categoryPath(slug)}/todo`;
+}
+
 // Mismo formato que el servidor (isValidSlug en backend/utils/categories.js). Un slug con otro
 // formato no puede existir: el catálogo lo da por no encontrado sin llamar a la API (que daría 400)
 const CATEGORY_SLUG_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
